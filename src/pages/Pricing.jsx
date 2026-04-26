@@ -1,4 +1,5 @@
-import { Check, Flame, Zap, X } from 'lucide-react'
+import { Check, Flame, Zap, X, CreditCard, Bell, Clock } from 'lucide-react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import PlanBadge from '../components/ui/PlanBadge'
@@ -73,7 +74,66 @@ const PLANS = [
   },
 ]
 
-function PlanCard({ plan, currentPlan }) {
+function ComingSoonModal({ plan, onClose }) {
+  const Icon = plan.icon
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={onClose}>
+      <div
+        className="w-full max-w-sm bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className={`h-1 w-full ${plan.id === 'elite' ? 'bg-gradient-to-r from-violet-500 to-amber-400' : 'bg-gradient-to-r from-orange-500 to-red-500'}`} />
+
+        <div className="p-6 text-center">
+          <div className={`h-16 w-16 mx-auto mb-4 rounded-2xl flex items-center justify-center
+            ${plan.id === 'elite'
+              ? 'bg-gradient-to-br from-violet-500/20 to-amber-400/20 border border-violet-500/30'
+              : 'bg-gradient-to-br from-orange-500/20 to-red-500/20 border border-orange-500/30'
+            }`}>
+            {Icon
+              ? <Icon className={`h-7 w-7 ${plan.id === 'elite' ? 'text-amber-400' : 'text-orange-400'}`} />
+              : <CreditCard className="h-7 w-7 text-orange-400" />
+            }
+          </div>
+
+          <div className="inline-flex items-center gap-1.5 bg-zinc-800 border border-zinc-700 rounded-full px-3 py-1 mb-3">
+            <Clock className="h-3 w-3 text-brand-400" />
+            <span className="text-xs font-medium text-brand-400">Yakında Aktif</span>
+          </div>
+
+          <h3 className="text-xl font-bold text-white mb-2">{plan.name} Planı</h3>
+          <p className="text-zinc-400 text-sm leading-relaxed mb-5">
+            Ödeme altyapısı entegrasyonu tamamlanıyor.<br />
+            Hazır olduğunda bu sayfadan satın alabileceksin.
+          </p>
+
+          <div className="bg-zinc-800/60 border border-zinc-700 rounded-xl p-4 mb-5 text-left space-y-2">
+            {plan.features.filter(f => f.ok).slice(0, 4).map((f, i) => (
+              <div key={i} className="flex items-center gap-2 text-sm text-zinc-300">
+                <Check className="h-3.5 w-3.5 text-green-400 shrink-0" />
+                {f.text}
+              </div>
+            ))}
+            {plan.features.filter(f => f.ok).length > 4 && (
+              <p className="text-xs text-zinc-600 pl-5">+{plan.features.filter(f => f.ok).length - 4} özellik daha</p>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 bg-brand-500/10 border border-brand-500/20 rounded-xl px-4 py-3 mb-5">
+            <Bell className="h-4 w-4 text-brand-400 shrink-0" />
+            <p className="text-xs text-zinc-400 text-left">
+              Ödeme sistemi aktif olduğunda bildirim panelinden haberdar olacaksın.
+            </p>
+          </div>
+
+          <button onClick={onClose} className="w-full btn-secondary">Kapat</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PlanCard({ plan, currentPlan, onUpgradeClick }) {
   const { user } = useAuth()
   const isActive = currentPlan === plan.id
   const Icon = plan.icon
@@ -147,8 +207,16 @@ function PlanCard({ plan, currentPlan }) {
             Mevcut planın
           </div>
         ) : user ? (
-          <button className={`w-full text-center ${plan.btnClass}`} onClick={() => alert('Ödeme sistemi yakında!')}>
-            {plan.price === 0 ? 'Mevcut plan' : `${plan.name}\'e Geç`}
+          <button
+            className={`w-full text-center relative ${plan.btnClass}`}
+            onClick={() => plan.price > 0 && onUpgradeClick(plan)}
+          >
+            {plan.price === 0 ? 'Mevcut plan' : (
+              <span className="flex items-center justify-center gap-2">
+                {`${plan.name}'e Geç`}
+                <span className="text-[10px] bg-white/20 rounded-full px-1.5 py-0.5 font-normal">Yakında</span>
+              </span>
+            )}
           </button>
         ) : (
           <Link to="/register" className={`block w-full text-center ${plan.btnClass}`}>
@@ -163,9 +231,14 @@ function PlanCard({ plan, currentPlan }) {
 export default function Pricing() {
   const { profile } = useAuth()
   const currentPlan = profile?.plan || 'free'
+  const [comingSoonPlan, setComingSoonPlan] = useState(null)
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
+      {comingSoonPlan && (
+        <ComingSoonModal plan={comingSoonPlan} onClose={() => setComingSoonPlan(null)} />
+      )}
+
       {/* Header */}
       <div className="text-center mb-12">
         <h1 className="text-3xl font-black text-white mb-3">
@@ -179,11 +252,15 @@ export default function Pricing() {
             Aktif planın: <PlanBadge plan={currentPlan} size="sm" />
           </div>
         )}
+        <div className="mt-4 inline-flex items-center gap-2 bg-brand-500/10 border border-brand-500/20 rounded-full px-4 py-1.5 text-sm text-brand-400">
+          <Clock className="h-3.5 w-3.5" />
+          Ödeme sistemi entegrasyonu yakında tamamlanıyor
+        </div>
       </div>
 
       {/* Plan cards */}
       <div className="grid md:grid-cols-3 gap-5 items-start">
-        {PLANS.map(p => <PlanCard key={p.id} plan={p} currentPlan={currentPlan} />)}
+        {PLANS.map(p => <PlanCard key={p.id} plan={p} currentPlan={currentPlan} onUpgradeClick={setComingSoonPlan} />)}
       </div>
 
       {/* FAQ */}
@@ -203,7 +280,7 @@ export default function Pricing() {
           },
           {
             q: 'Ödeme güvenli mi?',
-            a: 'Evet, tüm ödemeler Stripe altyapısı üzerinden SSL korumalı işlenir.',
+            a: 'Evet, tüm ödemeler İyzico altyapısı üzerinden 3D Secure ve SSL korumalı olarak işlenecek.',
           },
         ].map((item, i) => (
           <div key={i} className="card p-5">
