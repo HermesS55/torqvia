@@ -16,6 +16,14 @@ dist-ssr
 .env
 .env.local
 
+# Claude Code local config — dev tool, not for repo
+.claude/
+
+# Screenshots accidentally dropped in project root
+Ekran görüntüsü*.png
+Ekran görüntüsü*.jpg
+*.screenshot.png
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
