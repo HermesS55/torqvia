@@ -166,6 +166,7 @@ export default function Events() {
 
   async function handleCreate(e) {
     e.preventDefault()
+    console.log('handleCreate çalıştı, user:', user?.id)
     setCreateError('')
     if (!form.title.trim()) { setCreateError('Etkinlik adı zorunludur.'); return }
     if (!form.event_date)   { setCreateError('Tarih ve saat zorunludur.'); return }
