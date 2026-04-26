@@ -1,4 +1,4 @@
-const CACHE = 'torqvia-v3'
+const CACHE = 'torqvia-v4'
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.add('/index.html')))
@@ -6,27 +6,19 @@ self.addEventListener('install', e => {
 })
 
 self.addEventListener('activate', e => {
+  // Eski cache'leri temizle ama açık sekmeleri zorla devralma
   e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
     )
   )
-  self.clients.claim()
+  // clients.claim() kaldırıldı — sekme geçişlerinde zorla reload'u önler
 })
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url)
-
-  // Supabase API — hiç karışma
-  if (url.hostname.includes('supabase.co') || url.hostname.includes('supabase.in')) {
-    return
-  }
-
-  // Sadece sayfa navigasyonlarında offline fallback yap
-  // JS, CSS, resim gibi statik dosyalara dokunma — tarayıcı kendi cache'iyle halleder
+  if (url.hostname.includes('supabase')) return
   if (e.request.mode === 'navigate') {
-    e.respondWith(
-      fetch(e.request).catch(() => caches.match('/index.html'))
-    )
+    e.respondWith(fetch(e.request).catch(() => caches.match('/index.html')))
   }
 })

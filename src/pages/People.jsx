@@ -50,77 +50,69 @@ function StarRating({ rating, count }) {
 function UserCard({ profile }) {
   const isPro = profile.role === 'pro'
   return (
-    <div className={`card hover:border-zinc-700 transition-all relative overflow-hidden ${
+    <div className={`card hover:border-zinc-700 transition-all relative overflow-hidden flex flex-col gap-3 ${
       isPro ? 'hover:border-blue-500/40 border-blue-500/10' : 'hover:border-brand-500/30'
     }`}>
       {isPro && (
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-600/40 via-blue-400/70 to-blue-600/40" />
       )}
 
-      <div className="flex items-start gap-3">
+      {/* Avatar + info */}
+      <div className="flex gap-3">
         <Link to={`/profile/${profile.id}`} className="shrink-0">
           <UserAvatar profile={profile} size="md" />
         </Link>
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <Link to={`/profile/${profile.id}`} className="block min-w-0">
-                <p className="font-semibold text-white hover:text-brand-400 transition-colors text-sm leading-tight truncate">
-                  {profile.full_name || 'İsimsiz Kullanıcı'}
-                </p>
-              </Link>
-              <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                {isPro
-                  ? <span className="inline-flex items-center gap-1 text-[10px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-full whitespace-nowrap">
-                      <Wrench className="h-2.5 w-2.5 shrink-0" />Servis Uzmanı
-                    </span>
-                  : <span className="inline-flex items-center gap-1 text-[10px] text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded-full whitespace-nowrap">
-                      <Car className="h-2.5 w-2.5 shrink-0" />Araç Sahibi
-                    </span>
-                }
-                {profile.plan && profile.plan !== 'free' && <PlanBadge plan={profile.plan} size="xs" />}
-              </div>
-            </div>
-            <div className="shrink-0 mt-0.5">
-              <FollowButton targetId={profile.id} size="sm" />
-            </div>
+          <Link to={`/profile/${profile.id}`}>
+            <p className="font-semibold text-white hover:text-brand-400 transition-colors text-sm leading-tight truncate">
+              {profile.full_name || 'İsimsiz Kullanıcı'}
+            </p>
+          </Link>
+          <div className="flex items-center gap-1 mt-1 flex-wrap">
+            {isPro
+              ? <span className="inline-flex items-center gap-1 text-[10px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-full">
+                  <Wrench className="h-2.5 w-2.5" />Servis Uzmanı
+                </span>
+              : <span className="inline-flex items-center gap-1 text-[10px] text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded-full">
+                  <Car className="h-2.5 w-2.5" />Araç Sahibi
+                </span>
+            }
+            {profile.plan && profile.plan !== 'free' && <PlanBadge plan={profile.plan} size="xs" />}
           </div>
-
           {isPro && profile.specialty && (
-            <p className="text-xs text-blue-300/80 font-medium mt-1.5 truncate">{profile.specialty}</p>
+            <p className="text-xs text-blue-300/70 mt-1 truncate">{profile.specialty}</p>
           )}
-
           {isPro && profile.avg_rating > 0 && (
             <StarRating rating={profile.avg_rating} count={profile.rating_count} />
-          )}
-
-          {profile.bio && (
-            <p className="text-xs text-zinc-500 line-clamp-2 mt-1.5 break-words">{profile.bio}</p>
-          )}
-
-          {isPro && profile.skills?.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1.5">
-              {profile.skills.slice(0, 3).map(s => (
-                <span key={s} className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full whitespace-nowrap">{s}</span>
-              ))}
-              {profile.skills.length > 3 && (
-                <span className="text-[10px] text-zinc-600 py-0.5">+{profile.skills.length - 3}</span>
-              )}
-            </div>
           )}
         </div>
       </div>
 
-      <div className="flex items-center gap-3 text-xs text-zinc-600 pt-2.5 mt-2.5 border-t border-zinc-800/60">
-        <span><span className="text-zinc-400 font-medium">{profile.follower_count || 0}</span> takipçi</span>
-        <span className="text-zinc-800">·</span>
-        <span><span className="text-zinc-400 font-medium">{profile.post_count || 0}</span> paylaşım</span>
-        {profile.listing_count > 0 && (
-          <>
-            <span className="text-zinc-800">·</span>
-            <span><span className="text-zinc-400 font-medium">{profile.listing_count}</span> ilan</span>
-          </>
-        )}
+      {/* Bio */}
+      {profile.bio && (
+        <p className="text-xs text-zinc-500 line-clamp-2 leading-relaxed">{profile.bio}</p>
+      )}
+
+      {/* Skills */}
+      {isPro && profile.skills?.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {profile.skills.slice(0, 3).map(s => (
+            <span key={s} className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full">{s}</span>
+          ))}
+          {profile.skills.length > 3 && (
+            <span className="text-[10px] text-zinc-600 py-0.5">+{profile.skills.length - 3}</span>
+          )}
+        </div>
+      )}
+
+      {/* Footer: stats + follow button */}
+      <div className="flex items-center justify-between pt-2.5 border-t border-zinc-800/60 mt-auto">
+        <div className="flex items-center gap-3 text-xs text-zinc-600">
+          <span><span className="text-zinc-400 font-medium">{profile.follower_count || 0}</span> takipçi</span>
+          <span className="text-zinc-800">·</span>
+          <span><span className="text-zinc-400 font-medium">{profile.post_count || 0}</span> paylaşım</span>
+        </div>
+        <FollowButton targetId={profile.id} size="sm" />
       </div>
     </div>
   )

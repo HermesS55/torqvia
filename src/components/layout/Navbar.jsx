@@ -81,16 +81,17 @@ export default function Navbar({ onOpenSearch }) {
                 {/* Upgrade (desktop only) */}
                 {!hasPlan && (
                   <Link to="/pricing"
-                    className="hidden lg:flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-lg bg-gradient-to-r from-orange-500/15 to-red-500/10 border border-orange-500/30 text-orange-400 hover:border-orange-400/60 transition-colors">
-                    <Flame className="h-3.5 w-3.5" />
-                    {t('nav.upgrade')}
+                    className="hidden lg:flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-orange-500/20 text-orange-400/70 hover:border-orange-500/40 hover:text-orange-400 transition-colors">
+                    <Flame className="h-3 w-3" />
+                    Turbo
                   </Link>
                 )}
 
                 {/* New listing (desktop) */}
                 {isOwner && (
-                  <Link to="/listings/new" className="hidden sm:flex btn-primary items-center gap-1.5 text-sm">
-                    <PlusCircle className="h-4 w-4" />
+                  <Link to="/listings/new"
+                    className="hidden sm:flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-zinc-700 text-zinc-300 hover:border-brand-500/50 hover:text-brand-400 hover:bg-brand-500/5 transition-colors">
+                    <PlusCircle className="h-3.5 w-3.5" />
                     <span className="hidden lg:inline">{t('nav.newListing')}</span>
                   </Link>
                 )}
