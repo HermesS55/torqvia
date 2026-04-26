@@ -16,6 +16,8 @@ export function AuthProvider({ children }) {
         const currentUser = session?.user ?? null
         setUser(currentUser)
         if (currentUser) {
+          // TOKEN_REFRESHED fires on tab focus — silently update user without loading flash
+          if (event === 'TOKEN_REFRESHED') return
           setLoading(true)
           fetchProfile(currentUser.id, currentUser.user_metadata)
         } else {
