@@ -166,20 +166,25 @@ export default function Events() {
 
   async function handleCreate(e) {
     e.preventDefault()
-    console.log('handleCreate çalıştı, user:', user?.id)
+    console.log('[Events] handleCreate başladı')
+    console.log('[Events] user:', user)
+    console.log('[Events] form:', form)
     setCreateError('')
     if (!form.title.trim()) { setCreateError('Etkinlik adı zorunludur.'); return }
     if (!form.event_date)   { setCreateError('Tarih ve saat zorunludur.'); return }
     setCreating(true)
     try {
-      const { data, error } = await supabase.from('events').insert({
+      const payload = {
         user_id: user.id,
         title: form.title.trim(),
         description: form.description.trim() || null,
-        event_date: form.event_date,
+        event_date: new Date(form.event_date).toISOString(),
         location: form.location.trim() || null,
         category: form.category,
-      }).select()
+      }
+      console.log('[Events] insert payload:', payload)
+      const { data, error } = await supabase.from('events').insert(payload).select()
+      console.log('[Events] insert sonuç — data:', data, 'error:', error)
       if (error) {
         setCreateError(`${error.message} [${error.code}]`)
         return
@@ -190,6 +195,7 @@ export default function Events() {
       setForm({ title: '', description: '', event_date: '', location: '', category: 'Buluşma' })
       fetchEvents()
     } catch (err) {
+      console.error('[Events] catch hatası:', err)
       setCreateError(`Beklenmeyen hata: ${err.message}`)
     } finally {
       setCreating(false)
