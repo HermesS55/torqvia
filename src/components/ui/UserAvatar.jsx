@@ -1,0 +1,31 @@
+import { getInitials } from '../../lib/avatar'
+
+const SIZES = {
+  xs: 'h-6 w-6 text-[10px]',
+  sm: 'h-8 w-8 text-xs',
+  md: 'h-10 w-10 text-sm',
+  lg: 'h-14 w-14 text-lg',
+  xl: 'h-20 w-20 text-2xl',
+}
+
+export default function UserAvatar({ profile, email, size = 'md', className = '' }) {
+  const isOwner = profile?.role === 'owner'
+  const ring = isOwner ? 'ring-2 ring-brand-500/40' : 'ring-2 ring-blue-500/40'
+  const bg   = isOwner ? 'bg-brand-500/15 text-brand-400' : 'bg-blue-500/15 text-blue-400'
+
+  if (profile?.avatar_url) {
+    return (
+      <img
+        src={profile.avatar_url}
+        alt=""
+        className={`${SIZES[size]} rounded-full object-cover ${ring} ${className}`}
+      />
+    )
+  }
+
+  return (
+    <div className={`${SIZES[size]} rounded-full flex items-center justify-center font-bold shrink-0 ${bg} ${ring} ${className}`}>
+      {getInitials(email || profile?.full_name || '')}
+    </div>
+  )
+}
