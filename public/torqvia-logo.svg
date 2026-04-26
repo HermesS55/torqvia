@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 120" width="480" height="120">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="480" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#111113"/>
+      <stop offset="100%" stop-color="#09090b"/>
+    </linearGradient>
+    <linearGradient id="leftArc" x1="60" y1="24" x2="34.54" y2="85.46" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fb923c"/>
+      <stop offset="100%" stop-color="#ea580c"/>
+    </linearGradient>
+    <linearGradient id="textGrad" x1="132" y1="0" x2="380" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e4e4e7"/>
+    </linearGradient>
+    <radialGradient id="iconGlow" cx="60" cy="60" r="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f97316" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#f97316" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="480" height="120" rx="18" fill="url(#bgGrad)"/>
+
+  <!-- ─── ICON ─── center (60,60) -->
+
+  <!-- Outer glow ring -->
+  <circle cx="60" cy="60" r="48" fill="none" stroke="#f97316" stroke-opacity="0.07" stroke-width="3"/>
+  <!-- Icon bg circle -->
+  <circle cx="60" cy="60" r="44" fill="#18181b"/>
+  <!-- Radial glow fill -->
+  <circle cx="60" cy="60" r="44" fill="url(#iconGlow)"/>
+  <!-- Border ring -->
+  <circle cx="60" cy="60" r="44" fill="none" stroke="#f97316" stroke-opacity="0.22" stroke-width="1"/>
+
+  <!-- Speedometer arcs — radius 36, gap at bottom between 45° and 135° SVG -->
+  <!-- top=(60,24)  right-bottom=(85.46,85.46)  left-bottom=(34.54,85.46) -->
+
+  <!-- Glow halo for active (left) arc -->
+  <path d="M 60 24 A 36 36 0 0 0 34.54 85.46"
+    fill="none" stroke="#f97316" stroke-opacity="0.18" stroke-width="10" stroke-linecap="round"/>
+
+  <!-- Right (inactive) arc -->
+  <path d="M 60 24 A 36 36 0 0 1 85.46 85.46"
+    fill="none" stroke="#f97316" stroke-opacity="0.22" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Left (active) arc -->
+  <path d="M 60 24 A 36 36 0 0 0 34.54 85.46"
+    fill="none" stroke="url(#leftArc)" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Tick dots -->
+  <circle cx="60"    cy="24"    r="2"   fill="#f97316" opacity="0.65"/>
+  <circle cx="34.54" cy="85.46" r="2"   fill="#f97316" opacity="0.55"/>
+  <circle cx="85.46" cy="85.46" r="1.8" fill="#f97316" opacity="0.2"/>
+
+  <!-- Needle glow -->
+  <line x1="60" y1="60" x2="44.3" y2="40.6"
+    stroke="#f97316" stroke-opacity="0.22" stroke-width="6" stroke-linecap="round"/>
+  <!-- Needle -->
+  <line x1="60" y1="60" x2="44.3" y2="40.6"
+    stroke="#f97316" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Center ring -->
+  <circle cx="60" cy="60" r="6.5" fill="none" stroke="#f97316" stroke-opacity="0.3" stroke-width="1.5"/>
+  <!-- Center dot -->
+  <circle cx="60" cy="60" r="4" fill="#f97316"/>
+
+  <!-- ─── TEXT ─── -->
+
+  <!-- "Torqvia" -->
+  <text x="132" y="63"
+    font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+    font-size="40" font-weight="800" fill="url(#textGrad)" letter-spacing="-1.5">Torqvia</text>
+
+  <!-- Decorative line between name and subtitle -->
+  <rect x="134" y="70" width="32" height="1.5" rx="1" fill="#f97316" opacity="0.6"/>
+
+  <!-- Subtitle -->
+  <text x="134" y="84"
+    font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+    font-size="10" font-weight="500" fill="#52525b" letter-spacing="3.8">AUTOMOTIVE COMMUNITY</text>
+</svg>

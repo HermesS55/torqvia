@@ -10,9 +10,9 @@
   "lang": "tr",
   "icons": [
     {
-      "src": "/favicon.svg",
+      "src": "/torqvia-logo.png",
       "sizes": "any",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ],

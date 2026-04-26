@@ -66,6 +66,17 @@ export async function uploadListingImage(userId, file) {
   return data.publicUrl
 }
 
+export async function uploadEventImage(userId, file) {
+  const compressed = await compressImage(file, 1280, 0.82)
+  const path = `events/${userId}/${Date.now()}.jpg`
+  const { error } = await supabase.storage
+    .from('post-images')
+    .upload(path, compressed, { upsert: false, contentType: 'image/jpeg' })
+  if (error) throw error
+  const { data } = supabase.storage.from('post-images').getPublicUrl(path)
+  return data.publicUrl
+}
+
 export function getInitials(email = '') {
   return email.slice(0, 2).toUpperCase()
 }

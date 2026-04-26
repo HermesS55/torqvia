@@ -31,6 +31,7 @@ import EditListing from './pages/listings/EditListing'
 import Admin from './pages/Admin'
 import PostDetail from './pages/PostDetail'
 import Events from './pages/Events'
+import EventDetail from './pages/EventDetail'
 
 function NotFound() {
   return (
@@ -90,7 +91,8 @@ export default function App() {
             <Route path="/search"    element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
             <Route path="/admin"     element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/posts/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
-            <Route path="/events"    element={<ProtectedRoute><Events /></ProtectedRoute>} />
+            <Route path="/events"     element={<ProtectedRoute><Events /></ProtectedRoute>} />
+            <Route path="/events/:id" element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -91,6 +91,7 @@ export default function Profile() {
   const [ratingCount, setRatingCount] = useState(0)
   const [myRating, setMyRating] = useState(null)
   const [followRequests, setFollowRequests] = useState([])
+  const [ratings, setRatings] = useState([])
   const fileRef = useRef()
 
   const isOwn = id === user?.id
@@ -105,17 +106,26 @@ export default function Profile() {
     if (isOwn) fetchFollowRequests()
   }, [id])
 
+  useEffect(() => {
+    if (user?.id && id && user.id !== id) {
+      supabase.rpc('increment_profile_view', { target_id: id }).then(() => {})
+    }
+  }, [id, user?.id])
+
   async function fetchRatings() {
     const { data } = await supabase
       .from('pro_ratings')
-      .select('rating, owner_id')
+      .select('id, rating, comment, created_at, owner_id, reviewer:profiles!pro_ratings_owner_id_fkey(id, full_name, avatar_url)')
       .eq('pro_id', id)
-    if (data && data.length > 0) {
-      const avg = data.reduce((s, r) => s + r.rating, 0) / data.length
+      .order('created_at', { ascending: false })
+    const arr = data || []
+    setRatings(arr)
+    if (arr.length > 0) {
+      const avg = arr.reduce((s, r) => s + r.rating, 0) / arr.length
       setAvgRating(Math.round(avg * 10) / 10)
-      setRatingCount(data.length)
+      setRatingCount(arr.length)
       if (user?.id) {
-        const mine = data.find(r => r.owner_id === user.id)
+        const mine = arr.find(r => r.owner_id === user.id)
         setMyRating(mine?.rating || null)
       }
     } else {
@@ -535,7 +545,7 @@ export default function Profile() {
           {/* Stats */}
           <div className={`grid gap-px mt-4 pt-4 border-t ${
             isElite ? 'border-violet-500/20' : 'border-zinc-800'
-          } ${isOwner ? 'grid-cols-4' : 'grid-cols-3'}`}>
+          } ${(isOwner || isPro) ? 'grid-cols-4' : 'grid-cols-3'}`}>
             <div className="text-center py-1">
               <div className={`text-lg font-bold ${isElite ? 'text-violet-200' : 'text-white'}`}>{posts.length}</div>
               <div className="text-[11px] text-zinc-500">Paylaşım</div>
@@ -554,6 +564,14 @@ export default function Profile() {
               <div className="text-center py-1">
                 <div className={`text-lg font-bold ${isElite ? 'text-violet-200' : 'text-white'}`}>{listings.length}</div>
                 <div className="text-[11px] text-zinc-500">İlan</div>
+              </div>
+            )}
+            {isPro && (
+              <div className="text-center py-1">
+                <div className={`text-lg font-bold ${isElite ? 'text-violet-200' : 'text-white'}`}>
+                  {(profile.view_count || 0).toLocaleString('tr-TR')}
+                </div>
+                <div className="text-[11px] text-zinc-500">Görüntülenme</div>
               </div>
             )}
           </div>
@@ -669,6 +687,7 @@ export default function Profile() {
             {[
               { id: 'posts', label: 'Paylaşımlar', icon: Grid3X3 },
               ...(isPro ? [{ id: 'portfolio', label: 'Portföy', icon: ImageIcon }] : []),
+              ...(isPro ? [{ id: 'reviews', label: `Değerlendirmeler${ratingCount > 0 ? ` (${ratingCount})` : ''}`, icon: Star }] : []),
               ...(isOwner ? [{ id: 'listings', label: 'İlanlar', icon: FileText }] : []),
               ...(isOwner ? [{ id: 'garage', label: 'Garaj', icon: Car }] : []),
             ].map(tabItem => (
@@ -775,6 +794,76 @@ export default function Profile() {
                     </Link>
                   ))
               }
+            </div>
+          )}
+
+          {/* Reviews tab (pro only - visible to everyone) */}
+          {tab === 'reviews' && isPro && (
+            <div>
+              {ratings.length === 0 ? (
+                <EmptyState icon={Star} title="Henüz değerlendirme yok"
+                  description="Bu uzman henüz değerlendirilmemiş" />
+              ) : (
+                <>
+                  {/* Summary */}
+                  <div className="card mb-4 flex items-center gap-5">
+                    <div className="text-center shrink-0">
+                      <div className="text-4xl font-black text-white leading-none">{avgRating}</div>
+                      <div className="flex items-center justify-center gap-0.5 my-1.5">
+                        {[1,2,3,4,5].map(s => (
+                          <Star key={s} className={`h-3.5 w-3.5 ${s <= Math.round(avgRating) ? 'fill-yellow-400 text-yellow-400' : 'fill-zinc-700 text-zinc-700'}`} />
+                        ))}
+                      </div>
+                      <div className="text-xs text-zinc-500">{ratingCount} yorum</div>
+                    </div>
+                    <div className="flex-1 space-y-1.5">
+                      {[5,4,3,2,1].map(star => {
+                        const count = ratings.filter(r => r.rating === star).length
+                        const pct   = ratingCount > 0 ? (count / ratingCount) * 100 : 0
+                        return (
+                          <div key={star} className="flex items-center gap-2">
+                            <span className="text-xs text-zinc-500 w-2 shrink-0">{star}</span>
+                            <Star className="h-2.5 w-2.5 fill-zinc-700 text-zinc-700 shrink-0" />
+                            <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                              <div className="h-full bg-yellow-400 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                            </div>
+                            <span className="text-xs text-zinc-600 w-4 text-right shrink-0">{count}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                  {/* Individual reviews */}
+                  <div className="space-y-3">
+                    {ratings.map(r => (
+                      <div key={r.id} className="card">
+                        <div className="flex items-start gap-3">
+                          <UserAvatar profile={r.reviewer} size="sm" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <Link to={`/profile/${r.owner_id}`}
+                                className="text-sm font-medium text-zinc-200 hover:text-brand-400 transition-colors">
+                                {r.reviewer?.full_name || 'Kullanıcı'}
+                              </Link>
+                              <span className="text-xs text-zinc-600 shrink-0">
+                                {new Date(r.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-0.5 mt-1">
+                              {[1,2,3,4,5].map(s => (
+                                <Star key={s} className={`h-3 w-3 ${s <= r.rating ? 'fill-yellow-400 text-yellow-400' : 'fill-zinc-700 text-zinc-700'}`} />
+                              ))}
+                            </div>
+                            {r.comment && (
+                              <p className="text-sm text-zinc-400 mt-2 leading-relaxed">{r.comment}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
