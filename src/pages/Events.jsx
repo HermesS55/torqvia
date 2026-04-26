@@ -167,31 +167,32 @@ export default function Events() {
   async function handleCreate(e) {
     e.preventDefault()
     setCreateError('')
-    if (!form.title.trim() || !form.event_date) {
-      setCreateError('Başlık ve tarih alanları zorunludur.')
-      return
-    }
+    if (!form.title.trim()) { setCreateError('Etkinlik adı zorunludur.'); return }
+    if (!form.event_date)   { setCreateError('Tarih ve saat zorunludur.'); return }
     setCreating(true)
-    const { error } = await supabase.from('events').insert({
-      user_id: user.id,
-      title: form.title.trim(),
-      description: form.description.trim() || null,
-      event_date: new Date(form.event_date).toISOString(),
-      location: form.location.trim() || null,
-      category: form.category,
-    })
-    if (error) {
-      console.error('Event insert error:', error)
-      setCreateError(`Hata: ${error.message} (code: ${error.code})`)
+    try {
+      const { data, error } = await supabase.from('events').insert({
+        user_id: user.id,
+        title: form.title.trim(),
+        description: form.description.trim() || null,
+        event_date: form.event_date,
+        location: form.location.trim() || null,
+        category: form.category,
+      }).select()
+      if (error) {
+        setCreateError(`${error.message} [${error.code}]`)
+        return
+      }
+      toast.success('Etkinlik oluşturuldu!')
+      setShowCreate(false)
+      setCreateError('')
+      setForm({ title: '', description: '', event_date: '', location: '', category: 'Buluşma' })
+      fetchEvents()
+    } catch (err) {
+      setCreateError(`Beklenmeyen hata: ${err.message}`)
+    } finally {
       setCreating(false)
-      return
     }
-    toast.success('Etkinlik oluşturuldu!')
-    setShowCreate(false)
-    setCreateError('')
-    setForm({ title: '', description: '', event_date: '', location: '', category: 'Buluşma' })
-    fetchEvents()
-    setCreating(false)
   }
 
   async function handleJoinToggle(eventId, isJoined) {
