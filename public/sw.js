@@ -1,4 +1,4 @@
-const CACHE = 'torqvia-v2'
+const CACHE = 'torqvia-v3'
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.add('/index.html')))
@@ -17,35 +17,16 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url)
 
-  // Supabase API — tarayıcının kendi fetch'ine bırak, SW karışmasın
+  // Supabase API — hiç karışma
   if (url.hostname.includes('supabase.co') || url.hostname.includes('supabase.in')) {
     return
   }
 
-  // Sadece GET isteklerini yakala
-  if (e.request.method !== 'GET') return
-
-  // SPA navigasyon — önce ağ, offline ise cache'den index.html
+  // Sadece sayfa navigasyonlarında offline fallback yap
+  // JS, CSS, resim gibi statik dosyalara dokunma — tarayıcı kendi cache'iyle halleder
   if (e.request.mode === 'navigate') {
     e.respondWith(
-      fetch(e.request).catch(async () => {
-        const cached = await caches.match('/index.html')
-        return cached ?? new Response('Çevrimdışısın', { status: 503, headers: { 'Content-Type': 'text/plain' } })
-      })
+      fetch(e.request).catch(() => caches.match('/index.html'))
     )
-    return
   }
-
-  // Statik dosyalar — önce cache, sonra ağ
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached
-      return fetch(e.request).then(res => {
-        if (!res || res.status !== 200 || res.type !== 'basic') return res
-        const clone = res.clone()
-        caches.open(CACHE).then(c => c.put(e.request, clone))
-        return res
-      }).catch(() => cached ?? new Response('', { status: 408 }))
-    })
-  )
 })
