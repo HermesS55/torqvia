@@ -94,14 +94,6 @@ export function AuthProvider({ children }) {
     await supabase.auth.signOut().catch(() => {})
   }
 
-  async function signInWithGoogle() {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/dashboard` },
-    })
-    if (error) throw error
-  }
-
   async function resetPassword(email) {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
@@ -121,7 +113,6 @@ export function AuthProvider({ children }) {
     signUp,
     signIn,
     signOut,
-    signInWithGoogle,
     resetPassword,
     updatePassword,
     refetchProfile: () => user && fetchProfile(user.id, user.user_metadata),
