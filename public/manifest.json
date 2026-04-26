@@ -10,10 +10,16 @@
   "lang": "tr",
   "icons": [
     {
-      "src": "/torqvia-logo.png",
-      "sizes": "any",
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/torqvia-logo.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
   "categories": ["social", "automotive"]

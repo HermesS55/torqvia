@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Search, Users, Car, Wrench, X, ChevronDown, Star } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Search, Users, Car, Wrench, X, ChevronDown, Star, MessageCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import UserAvatar from '../components/ui/UserAvatar'
@@ -49,6 +49,7 @@ function StarRating({ rating, count }) {
 
 function UserCard({ profile }) {
   const isPro = profile.role === 'pro'
+  const navigate = useNavigate()
   return (
     <div className={`card hover:border-zinc-700 transition-all relative overflow-hidden flex flex-col gap-3 ${
       isPro ? 'hover:border-blue-500/40 border-blue-500/10' : 'hover:border-brand-500/30'
@@ -105,14 +106,23 @@ function UserCard({ profile }) {
         </div>
       )}
 
-      {/* Footer: stats + follow button */}
+      {/* Footer: stats + actions */}
       <div className="flex items-center justify-between pt-2.5 border-t border-zinc-800/60 mt-auto">
         <div className="flex items-center gap-3 text-xs text-zinc-600">
           <span><span className="text-zinc-400 font-medium">{profile.follower_count || 0}</span> takipçi</span>
           <span className="text-zinc-800">·</span>
           <span><span className="text-zinc-400 font-medium">{profile.post_count || 0}</span> paylaşım</span>
         </div>
-        <FollowButton targetId={profile.id} size="sm" />
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => navigate(`/messages?to=${profile.id}`)}
+            className="p-1.5 rounded-lg border border-zinc-800 hover:border-zinc-700 text-zinc-500 hover:text-brand-400 hover:bg-brand-500/5 transition-colors"
+            title="Mesaj gönder"
+          >
+            <MessageCircle className="h-3.5 w-3.5" />
+          </button>
+          <FollowButton targetId={profile.id} size="sm" />
+        </div>
       </div>
     </div>
   )

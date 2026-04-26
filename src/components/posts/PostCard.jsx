@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Heart, MessageCircle, Repeat2, Trash2, Car, Wrench, Volume2, VolumeX, MoreHorizontal, Pin, Share2, Flag, ShieldOff, Edit2, Link2, Check } from 'lucide-react'
+import { Heart, MessageCircle, Repeat2, Trash2, Car, Wrench, Volume2, VolumeX, MoreHorizontal, Pin, Share2, Flag, ShieldOff, Edit2, Link2, Check, Bookmark, BookmarkCheck } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useT } from '../../contexts/LangContext'
@@ -139,6 +139,14 @@ export default function PostCard({ post, onDelete, onRepost, pinnedPostId }) {
   const [editing, setEditing] = useState(false)
   const [editContent, setEditContent] = useState(post.content || '')
   const [saving, setSaving] = useState(false)
+  const [bookmarked, setBookmarked] = useState(false)
+  const [bookmarking, setBookmarking] = useState(false)
+
+  useEffect(() => {
+    if (!user?.id) return
+    supabase.from('post_bookmarks').select('post_id').eq('user_id', user.id).eq('post_id', post.id).maybeSingle()
+      .then(({ data }) => setBookmarked(!!data))
+  }, [post.id, user?.id])
 
   const isOwn = post.user_id === user?.id
   const isPinned = pinnedPostId === post.id
@@ -205,6 +213,20 @@ export default function PostCard({ post, onDelete, onRepost, pinnedPostId }) {
       toast.success('Gönderi güncellendi')
     }
     setSaving(false)
+  }
+
+  async function toggleBookmark() {
+    if (bookmarking || !user) return
+    setBookmarking(true)
+    if (bookmarked) {
+      await supabase.from('post_bookmarks').delete().match({ user_id: user.id, post_id: post.id })
+      setBookmarked(false)
+    } else {
+      await supabase.from('post_bookmarks').insert({ user_id: user.id, post_id: post.id })
+      setBookmarked(true)
+      toast.success('Gönderi kaydedildi')
+    }
+    setBookmarking(false)
   }
 
   async function handleBlock() {
@@ -353,6 +375,15 @@ export default function PostCard({ post, onDelete, onRepost, pinnedPostId }) {
                 title="DM ile paylaş"
               >
                 <Share2 className="h-4 w-4" />
+              </button>
+
+              <button
+                onClick={toggleBookmark}
+                disabled={bookmarking}
+                className={`flex items-center gap-1.5 text-sm transition-colors disabled:opacity-40 ${bookmarked ? 'text-brand-400' : 'text-zinc-500 hover:text-brand-400'}`}
+                title={bookmarked ? 'Kaydı kaldır' : 'Kaydet'}
+              >
+                {bookmarked ? <BookmarkCheck className="h-4 w-4 fill-brand-400" /> : <Bookmark className="h-4 w-4" />}
               </button>
             </div>
           </div>

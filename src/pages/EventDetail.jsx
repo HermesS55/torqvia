@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { Calendar, MapPin, Users, Tag, Trash2, ArrowLeft, Share2, ExternalLink } from 'lucide-react'
+import { Calendar, MapPin, Users, Tag, Trash2, ArrowLeft, Share2, ExternalLink, MessageCircle, Send } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import UserAvatar from '../components/ui/UserAvatar'
@@ -20,15 +20,19 @@ export default function EventDetail() {
   const navigate = useNavigate()
   const [event, setEvent] = useState(null)
   const [attendees, setAttendees] = useState([])
+  const [comments, setComments] = useState([])
   const [loading, setLoading] = useState(true)
   const [joining, setJoining] = useState(false)
+  const [commentText, setCommentText] = useState('')
+  const [sendingComment, setSendingComment] = useState(false)
+  const commentRef = useRef()
 
   useMeta(event?.title || 'Etkinlik')
 
   useEffect(() => { fetchAll() }, [id])
 
   async function fetchAll() {
-    const [{ data: ev }, { data: att }] = await Promise.all([
+    const [{ data: ev }, { data: att }, { data: cmts }] = await Promise.all([
       supabase.from('events')
         .select('*, profiles(id, full_name, avatar_url)')
         .eq('id', id)
@@ -36,10 +40,36 @@ export default function EventDetail() {
       supabase.from('event_attendees')
         .select('user_id, profiles(id, full_name, avatar_url, role)')
         .eq('event_id', id),
+      supabase.from('event_comments')
+        .select('*, profiles(id, full_name, avatar_url, role)')
+        .eq('event_id', id)
+        .order('created_at', { ascending: true }),
     ])
     setEvent(ev)
     setAttendees(att || [])
+    setComments(cmts || [])
     setLoading(false)
+  }
+
+  async function handleSendComment(e) {
+    e.preventDefault()
+    const text = commentText.trim()
+    if (!text || sendingComment) return
+    setSendingComment(true)
+    const { data, error } = await supabase
+      .from('event_comments')
+      .insert({ event_id: id, user_id: user.id, content: text })
+      .select('*, profiles(id, full_name, avatar_url, role)')
+      .single()
+    if (error) { toast.error('Yorum gönderilemedi'); setSendingComment(false); return }
+    setComments(prev => [...prev, data])
+    setCommentText('')
+    setSendingComment(false)
+  }
+
+  async function handleDeleteComment(commentId) {
+    const { error } = await supabase.from('event_comments').delete().eq('id', commentId).eq('user_id', user.id)
+    if (!error) setComments(prev => prev.filter(c => c.id !== commentId))
   }
 
   const isPast   = event && new Date(event.event_date) < new Date()
@@ -192,7 +222,7 @@ export default function EventDetail() {
       </div>
 
       {/* Attendees */}
-      <div className="card">
+      <div className="card mb-4">
         <div className="flex items-center gap-2 mb-4">
           <Users className="h-4 w-4 text-zinc-400" />
           <h2 className="font-semibold text-white text-sm">{attendees.length} Katılımcı</h2>
@@ -217,6 +247,68 @@ export default function EventDetail() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Comments */}
+      <div className="card">
+        <div className="flex items-center gap-2 mb-4">
+          <MessageCircle className="h-4 w-4 text-zinc-400" />
+          <h2 className="font-semibold text-white text-sm">Yorumlar {comments.length > 0 && `(${comments.length})`}</h2>
+        </div>
+
+        {/* Comment list */}
+        {comments.length > 0 && (
+          <div className="space-y-3 mb-4">
+            {comments.map(c => (
+              <div key={c.id} className="flex gap-3 group">
+                <Link to={`/profile/${c.user_id}`} className="shrink-0">
+                  <UserAvatar profile={c.profiles} size="xs" />
+                </Link>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <Link to={`/profile/${c.user_id}`} className="text-xs font-semibold text-zinc-300 hover:text-white transition-colors">
+                      {c.profiles?.full_name || 'İsimsiz'}
+                    </Link>
+                    <span className="text-[10px] text-zinc-600">
+                      {new Date(c.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    {c.user_id === user?.id && (
+                      <button
+                        onClick={() => handleDeleteComment(c.id)}
+                        className="ml-auto text-zinc-700 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all text-[10px]"
+                      >
+                        Sil
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-sm text-zinc-400 leading-relaxed">{c.content}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Comment input */}
+        <form onSubmit={handleSendComment} className="flex items-center gap-2">
+          <UserAvatar profile={null} size="xs" />
+          <div className="flex-1 flex items-center gap-2 bg-zinc-800 rounded-xl px-3 py-2 border border-zinc-700 focus-within:border-zinc-600">
+            <input
+              ref={commentRef}
+              value={commentText}
+              onChange={e => setCommentText(e.target.value)}
+              placeholder="Bir yorum yaz..."
+              maxLength={500}
+              className="flex-1 bg-transparent text-sm text-zinc-300 placeholder-zinc-600 outline-none"
+            />
+            <button
+              type="submit"
+              disabled={!commentText.trim() || sendingComment}
+              className="text-zinc-500 hover:text-brand-400 disabled:opacity-30 transition-colors"
+            >
+              <Send className="h-4 w-4" />
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )

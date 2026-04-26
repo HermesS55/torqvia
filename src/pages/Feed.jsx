@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { TrendingUp, Users, RefreshCw, Flame, ChevronDown, UserPlus } from 'lucide-react'
+import { TrendingUp, Users, RefreshCw, Flame, ChevronDown, UserPlus, Bookmark } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import PostCard from '../components/posts/PostCard'
@@ -15,8 +15,9 @@ const PAGE_SIZE = 20
 
 const TABS = [
   { id: 'discover',  label: 'Keşfet' },
-  { id: 'following', label: 'Takip',  icon: Users },
-  { id: 'trending',  label: 'Trend',  icon: TrendingUp },
+  { id: 'following', label: 'Takip',     icon: Users },
+  { id: 'trending',  label: 'Trend',     icon: TrendingUp },
+  { id: 'saved',     label: 'Kaydettim', icon: Bookmark },
 ]
 
 function FeedLogo() {
@@ -40,11 +41,17 @@ export default function Feed() {
   const [followingIds, setFollowingIds] = useState(new Set())
   const [blockedIds, setBlockedIds] = useState(new Set())
   const [suggestedUsers, setSuggestedUsers] = useState([])
+  const [savedPosts, setSavedPosts] = useState([])
+  const [loadingSaved, setLoadingSaved] = useState(false)
   // Keep refs so fetchPosts always reads current filter values
   const followingRef = useRef(new Set())
   const blockedRef = useRef(new Set())
 
   useEffect(() => {
+    if (tab === 'saved') {
+      fetchSavedPosts()
+      return
+    }
     setPage(0)
     setPosts([])
     setHasMore(false)
@@ -158,6 +165,27 @@ export default function Feed() {
     setSuggestedUsers(filtered)
   }
 
+  async function fetchSavedPosts() {
+    setLoadingSaved(true)
+    const uid = user?.id
+    const { data } = await supabase
+      .from('post_bookmarks')
+      .select(`post_id, posts(*, profiles!posts_user_id_fkey(id, avatar_url, full_name, role, specialty, plan), post_likes(user_id), post_comments(count))`)
+      .eq('user_id', uid)
+      .order('created_at', { ascending: false })
+    const mapped = (data || [])
+      .map(r => r.posts)
+      .filter(Boolean)
+      .map(p => ({
+        ...p,
+        like_count: p.post_likes?.length || 0,
+        comment_count: p.post_comments?.[0]?.count || 0,
+        liked_by_me: p.post_likes?.some(l => l.user_id === uid) || false,
+      }))
+    setSavedPosts(mapped)
+    setLoadingSaved(false)
+  }
+
   function handleRefresh() {
     setPage(0)
     setPosts([])
@@ -215,7 +243,21 @@ export default function Feed() {
         <CreatePost onCreated={post => setPosts(prev => [post, ...prev])} />
       )}
 
-      {loading ? (
+      {tab === 'saved' ? (
+        loadingSaved ? (
+          <div className="flex justify-center py-16"><Spinner size="lg" /></div>
+        ) : savedPosts.length === 0 ? (
+          <EmptyState icon={Bookmark} title="Kaydedilen gönderi yok" description="Gönderilerin altındaki kaydet ikonuna tıklayarak içerikleri buraya ekleyebilirsin." />
+        ) : (
+          <div>
+            {savedPosts.map(post => (
+              <div key={post.id} className="mb-4">
+                <PostCard post={post} onDelete={id => setSavedPosts(prev => prev.filter(p => p.id !== id))} />
+              </div>
+            ))}
+          </div>
+        )
+      ) : loading ? (
         <div className="flex justify-center py-16"><Spinner size="lg" /></div>
       ) : posts.length === 0 ? (
         tab === 'following' && suggestedUsers.length > 0 ? (
