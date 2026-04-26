@@ -150,7 +150,8 @@ export default function Events() {
     title: '', description: '', event_date: '', location: '', category: 'Buluşma',
   })
   const [creating, setCreating] = useState(false)
-  const [attendeesModal, setAttendeesModal] = useState(null) // { eventId, eventTitle }
+  const [createError, setCreateError] = useState('')
+  const [attendeesModal, setAttendeesModal] = useState(null)
 
   useEffect(() => { fetchEvents() }, [])
 
@@ -165,19 +166,29 @@ export default function Events() {
 
   async function handleCreate(e) {
     e.preventDefault()
-    if (!form.title.trim() || !form.event_date) { toast.error('Başlık ve tarih zorunlu'); return }
+    setCreateError('')
+    if (!form.title.trim() || !form.event_date) {
+      setCreateError('Başlık ve tarih alanları zorunludur.')
+      return
+    }
     setCreating(true)
     const { error } = await supabase.from('events').insert({
       user_id: user.id,
       title: form.title.trim(),
       description: form.description.trim() || null,
-      event_date: form.event_date + ':00',
+      event_date: new Date(form.event_date).toISOString(),
       location: form.location.trim() || null,
       category: form.category,
     })
-    if (error) { console.error('Event insert error:', error); toast.error(error.message || 'Oluşturulamadı'); setCreating(false); return }
+    if (error) {
+      console.error('Event insert error:', error)
+      setCreateError(`Hata: ${error.message} (code: ${error.code})`)
+      setCreating(false)
+      return
+    }
     toast.success('Etkinlik oluşturuldu!')
     setShowCreate(false)
+    setCreateError('')
     setForm({ title: '', description: '', event_date: '', location: '', category: 'Buluşma' })
     fetchEvents()
     setCreating(false)
@@ -283,6 +294,11 @@ export default function Events() {
               </button>
             </div>
             <form onSubmit={handleCreate} className="p-5 space-y-4">
+              {createError && (
+                <div className="bg-red-500/10 border border-red-500/40 rounded-xl px-4 py-3 text-red-400 text-xs leading-relaxed">
+                  {createError}
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-medium text-zinc-400 mb-1.5">Etkinlik Adı *</label>
                 <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
