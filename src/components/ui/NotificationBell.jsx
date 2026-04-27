@@ -6,18 +6,48 @@ import { useAuth } from '../../contexts/AuthContext'
 import UserAvatar from './UserAvatar'
 import toast from 'react-hot-toast'
 
+const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY
+
 function getPushPermission() {
   if (!('Notification' in window)) return 'unsupported'
   return Notification.permission
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const raw = atob(base64)
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)))
+}
+
+async function subscribeToPush(userId) {
+  if (!('serviceWorker' in navigator) || !VAPID_PUBLIC_KEY) return
+  try {
+    const reg = await navigator.serviceWorker.ready
+    let sub = await reg.pushManager.getSubscription()
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      })
+    }
+    const { supabase } = await import('../../lib/supabase')
+    await supabase.from('push_subscriptions').upsert({
+      user_id: userId,
+      subscription: sub.toJSON(),
+    }, { onConflict: 'user_id,subscription->endpoint', ignoreDuplicates: true })
+  } catch (err) {
+    console.warn('Push subscribe failed:', err)
+  }
 }
 
 async function sendBrowserNotif(title, body) {
   if (getPushPermission() !== 'granted') return
   if ('serviceWorker' in navigator) {
     const reg = await navigator.serviceWorker.getRegistration()
-    if (reg) { reg.showNotification(title, { body, icon: '/icons/icon-192.png', badge: '/icons/icon-192.png' }); return }
+    if (reg) { reg.showNotification(title, { body, icon: '/torqvia-logo.png?v=2', badge: '/torqvia-logo.png?v=2' }); return }
   }
-  new Notification(title, { body, icon: '/icons/icon-192.png' })
+  new Notification(title, { body, icon: '/torqvia-logo.png?v=2' })
 }
 
 const TYPE_CONFIG = {
@@ -47,13 +77,18 @@ export default function NotificationBell() {
     if (!('Notification' in window)) { toast.error('Tarayıcın bildirimleri desteklemiyor'); return }
     const result = await Notification.requestPermission()
     setPushPerm(result)
-    if (result === 'granted') toast.success('Tarayıcı bildirimleri etkinleştirildi!')
-    else toast.error('Bildirim izni reddedildi')
+    if (result === 'granted') {
+      await subscribeToPush(user.id)
+      toast.success('Bildirimler etkinleştirildi!')
+    } else {
+      toast.error('Bildirim izni reddedildi')
+    }
   }
 
   useEffect(() => {
     if (!user?.id) return
     fetchNotifications()
+    if (getPushPermission() === 'granted') subscribeToPush(user.id)
     const channel = supabase
       .channel(`notifs-${user.id}`)
       .on('postgres_changes', {
