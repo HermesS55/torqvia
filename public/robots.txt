@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /messages
+Disallow: /admin
+Disallow: /listings/new
+Disallow: /listings/*/edit
+Disallow: /garage
+Disallow: /communities/new
+
+User-agent: Googlebot
+Allow: /
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /messages
+Disallow: /admin
+
+Sitemap: https://www.torqvia.net/sitemap.xml
