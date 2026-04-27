@@ -14,6 +14,7 @@ export default function Login() {
   const navigate = useNavigate()
   const [form, setForm] = useState({ email: '', password: '' })
   const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -32,7 +33,7 @@ export default function Login() {
     }
     setLoading(true)
     try {
-      await signIn(form)
+      await signIn({ ...form, rememberMe })
       toast.success(t('auth.login.success'))
       navigate('/dashboard')
     } catch (err) {
@@ -102,7 +103,33 @@ export default function Login() {
           </div>
         </div>
 
-        <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 mt-2">
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={rememberMe}
+            onClick={() => setRememberMe(v => !v)}
+            className={`w-4.5 h-4.5 rounded flex items-center justify-center border transition-colors shrink-0 ${
+              rememberMe
+                ? 'bg-brand-500 border-brand-500'
+                : 'bg-transparent border-zinc-600 hover:border-zinc-400'
+            }`}
+          >
+            {rememberMe && (
+              <svg viewBox="0 0 10 8" fill="none" className="w-2.5 h-2.5">
+                <path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+          </button>
+          <span
+            onClick={() => setRememberMe(v => !v)}
+            className="text-sm text-zinc-400 cursor-pointer select-none"
+          >
+            Oturumu açık bırak
+          </span>
+        </div>
+
+        <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">
           {loading ? <Spinner size="sm" /> : t('auth.login.submit')}
         </button>
       </form>

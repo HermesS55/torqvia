@@ -86,13 +86,15 @@ export function AuthProvider({ children }) {
     return data
   }
 
-  async function signIn({ email, password }) {
+  async function signIn({ email, password, rememberMe = true }) {
+    localStorage.setItem('torqvia_remember', rememberMe ? 'true' : 'false')
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
     return data
   }
 
   async function signOut() {
+    localStorage.removeItem('torqvia_remember')
     await supabase.auth.signOut().catch(() => {})
   }
 
