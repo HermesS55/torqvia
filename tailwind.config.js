@@ -23,6 +23,7 @@ export default {
     function({ addUtilities }) {
       addUtilities({
         '.pb-safe': { paddingBottom: 'env(safe-area-inset-bottom, 0px)' },
+        '.pt-safe': { paddingTop: 'env(safe-area-inset-top, 0px)' },
         '.scrollbar-none': { '-ms-overflow-style': 'none', 'scrollbar-width': 'none', '&::-webkit-scrollbar': { display: 'none' } },
       })
     },
