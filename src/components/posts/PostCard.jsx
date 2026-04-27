@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Heart, MessageCircle, Repeat2, Trash2, Car, Wrench, Volume2, VolumeX, MoreHorizontal, Pin, Share2, Flag, ShieldOff, Edit2, Link2, Check, Bookmark, BookmarkCheck } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
@@ -19,6 +19,7 @@ function RoleBadge({ role }) {
 }
 
 function renderContent(content) {
+  if (!content) return null
   return content.split(/(@\S+|#\S+)/g).map((part, i) => {
     if (part.startsWith('@')) return <span key={i} className="text-brand-400 font-medium">{part}</span>
     if (part.startsWith('#')) return (
