@@ -4,7 +4,7 @@ import {
   Hash, Users, MessageCircle, Info, ArrowLeft,
   Send, Heart, Trash2, Image, X, Crown, UserCheck, UserPlus,
   Settings, UserMinus, ShieldCheck, ShieldOff, Upload,
-  AlertTriangle, Save,
+  AlertTriangle, Save, Search,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
@@ -56,6 +56,9 @@ export default function CommunityDetail() {
   const chatBottomRef = useRef()
   const channelRef    = useRef()
   const chatFileRef   = useRef()
+
+  // Feed search
+  const [feedSearch, setFeedSearch] = useState('')
 
   // Admin / settings
   const [editName, setEditName]           = useState('')
@@ -451,6 +454,24 @@ export default function CommunityDetail() {
       {/* ── Feed Tab ── */}
       {tab === 'feed' && (
         <div className="space-y-4">
+          {/* Arama */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
+            <input
+              type="text"
+              value={feedSearch}
+              onChange={e => setFeedSearch(e.target.value)}
+              placeholder="Paylaşımlarda ara..."
+              className="input-base pl-10 pr-9"
+            />
+            {feedSearch && (
+              <button onClick={() => setFeedSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300">
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
           {isMember ? (
             <div className="card">
               <div className="flex gap-3">
@@ -511,7 +532,13 @@ export default function CommunityDetail() {
               <p className="text-zinc-500 text-sm">Henüz paylaşım yok. İlk paylaşımı sen yap!</p>
             </div>
           )}
-          {posts.map(post => (
+          {feedSearch && posts.filter(p => p.content?.toLowerCase().includes(feedSearch.toLowerCase())).length === 0 && posts.length > 0 && (
+            <div className="card text-center py-8">
+              <Search className="h-8 w-8 text-zinc-700 mx-auto mb-2" />
+              <p className="text-zinc-500 text-sm">"{feedSearch}" için sonuç bulunamadı</p>
+            </div>
+          )}
+          {posts.filter(p => !feedSearch || p.content?.toLowerCase().includes(feedSearch.toLowerCase())).map(post => (
             <div key={post.id} className="card">
               <div className="flex items-start gap-3">
                 <Link to={`/profile/${post.user_id}`}>

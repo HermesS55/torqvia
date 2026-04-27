@@ -163,7 +163,7 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden z-50">
+        <div className="fixed inset-x-2 top-[4.5rem] z-50 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80">
           <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
             <h3 className="font-semibold text-white text-sm">Bildirimler</h3>
             <div className="flex items-center gap-1.5">
@@ -211,7 +211,7 @@ export default function NotificationBell() {
             </button>
           )}
 
-          <div className="max-h-[420px] overflow-y-auto divide-y divide-zinc-800/50">
+          <div className="max-h-[calc(100dvh-12rem)] sm:max-h-[420px] overflow-y-auto divide-y divide-zinc-800/50">
             {notifications.length === 0 ? (
               <div className="text-center py-10">
                 <Bell className="h-8 w-8 text-zinc-700 mx-auto mb-2" />

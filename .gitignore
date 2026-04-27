@@ -34,3 +34,9 @@ Ekran görüntüsü*.jpg
 *.njsproj
 *.sln
 *.sw?
+
+.vercel
+.env*.local
+
+# Large source assets not needed in repo
+"public/ChatGPT Image*"

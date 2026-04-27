@@ -5,6 +5,7 @@ import {
   MessageCircle, Star, Grid3X3, FileText,
   Flag, ShieldOff, Crown, Zap, Flame, Ban,
   Image as ImageIcon, PlusCircle, Trash2, UserCheck, UserX,
+  MapPin, Clock, Banknote,
 } from 'lucide-react'
 import TorqviaLogo from '../components/ui/TorqviaLogo'
 import { supabase } from '../lib/supabase'
@@ -181,6 +182,9 @@ export default function Profile() {
       skills: p?.skills || [],
       website: p?.website || '',
       phone: p?.phone || '',
+      location: p?.location || '',
+      service_hours: p?.service_hours || '',
+      price_range: p?.price_range || '',
     })
 
     const uid = user?.id
@@ -232,6 +236,9 @@ export default function Profile() {
         skills: editForm.skills,
         website: sanitizeUrl(editForm.website),
         phone: sanitizeText(editForm.phone, 20),
+        location: sanitizeText(editForm.location, 100),
+        service_hours: sanitizeText(editForm.service_hours, 100),
+        price_range: sanitizeText(editForm.price_range, 50),
       }).eq('id', user.id)
       if (error) throw error
       setProfile(p => ({ ...p, ...editForm }))
@@ -538,7 +545,24 @@ export default function Profile() {
                     <Globe className="h-3 w-3" />{profile.website.replace(/https?:\/\//, '')}
                   </a>
                 )}
+                {isPro && profile.location && (
+                  <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{profile.location}</span>
+                )}
               </div>
+              {isPro && (profile.service_hours || profile.price_range) && (
+                <div className="flex flex-wrap gap-3 mt-2">
+                  {profile.service_hours && (
+                    <span className="flex items-center gap-1.5 text-xs text-zinc-400 bg-zinc-800/60 border border-zinc-700/50 px-2.5 py-1 rounded-lg">
+                      <Clock className="h-3 w-3 text-zinc-500" />{profile.service_hours}
+                    </span>
+                  )}
+                  {profile.price_range && (
+                    <span className="flex items-center gap-1.5 text-xs text-zinc-400 bg-zinc-800/60 border border-zinc-700/50 px-2.5 py-1 rounded-lg">
+                      <Banknote className="h-3 w-3 text-zinc-500" />{profile.price_range}
+                    </span>
+                  )}
+                </div>
+              )}
             </>
           )}
 
@@ -604,6 +628,23 @@ export default function Profile() {
                     <label className="block text-sm font-medium text-zinc-300 mb-1.5">Uzmanlık Alanı</label>
                     <input value={editForm.specialty} onChange={e => setEditForm(f => ({ ...f, specialty: e.target.value }))}
                       placeholder="ör. Motor Tamircisi, Kaporta Ustası..." className="input-base" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-300 mb-1.5">Konum</label>
+                    <input value={editForm.location} onChange={e => setEditForm(f => ({ ...f, location: e.target.value }))}
+                      placeholder="ör. İstanbul / Kadıköy" className="input-base" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-zinc-300 mb-1.5">Servis Saatleri</label>
+                      <input value={editForm.service_hours} onChange={e => setEditForm(f => ({ ...f, service_hours: e.target.value }))}
+                        placeholder="ör. Haftaiçi 09:00-18:00" className="input-base" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-zinc-300 mb-1.5">Fiyat Aralığı</label>
+                      <input value={editForm.price_range} onChange={e => setEditForm(f => ({ ...f, price_range: e.target.value }))}
+                        placeholder="ör. ₺200-₺500/saat" className="input-base" />
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-zinc-300 mb-1.5">Yetenekler</label>

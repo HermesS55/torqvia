@@ -19,5 +19,12 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    function({ addUtilities }) {
+      addUtilities({
+        '.pb-safe': { paddingBottom: 'env(safe-area-inset-bottom, 0px)' },
+        '.scrollbar-none': { '-ms-overflow-style': 'none', 'scrollbar-width': 'none', '&::-webkit-scrollbar': { display: 'none' } },
+      })
+    },
+  ],
 }

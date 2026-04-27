@@ -66,7 +66,7 @@ export default function ProfileDropdown() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-64 z-50 rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/60 overflow-hidden">
+        <div className="fixed inset-x-2 top-[4.5rem] z-50 rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/60 overflow-hidden sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-64">
 
           {/* Header */}
           <div className={`px-4 py-4 border-b border-zinc-800 ${accentBg}`}>

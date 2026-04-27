@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Calendar, MapPin, PlusCircle, X, Users, Clock, Tag, Trash2, ImagePlus, ExternalLink } from 'lucide-react'
+import { Calendar, MapPin, PlusCircle, X, Users, Clock, Tag, Trash2, ImagePlus, ExternalLink, Map, List } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { uploadEventImage } from '../lib/avatar'
@@ -9,6 +9,8 @@ import EmptyState from '../components/ui/EmptyState'
 import { Link } from 'react-router-dom'
 import { useMeta } from '../hooks/useMeta'
 import toast from 'react-hot-toast'
+import LocationAutocomplete from '../components/ui/LocationAutocomplete'
+import EventsMapView from '../components/map/EventsMapView'
 
 const CATEGORIES = ['Buluşma', 'Yarış', 'Fuar', 'Sergi', 'Etkinlik', 'Diğer']
 
@@ -224,8 +226,11 @@ function CreateModal({ onClose, onCreated }) {
           </div>
           <div>
             <label className="block text-xs font-medium text-zinc-400 mb-1.5">Konum</label>
-            <input value={form.location} onChange={e => set('location', e.target.value)}
-              placeholder="Örn: İstanbul, Atatürk Havalimanı Pisti" className="input-base" maxLength={200} />
+            <LocationAutocomplete
+              value={form.location}
+              onChange={val => set('location', val)}
+              placeholder="Örn: İstanbul, Atatürk Havalimanı"
+            />
           </div>
 
           {/* Cover image upload */}
@@ -271,14 +276,20 @@ export default function Events() {
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [tab, setTab] = useState('upcoming')
+  const [viewMode, setViewMode] = useState('list')
 
   useEffect(() => { fetchEvents() }, [])
 
   async function fetchEvents() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('events')
-      .select('*, profiles(id, full_name, avatar_url), event_attendees(user_id)')
+      .select(`
+        *,
+        profiles:user_id(id, full_name, avatar_url),
+        event_attendees(user_id)
+      `)
       .order('event_date', { ascending: true })
+    if (error) toast.error('Yükleme hatası: ' + error.message)
     setEvents(data || [])
     setLoading(false)
   }
@@ -332,32 +343,59 @@ export default function Events() {
           <h1 className="text-xl font-bold text-white">Etkinlikler</h1>
           <p className="text-zinc-500 text-xs mt-0.5">Buluşmalar, fuarlar, topluluk etkinlikleri</p>
         </div>
-        <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-1.5 text-sm">
-          <PlusCircle className="h-4 w-4" />
-          <span className="hidden sm:inline">Etkinlik Oluştur</span>
-          <span className="sm:hidden">Oluştur</span>
-        </button>
-      </div>
-
-      <div className="flex border-b border-zinc-800 mb-5 overflow-x-auto scrollbar-none -mx-1 px-1">
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${
-              tab === t.id ? 'border-brand-500 text-brand-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'
-            }`}>
-            {t.label}
-            {t.count > 0 && (
-              <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${
-                tab === t.id ? 'bg-brand-500/20 text-brand-400' : 'bg-zinc-800 text-zinc-600'
-              }`}>
-                {t.count}
-              </span>
-            )}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-zinc-800 rounded-lg p-0.5 border border-zinc-700">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+              title="Liste"
+            >
+              <List className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => setViewMode('map')}
+              className={`p-1.5 rounded-md transition-colors ${viewMode === 'map' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+              title="Harita"
+            >
+              <Map className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-1.5 text-sm">
+            <PlusCircle className="h-4 w-4" />
+            <span className="hidden sm:inline">Etkinlik Oluştur</span>
+            <span className="sm:hidden">Oluştur</span>
           </button>
-        ))}
+        </div>
       </div>
 
-      {loading ? (
+      {viewMode === 'list' && (
+        <div className="flex gap-2 mb-5 overflow-x-auto scrollbar-none pb-0.5">
+          {TABS.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border ${
+                tab === t.id
+                  ? 'bg-brand-500/10 text-brand-400 border-brand-500/40'
+                  : 'text-zinc-500 border-zinc-800 hover:text-zinc-300 hover:border-zinc-700'
+              }`}
+            >
+              {t.label}
+              {t.count > 0 && (
+                <span className={`text-[10px] font-bold min-w-[18px] h-[18px] flex items-center justify-center rounded-full leading-none ${
+                  tab === t.id ? 'bg-brand-500 text-white' : 'bg-zinc-800 text-zinc-500'
+                }`}>
+                  {t.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {viewMode === 'map' ? (
+        <EventsMapView events={events.filter(e => new Date(e.event_date) >= new Date())} />
+      ) : loading ? (
         <div className="flex justify-center py-16"><Spinner size="lg" /></div>
       ) : (lists[tab] || []).length === 0 ? (
         <EmptyState

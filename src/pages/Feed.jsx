@@ -17,7 +17,7 @@ const TABS = [
   { id: 'discover',  label: 'Keşfet' },
   { id: 'following', label: 'Takip',     icon: Users },
   { id: 'trending',  label: 'Trend',     icon: TrendingUp },
-  { id: 'saved',     label: 'Kaydettim', icon: Bookmark },
+  { id: 'saved',     label: 'Kaydedilenler', icon: Bookmark },
 ]
 
 function FeedLogo() {
@@ -221,12 +221,12 @@ export default function Feed() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-zinc-800 mb-5">
+      <div className="flex gap-1 border-b border-zinc-800 mb-5 overflow-x-auto scrollbar-none">
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             onClick={() => setTab(id)}
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
               tab === id
                 ? 'border-brand-500 text-brand-400'
                 : 'border-transparent text-zinc-500 hover:text-zinc-300'

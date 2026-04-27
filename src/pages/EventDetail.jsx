@@ -7,6 +7,7 @@ import UserAvatar from '../components/ui/UserAvatar'
 import Spinner from '../components/ui/Spinner'
 import { useMeta } from '../hooks/useMeta'
 import toast from 'react-hot-toast'
+import EventMapPin from '../components/map/EventMapPin'
 
 const fmtDate = dt =>
   new Date(dt).toLocaleString('tr-TR', {
@@ -16,7 +17,7 @@ const fmtDate = dt =>
 
 export default function EventDetail() {
   const { id } = useParams()
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const navigate = useNavigate()
   const [event, setEvent] = useState(null)
   const [attendees, setAttendees] = useState([])
@@ -32,22 +33,22 @@ export default function EventDetail() {
   useEffect(() => { fetchAll() }, [id])
 
   async function fetchAll() {
-    const [{ data: ev }, { data: att }, { data: cmts }] = await Promise.all([
+    const [evRes, attRes, cmtRes] = await Promise.all([
       supabase.from('events')
-        .select('*, profiles(id, full_name, avatar_url)')
+        .select('*, profiles:user_id(id, full_name, avatar_url)')
         .eq('id', id)
         .single(),
       supabase.from('event_attendees')
-        .select('user_id, profiles(id, full_name, avatar_url, role)')
+        .select('user_id, profiles:user_id(id, full_name, avatar_url, role)')
         .eq('event_id', id),
       supabase.from('event_comments')
-        .select('*, profiles(id, full_name, avatar_url, role)')
+        .select('*, profiles:user_id(id, full_name, avatar_url, role)')
         .eq('event_id', id)
         .order('created_at', { ascending: true }),
     ])
-    setEvent(ev)
-    setAttendees(att || [])
-    setComments(cmts || [])
+    setEvent(evRes.data)
+    setAttendees(attRes.data || [])
+    setComments(cmtRes.data || [])
     setLoading(false)
   }
 
@@ -175,17 +176,20 @@ export default function EventDetail() {
 
         {/* Location with map link */}
         {event.location && (
-          <a href={`https://maps.google.com/maps?q=${encodeURIComponent(event.location)}`}
-            target="_blank" rel="noreferrer"
-            className="flex items-start gap-3 mb-3 p-3 bg-zinc-800/50 rounded-xl hover:bg-zinc-800 transition-colors group">
-            <MapPin className="h-4 w-4 text-zinc-500 mt-0.5 shrink-0 group-hover:text-brand-400 transition-colors" />
-            <div>
-              <p className="text-sm text-zinc-300 group-hover:text-white transition-colors">{event.location}</p>
-              <p className="text-xs text-zinc-600 mt-0.5 flex items-center gap-1">
-                <ExternalLink className="h-3 w-3" /> Haritada aç
-              </p>
-            </div>
-          </a>
+          <>
+            <a href={`https://maps.google.com/maps?q=${encodeURIComponent(event.location)}`}
+              target="_blank" rel="noreferrer"
+              className="flex items-start gap-3 mb-3 p-3 bg-zinc-800/50 rounded-xl hover:bg-zinc-800 transition-colors group">
+              <MapPin className="h-4 w-4 text-zinc-500 mt-0.5 shrink-0 group-hover:text-brand-400 transition-colors" />
+              <div>
+                <p className="text-sm text-zinc-300 group-hover:text-white transition-colors">{event.location}</p>
+                <p className="text-xs text-zinc-600 mt-0.5 flex items-center gap-1">
+                  <ExternalLink className="h-3 w-3" /> Google Maps'te aç
+                </p>
+              </div>
+            </a>
+            <EventMapPin location={event.location} title={event.title} />
+          </>
         )}
 
         {event.description && (
@@ -290,7 +294,7 @@ export default function EventDetail() {
 
         {/* Comment input */}
         <form onSubmit={handleSendComment} className="flex items-center gap-2">
-          <UserAvatar profile={null} size="xs" />
+          <UserAvatar profile={profile} size="xs" />
           <div className="flex-1 flex items-center gap-2 bg-zinc-800 rounded-xl px-3 py-2 border border-zinc-700 focus-within:border-zinc-600">
             <input
               ref={commentRef}

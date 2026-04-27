@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Shield, Lock, Bell, User, Eye, EyeOff,
-  Phone, Mail, ChevronRight, Check, AlertTriangle,
-  KeyRound, Trash2, Moon,
+  Phone, Mail, Check, AlertTriangle,
+  KeyRound, Trash2, Heart, MessageCircle, UserPlus, Send,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -64,9 +64,10 @@ export default function Settings() {
   const [tab, setTab] = useState('privacy')
 
   const tabs = [
-    { id: 'privacy',   label: 'Gizlilik',  icon: Shield },
-    { id: 'account',   label: 'Hesap',     icon: User },
-    { id: 'security',  label: 'Güvenlik',  icon: Lock },
+    { id: 'privacy',       label: 'Gizlilik',    icon: Shield },
+    { id: 'notifications', label: 'Bildirimler', icon: Bell },
+    { id: 'account',       label: 'Hesap',       icon: User },
+    { id: 'security',      label: 'Güvenlik',    icon: Lock },
   ]
 
   return (
@@ -76,10 +77,10 @@ export default function Settings() {
         <p className="text-zinc-500 text-sm mt-0.5">Hesap ve gizlilik tercihlerini yönet</p>
       </div>
 
-      <div className="flex gap-1 border-b border-zinc-800 mb-6">
+      <div className="flex gap-1 border-b border-zinc-800 mb-6 overflow-x-auto scrollbar-none">
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
               tab === t.id
                 ? 'border-brand-500 text-brand-400'
                 : 'border-transparent text-zinc-500 hover:text-zinc-300'
@@ -91,9 +92,67 @@ export default function Settings() {
       </div>
 
       <div className="card p-5">
-        {tab === 'privacy'  && <PrivacyTab profile={profile} user={user} refetchProfile={refetchProfile} />}
-        {tab === 'account'  && <AccountTab profile={profile} user={user} refetchProfile={refetchProfile} />}
-        {tab === 'security' && <SecurityTab updatePassword={updatePassword} user={user} />}
+        {tab === 'privacy'       && <PrivacyTab profile={profile} user={user} refetchProfile={refetchProfile} />}
+        {tab === 'notifications' && <NotificationsTab profile={profile} refetchProfile={refetchProfile} />}
+        {tab === 'account'       && <AccountTab profile={profile} user={user} refetchProfile={refetchProfile} />}
+        {tab === 'security'      && <SecurityTab updatePassword={updatePassword} user={user} />}
+      </div>
+    </div>
+  )
+}
+
+/* ─── Notifications Tab ─── */
+const NOTIF_OPTIONS = [
+  { key: 'likes',          label: 'Beğeniler',              desc: 'Biri gönderini beğendiğinde',       icon: Heart },
+  { key: 'comments',       label: 'Yorumlar',               desc: 'Biri gönderine yorum yaptığında',   icon: MessageCircle },
+  { key: 'follows',        label: 'Takip istekleri',        desc: 'Biri seni takip ettiğinde',         icon: UserPlus },
+  { key: 'messages',       label: 'Mesajlar',               desc: 'Yeni mesaj aldığında',              icon: MessageCircle },
+  { key: 'offers',         label: 'Yeni teklifler',         desc: 'İlanına teklif geldiğinde',         icon: Send },
+  { key: 'offer_accepted', label: 'Teklif kabul edildi',    desc: 'Teklifin kabul edildiğinde',        icon: Check },
+  { key: 'offer_rejected', label: 'Teklif reddedildi',      desc: 'Teklifin reddedildiğinde',          icon: AlertTriangle },
+]
+
+const DEFAULT_PREFS = {
+  likes: true, comments: true, follows: true,
+  messages: true, offers: true, offer_accepted: true, offer_rejected: true,
+}
+
+function NotificationsTab({ profile, refetchProfile }) {
+  const prefs = { ...DEFAULT_PREFS, ...(profile?.notification_prefs || {}) }
+  const [saving, setSaving] = useState({})
+
+  async function toggle(key, value) {
+    setSaving(s => ({ ...s, [key]: true }))
+    const newPrefs = { ...prefs, [key]: value }
+    const { error } = await supabase
+      .from('profiles')
+      .update({ notification_prefs: newPrefs })
+      .eq('id', profile.id)
+    if (error) toast.error('Kaydedilemedi')
+    else { await refetchProfile(); toast.success('Kaydedildi') }
+    setSaving(s => ({ ...s, [key]: false }))
+  }
+
+  if (!profile) return <div className="flex justify-center py-10"><Spinner /></div>
+
+  return (
+    <div>
+      <SectionTitle icon={Bell} title="Bildirim Tercihleri" desc="Hangi bildirimleri almak istediğini seç" />
+      <div className="space-y-0 divide-y divide-zinc-800/60">
+        {NOTIF_OPTIONS.map(({ key, label, desc, icon: Icon }) => (
+          <SettingRow key={key} icon={Icon} label={label} desc={desc}>
+            <Toggle
+              checked={prefs[key] !== false}
+              onChange={v => toggle(key, v)}
+              disabled={saving[key]}
+            />
+          </SettingRow>
+        ))}
+      </div>
+      <div className="mt-5 p-3.5 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
+        <p className="text-xs text-zinc-500 leading-relaxed">
+          Bildirimleri kapatsan da sistem bildirimleri (güvenlik vb.) gönderilmeye devam eder.
+        </p>
       </div>
     </div>
   )

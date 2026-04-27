@@ -88,7 +88,7 @@ function AuthBackground() {
 /* ── AuthCard ─────────────────────────────────────────────── */
 export default function AuthCard({ title, subtitle, children, footer }) {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 relative">
+    <div className="min-h-[100dvh] flex items-center justify-center px-4 py-12 relative">
       <AuthBackground />
 
       <div

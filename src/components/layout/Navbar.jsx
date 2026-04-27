@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { List, PlusCircle, MessageCircle, Users, Flame, Globe, Hash, Gauge, Search, Car, Menu, X, Shield, Calendar } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLang, useT } from '../../contexts/LangContext'
-import { useUnreadMessages } from '../../hooks/useUnreadMessages'
+import { useUnreadCount } from '../../contexts/UnreadMessagesContext'
 import ProfileDropdown from '../profile/ProfileDropdown'
 import NotificationBell from '../ui/NotificationBell'
 import TorqviaLogo from '../ui/TorqviaLogo'
@@ -13,7 +13,7 @@ export default function Navbar({ onOpenSearch }) {
   const { user, profile, loading } = useAuth()
   const { lang, toggle } = useLang()
   const t = useT()
-  const { unread: unreadMessages, markRead } = useUnreadMessages()
+  const { unread: unreadMessages, markRead } = useUnreadCount()
   const [mobileOpen, setMobileOpen] = useState(false)
   const plan = profile?.plan || 'free'
   const hasPlan = plan !== 'free'
@@ -40,7 +40,7 @@ export default function Navbar({ onOpenSearch }) {
 
           <Link to={user ? '/feed' : '/'} className="flex items-center gap-2 text-white font-bold text-xl shrink-0 hover:opacity-90 transition-opacity">
             <TorqviaLogo />
-            <span className="hidden xs:inline">Torqvia</span>
+            <span className="hidden sm:inline">Torqvia</span>
           </Link>
 
           {/* Desktop nav links */}
@@ -118,8 +118,8 @@ export default function Navbar({ onOpenSearch }) {
             ) : (
               <>
                 <Link to="/pricing"  className="btn-ghost text-sm hidden sm:block">{t('nav.plans')}</Link>
-                <Link to="/login"    className="btn-ghost text-sm">{t('nav.login')}</Link>
-                <Link to="/register" className="btn-primary text-sm">{t('nav.register')}</Link>
+                <Link to="/login"    className="text-sm px-3 py-1.5 rounded-lg text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors">{t('nav.login')}</Link>
+                <Link to="/register" className="btn-primary text-sm px-3 py-1.5">{t('nav.register')}</Link>
               </>
             )}
 

@@ -3,10 +3,12 @@ import { useLocation } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import Navbar from './Navbar'
 import Footer from './Footer'
+import BottomNav from './BottomNav'
 import OnboardingModal from '../ui/OnboardingModal'
 import GlobalSearch from '../ui/GlobalSearch'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
+import { UnreadMessagesProvider } from '../../contexts/UnreadMessagesContext'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -46,13 +48,15 @@ export default function Layout({ children }) {
   }, [])
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <UnreadMessagesProvider>
+    <div className="min-h-[100dvh] flex flex-col">
       <ScrollToTop />
       <Navbar onOpenSearch={() => setSearchOpen(true)} />
-      <main className="flex-1 max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 pb-20 md:pb-8">
         {children}
       </main>
       <Footer />
+      <BottomNav />
       <Toaster
         position="bottom-right"
         toastOptions={{
@@ -70,5 +74,6 @@ export default function Layout({ children }) {
         <GlobalSearch onClose={() => setSearchOpen(false)} />
       )}
     </div>
+    </UnreadMessagesProvider>
   )
 }
