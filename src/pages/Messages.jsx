@@ -3,7 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom'
 import { Send, MessageCircle, Search, ArrowLeft, Check, CheckCheck, X, Smile, Trash2, SearchIcon, Image as ImageIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { uploadPostImage } from '../lib/avatar'
+import { uploadPostImage, uploadPostVideo } from '../lib/avatar'
 import UserAvatar from '../components/ui/UserAvatar'
 import Spinner from '../components/ui/Spinner'
 import toast from 'react-hot-toast'
@@ -59,6 +59,7 @@ export default function Messages() {
   const [msgImageFile, setMsgImageFile] = useState(null)
   const [msgImagePreview, setMsgImagePreview] = useState(null)
   const [msgImageUploading, setMsgImageUploading] = useState(false)
+  const [msgIsVideo, setMsgIsVideo] = useState(false)
   const bottomRef = useRef()
   const channelRef = useRef()
   const inputRef = useRef()
@@ -214,8 +215,14 @@ export default function Messages() {
   async function handleMsgImage(e) {
     const file = e.target.files[0]
     if (!file) return
-    try { await validateImageFile(file, 5 * 1024 * 1024) }
-    catch (err) { toast.error(err.message); e.target.value = ''; return }
+    const isVideo = file.type.startsWith('video/')
+    if (isVideo) {
+      if (file.size > 50 * 1024 * 1024) { toast.error('Video boyutu çok büyük (maks. 50MB)'); e.target.value = ''; return }
+    } else {
+      try { await validateImageFile(file, 5 * 1024 * 1024) }
+      catch (err) { toast.error(err.message); e.target.value = ''; return }
+    }
+    setMsgIsVideo(isVideo)
     setMsgImageFile(file)
     setMsgImagePreview(URL.createObjectURL(file))
     e.target.value = ''
@@ -224,6 +231,7 @@ export default function Messages() {
   function clearMsgImage() {
     setMsgImageFile(null)
     setMsgImagePreview(null)
+    setMsgIsVideo(false)
   }
 
   const lastSeenLabel = ts => {
@@ -245,14 +253,17 @@ export default function Messages() {
     let imageUrl = null
     if (msgImageFile) {
       setMsgImageUploading(true)
-      try { imageUrl = await uploadPostImage(user.id, msgImageFile) }
-      catch { toast.error('Resim gönderilemedi'); setSending(false); setMsgImageUploading(false); return }
+      try {
+        imageUrl = msgIsVideo
+          ? await uploadPostVideo(user.id, msgImageFile)
+          : await uploadPostImage(user.id, msgImageFile)
+      } catch (err) { toast.error(err?.message || 'Medya gönderilemedi'); setSending(false); setMsgImageUploading(false); return }
       setMsgImageUploading(false)
     }
     const msg = {
       sender_id: user.id,
       receiver_id: activeId,
-      content: text.trim() ? sanitizeText(text, 2000) : null,
+      content: text.trim() ? sanitizeText(text, 2000) : '',
       image_url: imageUrl,
     }
     const { data, error } = await supabase.from('messages').insert(msg).select().single()
@@ -273,7 +284,7 @@ export default function Messages() {
         from_user_id: user.id,
         message: text.slice(0, 80),
       }).then(() => {})
-    } else toast.error('Gönderilemedi')
+    } else toast.error(error?.message || 'Gönderilemedi')
     setSending(false)
     inputRef.current?.focus()
   }
@@ -497,7 +508,9 @@ export default function Messages() {
                                 : 'bg-zinc-800 text-zinc-200 rounded-bl-sm'
                             }`}>
                               {m.image_url && (
-                                <img src={m.image_url} alt="" className="w-full object-cover max-h-60" />
+                                m.image_url.includes('post-videos')
+                                  ? <video src={m.image_url} className="w-full max-h-60" controls muted playsInline />
+                                  : <img src={m.image_url} alt="" className="w-full object-cover max-h-60" />
                               )}
                               {m.content && (
                                 <p className={`px-3.5 py-2.5 leading-relaxed whitespace-pre-wrap ${chatSearch && m.content.toLowerCase().includes(chatSearch.toLowerCase()) ? 'bg-yellow-500/20' : ''}`}>
@@ -536,7 +549,10 @@ export default function Messages() {
             {msgImagePreview && (
               <div className="px-4 pt-3 pb-1">
                 <div className="relative inline-block">
-                  <img src={msgImagePreview} alt="" className="max-h-32 rounded-lg border border-zinc-700 object-cover" />
+                  {msgIsVideo
+                    ? <video src={msgImagePreview} className="max-h-32 rounded-lg border border-zinc-700" controls muted />
+                    : <img src={msgImagePreview} alt="" className="max-h-32 rounded-lg border border-zinc-700 object-cover" />
+                  }
                   <button type="button" onClick={clearMsgImage}
                     className="absolute top-1 right-1 bg-black/70 rounded-full p-0.5">
                     <X className="h-3.5 w-3.5 text-white" />
@@ -545,12 +561,12 @@ export default function Messages() {
               </div>
             )}
             <form onSubmit={handleSend} className="flex gap-2 p-3">
-              <input ref={msgImageRef} type="file" accept="image/*" className="hidden" onChange={handleMsgImage} />
+              <input ref={msgImageRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleMsgImage} />
               <button
                 type="button"
                 onClick={() => msgImageRef.current?.click()}
                 className="p-2.5 rounded-xl transition-colors text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800"
-                title="Resim gönder"
+                title="Fotoğraf/video gönder"
               >
                 <ImageIcon className="h-4 w-4" />
               </button>
@@ -567,7 +583,7 @@ export default function Messages() {
                 onChange={e => setText(e.target.value)}
                 placeholder="Mesaj yaz..."
                 maxLength={2000}
-                className="input-base flex-1 text-sm py-2.5"
+                className="input-base flex-1 text-base py-2.5"
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e) } }}
               />
               <button type="submit" disabled={(!text.trim() && !msgImageFile) || sending || msgImageUploading}

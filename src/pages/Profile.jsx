@@ -428,8 +428,8 @@ export default function Profile() {
         </div>
 
         <div className="px-5 pb-5">
-          {/* Avatar + buttons */}
-          <div className="flex items-end justify-between -mt-10 mb-4">
+          {/* Avatar row — only avatar + small ⋮ menu, so nothing overlaps the cover */}
+          <div className="flex items-end justify-between -mt-10 mb-3">
             <div className="relative shrink-0">
               <div style={avatarRing}>
                 <UserAvatar profile={profile} email={email} size="xl" />
@@ -444,41 +444,44 @@ export default function Profile() {
                 </>
               )}
             </div>
+            {!isOwn && (
+              <ProfileActions
+                onReport={() => setShowReport(true)}
+                onBlock={handleBlock}
+                isBlocked={isBlocked}
+              />
+            )}
+          </div>
 
-            <div className="flex gap-2 mt-2 flex-wrap justify-end">
-              {isOwn ? (
-                <button onClick={() => setEditing(true)}
-                  className="btn-secondary flex items-center gap-1.5 text-sm">
-                  <Edit2 className="h-3.5 w-3.5" /> Düzenle
-                </button>
-              ) : (
-                <>
-                  {!isBlocked && <FollowButton targetId={id} onToggle={fetchFollowCounts} />}
-                  {!isBlocked && (
-                    <Link to={`/messages?to=${id}`}
-                      className="btn-secondary flex items-center gap-1.5 text-sm">
-                      <MessageCircle className="h-3.5 w-3.5" /> Mesaj
-                    </Link>
-                  )}
-                  {isPro && myProfile?.role === 'owner' && !isBlocked && (
-                    <button onClick={() => setShowRating(true)}
-                      className={`flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border transition-colors ${
-                        myRating
-                          ? 'border-yellow-500/40 text-yellow-400 bg-yellow-500/10'
-                          : 'border-zinc-700 text-zinc-400 hover:border-yellow-500/40 hover:text-yellow-400'
-                      }`}>
-                      <Star className={`h-3.5 w-3.5 ${myRating ? 'fill-yellow-400' : ''}`} />
-                      {myRating ? `${myRating}★` : 'Değerlendir'}
-                    </button>
-                  )}
-                  <ProfileActions
-                    onReport={() => setShowReport(true)}
-                    onBlock={handleBlock}
-                    isBlocked={isBlocked}
-                  />
-                </>
-              )}
-            </div>
+          {/* Action buttons — separate row, fully below cover */}
+          <div className="flex gap-2 mb-4 flex-wrap">
+            {isOwn ? (
+              <button onClick={() => setEditing(true)}
+                className="btn-secondary flex items-center gap-1.5 text-sm">
+                <Edit2 className="h-3.5 w-3.5" /> Düzenle
+              </button>
+            ) : (
+              <>
+                {!isBlocked && <FollowButton targetId={id} onToggle={fetchFollowCounts} />}
+                {!isBlocked && (
+                  <Link to={`/messages?to=${id}`}
+                    className="btn-secondary flex items-center gap-1.5 text-sm">
+                    <MessageCircle className="h-3.5 w-3.5" /> Mesaj
+                  </Link>
+                )}
+                {isPro && myProfile?.role === 'owner' && !isBlocked && (
+                  <button onClick={() => setShowRating(true)}
+                    className={`flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border transition-colors ${
+                      myRating
+                        ? 'border-yellow-500/40 text-yellow-400 bg-yellow-500/10'
+                        : 'border-zinc-700 text-zinc-400 hover:border-yellow-500/40 hover:text-yellow-400'
+                    }`}>
+                    <Star className={`h-3.5 w-3.5 ${myRating ? 'fill-yellow-400' : ''}`} />
+                    {myRating ? `${myRating}★` : 'Değerlendir'}
+                  </button>
+                )}
+              </>
+            )}
           </div>
 
           {/* Engellendi banner */}

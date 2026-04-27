@@ -6,6 +6,7 @@ import Footer from './Footer'
 import BottomNav from './BottomNav'
 import OnboardingModal from '../ui/OnboardingModal'
 import GlobalSearch from '../ui/GlobalSearch'
+import InstallBanner from '../ui/InstallBanner'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { UnreadMessagesProvider } from '../../contexts/UnreadMessagesContext'
@@ -52,6 +53,7 @@ export default function Layout({ children }) {
     <div className="min-h-[100dvh] flex flex-col">
       <ScrollToTop />
       <Navbar onOpenSearch={() => setSearchOpen(true)} />
+      <InstallBanner />
       <main className="flex-1 max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 pb-20 md:pb-8">
         {children}
       </main>
