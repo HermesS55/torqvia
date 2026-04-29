@@ -26,12 +26,16 @@ import Communities from './pages/communities/Communities'
 import CommunityDetail from './pages/communities/CommunityDetail'
 import CreateCommunity from './pages/communities/CreateCommunity'
 import Garage from './pages/Garage'
+import CarSales from './pages/sales/CarSales'
+import CreateCarSale from './pages/sales/CreateCarSale'
+import CarSaleDetail from './pages/sales/CarSaleDetail'
 import SearchPage from './pages/Search'
 import EditListing from './pages/listings/EditListing'
 import Admin from './pages/Admin'
 import PostDetail from './pages/PostDetail'
 import Events from './pages/Events'
 import EventDetail from './pages/EventDetail'
+import PaymentCallback from './pages/payment/PaymentCallback'
 
 function NotFound() {
   return (
@@ -88,11 +92,16 @@ export default function App() {
             <Route path="/communities/:id" element={<ProtectedRoute><CommunityDetail /></ProtectedRoute>} />
 
             <Route path="/garage"    element={<ProtectedRoute><Garage /></ProtectedRoute>} />
+            <Route path="/sales"        element={<ProtectedRoute><CarSales /></ProtectedRoute>} />
+            <Route path="/sales/new"    element={<ProtectedRoute><CreateCarSale /></ProtectedRoute>} />
+            <Route path="/sales/:id"    element={<ProtectedRoute><CarSaleDetail /></ProtectedRoute>} />
             <Route path="/search"    element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
             <Route path="/admin"     element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/posts/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
-            <Route path="/events"     element={<ProtectedRoute><Events /></ProtectedRoute>} />
-            <Route path="/events/:id" element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
+            <Route path="/events"          element={<ProtectedRoute><Events /></ProtectedRoute>} />
+            <Route path="/events/:id"     element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
+            <Route path="/payment/success" element={<PaymentCallback />} />
+            <Route path="/payment/failed"  element={<PaymentCallback />} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -1,11 +1,11 @@
 import { NavLink } from 'react-router-dom'
-import { Gauge, List, Hash, Users, MessageCircle } from 'lucide-react'
+import { Gauge, Tag, Hash, Users, MessageCircle } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useUnreadCount } from '../../contexts/UnreadMessagesContext'
 
 const ITEMS = [
   { to: '/feed',        icon: Gauge,         label: 'Akış' },
-  { to: '/listings',    icon: List,          label: 'İlanlar' },
+  { to: '/sales',       icon: Tag,           label: 'Satılık' },
   { to: '/communities', icon: Hash,          label: 'Topluluk' },
   { to: '/people',      icon: Users,         label: 'Kişiler' },
   { to: '/messages',    icon: MessageCircle, label: 'Mesaj', msg: true },

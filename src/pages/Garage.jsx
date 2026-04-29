@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   PlusCircle, Car, Trash2, Edit2, X, Camera,
   Gauge, Fuel, Check, Settings2, ZoomIn,
-  ChevronLeft, ChevronRight, Images,
+  ChevronLeft, ChevronRight, Images, Tag,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { uploadPostImage } from '../lib/avatar'
+import { uploadVehicleImage } from '../lib/avatar'
 import { validateImageFile, sanitizeText } from '../lib/security'
 import Spinner from '../components/ui/Spinner'
 import toast from 'react-hot-toast'
@@ -84,6 +84,7 @@ function PhotoLightbox({ photos, initialIndex, onClose }) {
 /* ── Vehicle card ────────────────────────────────────────── */
 export function VehicleCard({ vehicle, isOwn, onEdit, onDelete }) {
   const { user } = useAuth()
+  const navigate  = useNavigate()
   const photoRef  = useRef()
   const [zoomed, setZoomed]               = useState(false)
   const [photos, setPhotos]               = useState([])
@@ -103,7 +104,7 @@ export function VehicleCard({ vehicle, isOwn, onEdit, onDelete }) {
     if (file.size > 5 * 1024 * 1024) { toast.error('Fotoğraf 5MB\'dan büyük olamaz'); return }
     setUploadingPhoto(true)
     try {
-      const url = await uploadPostImage(user.id, file)
+      const url = await uploadVehicleImage(user.id, file)
       const { data, error } = await supabase.from('vehicle_photos')
         .insert({ vehicle_id: vehicle.id, user_id: user.id, image_url: url })
         .select().single()
@@ -169,6 +170,12 @@ export function VehicleCard({ vehicle, isOwn, onEdit, onDelete }) {
           </div>
           {isOwn && (
             <div className="flex gap-1 shrink-0">
+              <button
+                onClick={() => navigate(`/sales/new?vehicle_id=${vehicle.id}`)}
+                title="Satışa Çıkar"
+                className="p-1.5 rounded-lg text-zinc-600 hover:text-green-400 hover:bg-green-500/10 transition-colors">
+                <Tag className="h-3.5 w-3.5" />
+              </button>
               <button onClick={() => onEdit(vehicle)}
                 className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800 transition-colors">
                 <Edit2 className="h-3.5 w-3.5" />
@@ -285,7 +292,7 @@ function VehicleModal({ vehicle, onClose, onSaved }) {
     setSaving(true)
     try {
       let image_url = vehicle?.image_url || null
-      if (imageFile) image_url = await uploadPostImage(user.id, imageFile)
+      if (imageFile) image_url = await uploadVehicleImage(user.id, imageFile)
       const payload = {
         brand:     sanitizeText(form.brand, 60),
         model:     sanitizeText(form.model, 60),
@@ -497,18 +504,38 @@ export default function Garage() {
             </button>
           </div>
 
-          <div className="mt-6 p-4 rounded-xl bg-zinc-800/40 border border-zinc-800">
-            <div className="flex items-start gap-3">
-              <Settings2 className="h-4 w-4 text-zinc-500 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-zinc-300">Servis İlanı Ver</p>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  Aracın için servis ihtiyacın mı var?{' '}
-                  <Link to="/listings/new" className="text-brand-400 hover:text-brand-300 transition-colors">
-                    İlan oluştur
-                  </Link>{' '}
-                  ve ustalardan teklif al.
-                </p>
+          <div className="mt-6 grid sm:grid-cols-2 gap-3">
+            <div className="p-4 rounded-xl bg-zinc-800/40 border border-zinc-800">
+              <div className="flex items-start gap-3">
+                <Settings2 className="h-4 w-4 text-zinc-500 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-zinc-300">Servis İlanı Ver</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">
+                    Aracın için servis ihtiyacın mı var?{' '}
+                    <Link to="/listings/new" className="text-brand-400 hover:text-brand-300 transition-colors">
+                      İlan oluştur
+                    </Link>{' '}
+                    ve ustalardan teklif al.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 rounded-xl bg-zinc-800/40 border border-zinc-800">
+              <div className="flex items-start gap-3">
+                <Tag className="h-4 w-4 text-zinc-500 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-zinc-300">Aracını Sat</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">
+                    Aracını satmak mı istiyorsun?{' '}
+                    <Link to="/sales" className="text-brand-400 hover:text-brand-300 transition-colors">
+                      Satılık ilanlarına
+                    </Link>{' '}
+                    göz at veya{' '}
+                    <Link to="/sales/new" className="text-brand-400 hover:text-brand-300 transition-colors">
+                      ilan ver.
+                    </Link>
+                  </p>
+                </div>
               </div>
             </div>
           </div>

@@ -1,7 +1,8 @@
-import { Check, Flame, Zap, X, CreditCard, Bell, Clock } from 'lucide-react'
-import { useState } from 'react'
+import { Check, Flame, Zap, X, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
 import PlanBadge from '../components/ui/PlanBadge'
 
 const PLANS = [
@@ -74,59 +75,130 @@ const PLANS = [
   },
 ]
 
-function ComingSoonModal({ plan, onClose }) {
+function PaymentModal({ plan, onClose, onSuccess }) {
+  const [state, setState] = useState('loading') // loading | iframe | success | error
+  const [errorMsg, setErrorMsg] = useState('')
+  const iframeRef = useRef(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function getToken() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paytr-create-token`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ plan: plan.id }),
+          }
+        )
+        const data = await res.json()
+        if (cancelled) return
+
+        if (!res.ok || data.error) {
+          setErrorMsg(data.error || 'Ödeme başlatılamadı')
+          setState('error')
+          return
+        }
+
+        iframeRef.current.src = `https://www.paytr.com/odeme/guvenli/${data.token}`
+        setState('iframe')
+      } catch {
+        if (!cancelled) {
+          setErrorMsg('Bağlantı hatası, lütfen tekrar deneyin')
+          setState('error')
+        }
+      }
+    }
+
+    getToken()
+
+    const handleMessage = (e) => {
+      if (e.data?.paytr === 'success') {
+        setState('success')
+        setTimeout(() => { onSuccess(); onClose() }, 2000)
+      } else if (e.data?.paytr === 'failed') {
+        setErrorMsg('Ödeme işlemi başarısız oldu')
+        setState('error')
+      }
+    }
+    window.addEventListener('message', handleMessage)
+
+    return () => {
+      cancelled = true
+      window.removeEventListener('message', handleMessage)
+    }
+  }, [plan, onSuccess, onClose])
+
   const Icon = plan.icon
+  const isElite = plan.id === 'elite'
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+      onClick={state !== 'iframe' ? onClose : undefined}
+    >
       <div
-        className="w-full max-w-sm bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden shadow-2xl"
+        className="w-full max-w-md bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
-        <div className={`h-1 w-full ${plan.id === 'elite' ? 'bg-gradient-to-r from-violet-500 to-amber-400' : 'bg-gradient-to-r from-orange-500 to-red-500'}`} />
+        <div className={`h-1 w-full ${isElite ? 'bg-gradient-to-r from-violet-500 to-amber-400' : 'bg-gradient-to-r from-orange-500 to-red-500'}`} />
 
-        <div className="p-6 text-center">
-          <div className={`h-16 w-16 mx-auto mb-4 rounded-2xl flex items-center justify-center
-            ${plan.id === 'elite'
-              ? 'bg-gradient-to-br from-violet-500/20 to-amber-400/20 border border-violet-500/30'
-              : 'bg-gradient-to-br from-orange-500/20 to-red-500/20 border border-orange-500/30'
-            }`}>
-            {Icon
-              ? <Icon className={`h-7 w-7 ${plan.id === 'elite' ? 'text-amber-400' : 'text-orange-400'}`} />
-              : <CreditCard className="h-7 w-7 text-orange-400" />
-            }
-          </div>
-
-          <div className="inline-flex items-center gap-1.5 bg-zinc-800 border border-zinc-700 rounded-full px-3 py-1 mb-3">
-            <Clock className="h-3 w-3 text-brand-400" />
-            <span className="text-xs font-medium text-brand-400">Yakında Aktif</span>
-          </div>
-
-          <h3 className="text-xl font-bold text-white mb-2">{plan.name} Planı</h3>
-          <p className="text-zinc-400 text-sm leading-relaxed mb-5">
-            Ödeme altyapısı entegrasyonu tamamlanıyor.<br />
-            Hazır olduğunda bu sayfadan satın alabileceksin.
-          </p>
-
-          <div className="bg-zinc-800/60 border border-zinc-700 rounded-xl p-4 mb-5 text-left space-y-2">
-            {plan.features.filter(f => f.ok).slice(0, 4).map((f, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm text-zinc-300">
-                <Check className="h-3.5 w-3.5 text-green-400 shrink-0" />
-                {f.text}
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
+          <div className="flex items-center gap-2">
+            {Icon && (
+              <div className={`p-1.5 rounded-lg ${isElite ? 'bg-violet-500/15' : 'bg-orange-500/15'}`}>
+                <Icon className={`h-4 w-4 ${isElite ? 'text-amber-400' : 'text-orange-400'}`} />
               </div>
-            ))}
-            {plan.features.filter(f => f.ok).length > 4 && (
-              <p className="text-xs text-zinc-600 pl-5">+{plan.features.filter(f => f.ok).length - 4} özellik daha</p>
             )}
+            <span className="font-bold text-white">{plan.name} Üyeliği</span>
+            <span className={`text-sm font-semibold ${isElite ? 'text-amber-400' : 'text-orange-400'}`}>
+              {plan.price}₺/ay
+            </span>
           </div>
+          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
 
-          <div className="flex items-center gap-2 bg-brand-500/10 border border-brand-500/20 rounded-xl px-4 py-3 mb-5">
-            <Bell className="h-4 w-4 text-brand-400 shrink-0" />
-            <p className="text-xs text-zinc-400 text-left">
-              Ödeme sistemi aktif olduğunda bildirim panelinden haberdar olacaksın.
-            </p>
-          </div>
+        {/* Content */}
+        <div className="relative">
+          {/* PayTR iframe — her zaman render edilir, state'e göre gizlenir */}
+          <iframe
+            ref={iframeRef}
+            className={`w-full border-0 transition-all ${state === 'iframe' ? 'h-[520px]' : 'h-0'}`}
+            title="PayTR Güvenli Ödeme"
+            allow="payment"
+          />
 
-          <button onClick={onClose} className="w-full btn-secondary">Kapat</button>
+          {state === 'loading' && (
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+              <Loader2 className="h-8 w-8 text-brand-400 animate-spin" />
+              <p className="text-zinc-400 text-sm">Güvenli ödeme sayfası hazırlanıyor...</p>
+            </div>
+          )}
+
+          {state === 'success' && (
+            <div className="flex flex-col items-center justify-center py-16 gap-3 text-center px-6">
+              <CheckCircle className="h-12 w-12 text-green-400" />
+              <h3 className="text-lg font-bold text-white">{plan.name} aktifleştirildi!</h3>
+              <p className="text-zinc-400 text-sm">Ödemen alındı, üyeliğin başladı.</p>
+            </div>
+          )}
+
+          {state === 'error' && (
+            <div className="flex flex-col items-center justify-center py-12 gap-3 text-center px-6">
+              <AlertCircle className="h-10 w-10 text-red-400" />
+              <p className="text-zinc-300 font-medium">{errorMsg}</p>
+              <button onClick={onClose} className="btn-secondary mt-2">Kapat</button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -157,13 +229,11 @@ function PlanCard({ plan, currentPlan, onUpgradeClick }) {
         </div>
       )}
 
-      {/* Header gradient */}
       {plan.headerGrad && (
         <div className={`absolute inset-0 bg-gradient-to-b ${plan.headerGrad} pointer-events-none`} />
       )}
 
       <div className="relative p-6 flex flex-col flex-1">
-        {/* Plan name & icon */}
         <div className="flex items-center gap-2 mb-3">
           {Icon && (
             <div className={`p-1.5 rounded-lg ${plan.id === 'turbo' ? 'bg-orange-500/15' : 'bg-violet-500/15'}`}>
@@ -176,7 +246,6 @@ function PlanCard({ plan, currentPlan, onUpgradeClick }) {
 
         <p className="text-zinc-500 text-sm mb-5 leading-relaxed">{plan.desc}</p>
 
-        {/* Price */}
         <div className="mb-6">
           {plan.price === 0 ? (
             <span className="text-3xl font-black text-white">Ücretsiz</span>
@@ -188,7 +257,6 @@ function PlanCard({ plan, currentPlan, onUpgradeClick }) {
           )}
         </div>
 
-        {/* Features */}
         <ul className="space-y-2.5 flex-1 mb-6">
           {plan.features.map((f, i) => (
             <li key={i} className={`flex items-start gap-2.5 text-sm ${f.ok ? 'text-zinc-300' : 'text-zinc-600'}`}>
@@ -201,22 +269,16 @@ function PlanCard({ plan, currentPlan, onUpgradeClick }) {
           ))}
         </ul>
 
-        {/* CTA */}
         {isActive ? (
           <div className="text-center py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-sm font-medium text-zinc-400">
             Mevcut planın
           </div>
         ) : user ? (
           <button
-            className={`w-full text-center relative ${plan.btnClass}`}
+            className={`w-full text-center ${plan.btnClass}`}
             onClick={() => plan.price > 0 && onUpgradeClick(plan)}
           >
-            {plan.price === 0 ? 'Mevcut plan' : (
-              <span className="flex items-center justify-center gap-2">
-                {`${plan.name}'e Geç`}
-                <span className="text-[10px] bg-white/20 rounded-full px-1.5 py-0.5 font-normal">Yakında</span>
-              </span>
-            )}
+            {plan.price === 0 ? 'Mevcut plan' : `${plan.name}'e Geç`}
           </button>
         ) : (
           <Link to="/register" className={`block w-full text-center ${plan.btnClass}`}>
@@ -229,21 +291,22 @@ function PlanCard({ plan, currentPlan, onUpgradeClick }) {
 }
 
 export default function Pricing() {
-  const { profile } = useAuth()
+  const { profile, refetchProfile } = useAuth()
   const currentPlan = profile?.plan || 'free'
-  const [comingSoonPlan, setComingSoonPlan] = useState(null)
+  const [activePlan, setActivePlan] = useState(null)
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      {comingSoonPlan && (
-        <ComingSoonModal plan={comingSoonPlan} onClose={() => setComingSoonPlan(null)} />
+      {activePlan && (
+        <PaymentModal
+          plan={activePlan}
+          onClose={() => setActivePlan(null)}
+          onSuccess={() => { refetchProfile(); setActivePlan(null) }}
+        />
       )}
 
-      {/* Header */}
       <div className="text-center mb-12">
-        <h1 className="text-3xl font-black text-white mb-3">
-          Torqvia Üyelikleri
-        </h1>
+        <h1 className="text-3xl font-black text-white mb-3">Torqvia Üyelikleri</h1>
         <p className="text-zinc-400 text-base max-w-lg mx-auto">
           Topluluğun içinde öne çık. Aracını, işini ve tutkunu en iyi şekilde sergile.
         </p>
@@ -252,18 +315,14 @@ export default function Pricing() {
             Aktif planın: <PlanBadge plan={currentPlan} size="sm" />
           </div>
         )}
-        <div className="mt-4 inline-flex items-center gap-2 bg-brand-500/10 border border-brand-500/20 rounded-full px-4 py-1.5 text-sm text-brand-400">
-          <Clock className="h-3.5 w-3.5" />
-          Ödeme sistemi entegrasyonu yakında tamamlanıyor
-        </div>
       </div>
 
-      {/* Plan cards */}
       <div className="grid md:grid-cols-3 gap-5 items-start">
-        {PLANS.map(p => <PlanCard key={p.id} plan={p} currentPlan={currentPlan} onUpgradeClick={setComingSoonPlan} />)}
+        {PLANS.map(p => (
+          <PlanCard key={p.id} plan={p} currentPlan={currentPlan} onUpgradeClick={setActivePlan} />
+        ))}
       </div>
 
-      {/* FAQ */}
       <div className="mt-14 grid sm:grid-cols-2 gap-5">
         {[
           {
@@ -280,7 +339,7 @@ export default function Pricing() {
           },
           {
             q: 'Ödeme güvenli mi?',
-            a: 'Evet, tüm ödemeler İyzico altyapısı üzerinden 3D Secure ve SSL korumalı olarak işlenecek.',
+            a: 'Evet, tüm ödemeler PayTR altyapısı üzerinden 3D Secure ve SSL korumalı olarak işlenir.',
           },
         ].map((item, i) => (
           <div key={i} className="card p-5">

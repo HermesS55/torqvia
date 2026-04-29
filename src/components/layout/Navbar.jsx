@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { List, PlusCircle, MessageCircle, Users, Flame, Globe, Hash, Gauge, Search, Car, Menu, X, Shield, Calendar } from 'lucide-react'
+import { List, PlusCircle, MessageCircle, Users, Flame, Globe, Hash, Gauge, Search, Car, Menu, X, Shield, Calendar, Tag } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLang, useT } from '../../contexts/LangContext'
 import { useUnreadCount } from '../../contexts/UnreadMessagesContext'
@@ -23,6 +23,7 @@ export default function Navbar({ onOpenSearch }) {
   const navLinks = user ? [
     { to: '/feed',        icon: Gauge,         label: t('nav.feed') },
     { to: '/listings',    icon: List,          label: t('nav.listings') },
+    { to: '/sales',       icon: Tag,           label: 'Satılık' },
     { to: '/communities', icon: Hash,          label: 'Topluluklar' },
     { to: '/events',      icon: Calendar,      label: 'Etkinlikler' },
     { to: '/people',      icon: Users,         label: t('nav.people') },
@@ -52,9 +53,10 @@ export default function Navbar({ onOpenSearch }) {
               </>
             ) : navLinks.map(link => (
               <Link key={link.to} to={link.to} onClick={link.onClick}
-                className="btn-ghost flex items-center gap-1.5 text-sm relative">
-                <link.icon className="h-4 w-4" />
-                <span>{link.label}</span>
+                title={link.label}
+                className="btn-ghost flex items-center gap-1 px-2 py-1.5 text-sm relative">
+                <link.icon className="h-4 w-4 shrink-0" />
+                <span className="hidden xl:inline">{link.label}</span>
                 {link.badge > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 bg-brand-500 text-white text-[9px] font-bold rounded-full h-4 w-4 flex items-center justify-center leading-none">
                     {link.badge > 9 ? '9+' : link.badge}

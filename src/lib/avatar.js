@@ -56,8 +56,19 @@ export async function uploadPostVideo(userId, file) {
 }
 
 export async function uploadListingImage(userId, file) {
-  const compressed = await compressImage(file, 1280, 0.82)
+  const compressed = await compressImage(file, 3840, 0.96)
   const path = `${userId}/${Date.now()}.jpg`
+  const { error } = await supabase.storage
+    .from('listing-images')
+    .upload(path, compressed, { upsert: false, contentType: 'image/jpeg' })
+  if (error) throw error
+  const { data } = supabase.storage.from('listing-images').getPublicUrl(path)
+  return data.publicUrl
+}
+
+export async function uploadVehicleImage(userId, file) {
+  const compressed = await compressImage(file, 3840, 0.96)
+  const path = `vehicles/${userId}/${Date.now()}.jpg`
   const { error } = await supabase.storage
     .from('listing-images')
     .upload(path, compressed, { upsert: false, contentType: 'image/jpeg' })
