@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { List, PlusCircle, MessageCircle, Users, Flame, Globe, Hash, Gauge, Search, Car, Menu, X, Shield, Calendar, Tag } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import { List, PlusCircle, MessageCircle, Users, Flame, Globe, Hash, Gauge, Search, Car, Menu, X, Shield, Calendar, Tag, ChevronDown } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLang, useT } from '../../contexts/LangContext'
 import { useUnreadCount } from '../../contexts/UnreadMessagesContext'
@@ -22,8 +22,6 @@ export default function Navbar({ onOpenSearch }) {
 
   const navLinks = user ? [
     { to: '/feed',        icon: Gauge,         label: t('nav.feed') },
-    { to: '/listings',    icon: List,          label: t('nav.listings') },
-    { to: '/sales',       icon: Tag,           label: 'Satılık' },
     { to: '/communities', icon: Hash,          label: 'Topluluklar' },
     { to: '/events',      icon: Calendar,      label: 'Etkinlikler' },
     { to: '/people',      icon: Users,         label: t('nav.people') },
@@ -33,6 +31,20 @@ export default function Navbar({ onOpenSearch }) {
   ] : []
 
   function closeMobile() { setMobileOpen(false) }
+
+  // İlanlar dropdown
+  const [listingsOpen, setListingsOpen] = useState(false)
+  const listingsRef = useRef(null)
+  const { pathname } = useLocation()
+  const listingsActive = pathname.startsWith('/listings') || pathname.startsWith('/sales')
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (listingsRef.current && !listingsRef.current.contains(e.target)) setListingsOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
 
   return (
     <nav className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur sticky top-0 z-50 pt-safe">
@@ -51,19 +63,52 @@ export default function Navbar({ onOpenSearch }) {
                 <div className="h-8 w-16 bg-zinc-800 rounded-lg animate-pulse" />
                 <div className="h-8 w-16 bg-zinc-800 rounded-lg animate-pulse" />
               </>
-            ) : navLinks.map(link => (
-              <Link key={link.to} to={link.to} onClick={link.onClick}
-                title={link.label}
-                className="btn-ghost flex items-center gap-1 px-2 py-1.5 text-sm relative">
-                <link.icon className="h-4 w-4 shrink-0" />
-                <span className="hidden xl:inline">{link.label}</span>
-                {link.badge > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 bg-brand-500 text-white text-[9px] font-bold rounded-full h-4 w-4 flex items-center justify-center leading-none">
-                    {link.badge > 9 ? '9+' : link.badge}
-                  </span>
+            ) : (
+              <>
+                {/* İlanlar dropdown */}
+                {user && (
+                  <div ref={listingsRef} className="relative">
+                    <button
+                      onClick={() => setListingsOpen(o => !o)}
+                      className={`btn-ghost flex items-center gap-1 px-2 py-1.5 text-sm ${listingsActive ? 'text-brand-400' : ''}`}
+                      title="İlanlar"
+                    >
+                      <List className="h-4 w-4 shrink-0" />
+                      <span className="hidden xl:inline">İlanlar</span>
+                      <ChevronDown className={`h-3 w-3 transition-transform ${listingsOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {listingsOpen && (
+                      <div className="absolute top-full left-0 mt-1 w-44 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl overflow-hidden z-50">
+                        <Link to="/listings" onClick={() => setListingsOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors">
+                          <List className="h-4 w-4 text-zinc-500" />
+                          Servis İlanları
+                        </Link>
+                        <Link to="/sales" onClick={() => setListingsOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors border-t border-zinc-800">
+                          <Tag className="h-4 w-4 text-zinc-500" />
+                          Satılık Araçlar
+                        </Link>
+                      </div>
+                    )}
+                  </div>
                 )}
-              </Link>
-            ))}
+
+                {navLinks.map(link => (
+                  <Link key={link.to} to={link.to} onClick={link.onClick}
+                    title={link.label}
+                    className="btn-ghost flex items-center gap-1 px-2 py-1.5 text-sm relative">
+                    <link.icon className="h-4 w-4 shrink-0" />
+                    <span className="hidden xl:inline">{link.label}</span>
+                    {link.badge > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 bg-brand-500 text-white text-[9px] font-bold rounded-full h-4 w-4 flex items-center justify-center leading-none">
+                        {link.badge > 9 ? '9+' : link.badge}
+                      </span>
+                    )}
+                  </Link>
+                ))}
+              </>
+            )}
           </div>
 
           {/* Right side controls */}
@@ -141,6 +186,14 @@ export default function Navbar({ onOpenSearch }) {
       {/* Mobile drawer */}
       {mobileOpen && user && (
         <div className="md:hidden border-t border-zinc-800 bg-zinc-950 px-4 py-3 space-y-1">
+          <Link to="/listings" onClick={closeMobile}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors">
+            <List className="h-4 w-4 text-zinc-500" />Servis İlanları
+          </Link>
+          <Link to="/sales" onClick={closeMobile}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors">
+            <Tag className="h-4 w-4 text-zinc-500" />Satılık Araçlar
+          </Link>
           {navLinks.map(link => (
             <Link key={link.to} to={link.to}
               onClick={() => { link.onClick?.(); closeMobile() }}

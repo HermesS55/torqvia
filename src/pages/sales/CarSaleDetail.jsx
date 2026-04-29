@@ -3,8 +3,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
   Car, Gauge, Fuel, MapPin, Calendar, Phone, MessageCircle,
   ChevronLeft, ChevronRight, X, Settings2, CheckCircle,
-  Trash2, ArrowLeft, Share2, Tag, Heart,
+  Trash2, Share2, Tag, Heart, ArrowLeftRight, Shield, Eye,
+  Users,
 } from 'lucide-react'
+import CarDamageReport from '../../components/sales/CarDamageReport'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import Spinner from '../../components/ui/Spinner'
@@ -120,6 +122,8 @@ export default function CarSaleDetail() {
       if (error || !data) { navigate('/sales', { replace: true }); return }
       setSale(data)
       setLoading(false)
+      // Görüntülenme sayısını artır
+      supabase.rpc('increment_car_sale_views', { sale_id: id }).catch(() => {})
 
       if (user) {
         const { data: favData } = await supabase
@@ -177,13 +181,23 @@ export default function CarSaleDetail() {
   if (loading) return <div className="flex justify-center py-24"><Spinner size="lg" /></div>
   if (!sale) return null
 
+  const DRIVE_LABELS = { fwd: 'Önden Çekiş', rwd: 'Arkadan Çekiş', awd: 'Tam Zamanlı 4x4', '4wd': 'Part-Time 4x4' }
+  const DAMAGE_LABELS = { yok: 'Yok', var: 'Var', bilinmiyor: 'Bilinmiyor' }
+
   const specs = [
-    sale.mileage != null && { icon: Gauge, label: 'Kilometre', value: `${Number(sale.mileage).toLocaleString('tr-TR')} km`, highlight: false },
-    sale.fuel_type && { icon: Fuel, label: 'Yakıt Türü', value: FUEL_LABELS[sale.fuel_type] || sale.fuel_type },
-    sale.transmission && { icon: Settings2, label: 'Vites Tipi', value: TRANS_LABELS[sale.transmission] || sale.transmission },
-    sale.year && { icon: Calendar, label: 'Model Yılı', value: `${sale.year}` },
-    sale.color && { icon: Car, label: 'Renk', value: sale.color },
-    sale.location && { icon: MapPin, label: 'Konum', value: sale.location },
+    sale.mileage != null && { icon: Gauge,         label: 'Kilometre',     value: `${Number(sale.mileage).toLocaleString('tr-TR')} km` },
+    sale.fuel_type       && { icon: Fuel,           label: 'Yakıt Türü',    value: FUEL_LABELS[sale.fuel_type] || sale.fuel_type },
+    sale.transmission    && { icon: Settings2,      label: 'Vites Tipi',    value: TRANS_LABELS[sale.transmission] || sale.transmission },
+    sale.year            && { icon: Calendar,       label: 'Model Yılı',    value: `${sale.year}` },
+    sale.engine_cc       && { icon: Settings2,      label: 'Motor Hacmi',   value: `${sale.engine_cc} cc` },
+    sale.horse_power     && { icon: Gauge,          label: 'Güç',           value: `${sale.horse_power} HP` },
+    sale.drive_type      && { icon: Car,            label: 'Çekiş',         value: DRIVE_LABELS[sale.drive_type] || sale.drive_type },
+    sale.color           && { icon: Car,            label: 'Renk',          value: sale.color },
+    sale.owner_count     && { icon: Users,          label: 'Kaç El',        value: `${sale.owner_count}. El` },
+    sale.damage_record   && { icon: Shield,         label: 'Hasar Kaydı',   value: DAMAGE_LABELS[sale.damage_record] || sale.damage_record, accent: sale.damage_record === 'var' ? 'text-red-400' : 'text-green-400' },
+    sale.exchange        && { icon: ArrowLeftRight, label: 'Takas',         value: 'Evet' },
+    (sale.city || sale.location) && { icon: MapPin, label: 'Konum',        value: [sale.district, sale.city || sale.location].filter(Boolean).join(', ') },
+    sale.view_count != null && { icon: Eye,         label: 'Görüntülenme',  value: `${sale.view_count} kez` },
   ].filter(Boolean)
 
   const postedDate = new Date(sale.created_at).toLocaleDateString('tr-TR', {
@@ -314,6 +328,14 @@ export default function CarSaleDetail() {
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
               <h2 className="font-semibold text-white mb-3">Açıklama</h2>
               <p className="text-zinc-400 text-sm leading-relaxed whitespace-pre-line">{sale.description}</p>
+            </div>
+          )}
+
+          {/* Hasar / Boya Raporu */}
+          {sale.damage_report && Object.keys(sale.damage_report).length > 0 && (
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+              <h2 className="font-semibold text-white mb-4">Boya / Hasar Raporu</h2>
+              <CarDamageReport report={sale.damage_report} readOnly />
             </div>
           )}
         </div>
