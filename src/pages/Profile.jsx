@@ -74,6 +74,7 @@ export default function Profile() {
   const [vehicles, setVehicles] = useState([])
   const [portfolio, setPortfolio] = useState([])
   const [loading, setLoading] = useState(true)
+  // HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak - default tab role'e göre ayarlandı
   const [tab, setTab] = useState('posts')
   const [editing, setEditing] = useState(false)
   const [followCounts, setFollowCounts] = useState({ followers: 0, following: 0 })
@@ -112,6 +113,13 @@ export default function Profile() {
       supabase.rpc('increment_profile_view', { target_id: id }).then(() => {})
     }
   }, [id, user?.id])
+
+  // HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak - posts sekmesi gizlendiği için
+  useEffect(() => {
+    if (!profile) return
+    if (profile.role === 'pro') setTab('portfolio')
+    else if (profile.role === 'owner') setTab('listings')
+  }, [profile?.id])
 
   async function fetchRatings() {
     const { data } = await supabase
@@ -569,7 +577,8 @@ export default function Profile() {
             </>
           )}
 
-          {/* Stats */}
+          {/* HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak */}
+          {false && (
           <div className={`grid gap-px mt-4 pt-4 border-t ${
             isElite ? 'border-violet-500/20' : 'border-zinc-800'
           } ${(isOwner || isPro) ? 'grid-cols-4' : 'grid-cols-3'}`}>
@@ -602,6 +611,7 @@ export default function Profile() {
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
 
@@ -687,8 +697,8 @@ export default function Profile() {
         </div>
       )}
 
-      {/* Follow requests panel (own profile + private account) */}
-      {isOwn && followRequests.length > 0 && (
+      {/* HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak */}
+      {false && isOwn && followRequests.length > 0 && (
         <div className="card mb-6">
           <div className="flex items-center gap-2 mb-4">
             <UserCheck className="h-4 w-4 text-brand-400" />
@@ -729,7 +739,8 @@ export default function Profile() {
           {/* Tabs */}
           <div className="flex gap-1 border-b border-zinc-800 mb-6">
             {[
-              { id: 'posts', label: 'Paylaşımlar', icon: Grid3X3 },
+              // HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak
+              // { id: 'posts', label: 'Paylaşımlar', icon: Grid3X3 },
               ...(isPro ? [{ id: 'portfolio', label: 'Portföy', icon: ImageIcon }] : []),
               ...(isPro ? [{ id: 'reviews', label: `Değerlendirmeler${ratingCount > 0 ? ` (${ratingCount})` : ''}`, icon: Star }] : []),
               ...(isOwner ? [{ id: 'listings', label: 'İlanlar', icon: FileText }] : []),
@@ -747,8 +758,8 @@ export default function Profile() {
             ))}
           </div>
 
-          {/* Posts tab */}
-          {tab === 'posts' && (
+          {/* HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak */}
+          {false && tab === 'posts' && (
             <div>
               {isOwn && <CreatePost onCreated={post => setPosts(prev => [post, ...prev])} />}
 

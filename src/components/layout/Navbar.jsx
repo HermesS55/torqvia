@@ -19,13 +19,15 @@ export default function Navbar({ onOpenSearch }) {
   const hasPlan = plan !== 'free'
   const isOwner = profile?.role === 'owner'
   const isAdmin = profile?.role === 'admin'
+  const isPro = profile?.role === 'pro'
 
   const navLinks = user ? [
-    { to: '/feed',        icon: Gauge,         label: t('nav.feed') },
-    { to: '/communities', icon: Hash,          label: 'Topluluklar' },
-    { to: '/events',      icon: Calendar,      label: 'Etkinlikler' },
-    { to: '/people',      icon: Users,         label: t('nav.people') },
-    { to: '/messages',    icon: MessageCircle, label: t('nav.messages'), badge: unreadMessages, onClick: markRead },
+    // HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak
+    // { to: '/feed',        icon: Gauge,         label: t('nav.feed') },
+    // { to: '/communities', icon: Hash,          label: 'Topluluklar' },
+    // { to: '/events',      icon: Calendar,      label: 'Etkinlikler' },
+    // { to: '/people',      icon: Users,         label: t('nav.people') },
+    // { to: '/messages',    icon: MessageCircle, label: t('nav.messages'), badge: unreadMessages, onClick: markRead },
     ...(isOwner ? [{ to: '/garage', icon: Car, label: 'Garaj' }] : []),
     ...(isAdmin ? [{ to: '/admin', icon: Shield, label: 'Admin' }] : []),
   ] : []
@@ -134,10 +136,19 @@ export default function Navbar({ onOpenSearch }) {
                   </Link>
                 )}
 
-                {/* New listing (desktop) */}
+                {/* İlanları Keşfet (desktop, Pro kullanıcı) */}
+                {isPro && (
+                  <Link to="/listings"
+                    className="hidden sm:flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-blue-500/40 text-blue-400 hover:bg-blue-500/10 transition-colors">
+                    <List className="h-3.5 w-3.5" />
+                    <span className="hidden lg:inline">İlanları Keşfet</span>
+                  </Link>
+                )}
+
+                {/* New listing (desktop, Owner — ana CTA) */}
                 {isOwner && (
                   <Link to="/listings/new"
-                    className="hidden sm:flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-zinc-700 text-zinc-300 hover:border-brand-500/50 hover:text-brand-400 hover:bg-brand-500/5 transition-colors">
+                    className="hidden sm:flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-lg bg-brand-500 text-white hover:bg-brand-600 transition-colors shadow-lg shadow-brand-500/20">
                     <PlusCircle className="h-3.5 w-3.5" />
                     <span className="hidden lg:inline">{t('nav.newListing')}</span>
                   </Link>
@@ -194,6 +205,13 @@ export default function Navbar({ onOpenSearch }) {
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors">
             <Tag className="h-4 w-4 text-zinc-500" />Satılık Araçlar
           </Link>
+          {/* İlanları Keşfet (mobil, Pro kullanıcı) */}
+          {isPro && (
+            <Link to="/listings" onClick={closeMobile}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-blue-400 hover:bg-blue-500/10 transition-colors">
+              <List className="h-4 w-4" />İlanları Keşfet
+            </Link>
+          )}
           {navLinks.map(link => (
             <Link key={link.to} to={link.to}
               onClick={() => { link.onClick?.(); closeMobile() }}

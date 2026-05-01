@@ -7,8 +7,8 @@ import TorqviaLogo from '../components/ui/TorqviaLogo'
 export default function Home() {
   const { user } = useAuth()
   useMeta(
-    'Torqvia — Araç Sahipleri ve Servis Uzmanları için Oto Topluluğu',
-    'Torqvia; araç sahiplerini ve servis uzmanlarını buluşturan Türkiye\'nin otomotiv topluluk platformu. Servis ilanı ver, teklif al, topluluğa katıl.',
+    'Torqvia — Samsun\'un Oto Servis Platformu',
+    'Samsun\'da araç sahipleri ve servis ustalarını buluşturan platform. İlanını ver, usta bul, işi yaptır.',
   )
 
   return (
@@ -24,11 +24,11 @@ export default function Home() {
           </div>
         </div>
         <h1 className="text-3xl sm:text-5xl font-bold text-white mb-6 leading-tight">
-          Aracını doğru ustayla<br />
-          <span className="text-brand-400">buluştur</span>
+          Samsun'un güvenilir<br />
+          <span className="text-brand-400">oto servis platformu</span>
         </h1>
         <p className="text-zinc-400 text-base sm:text-lg mb-8 max-w-xl mx-auto">
-          Torqvia, araç sahiplerini doğrulanmış servis uzmanlarıyla buluşturuyor. İlanını ver, teklifleri karşılaştır, işi yaptır.
+          Aracınız için doğru ustayı bulun. Ustalar için yeni müşteri kaynağı. Şu an Samsun'da hizmet veriyoruz.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           {user ? (
@@ -38,16 +38,24 @@ export default function Home() {
             </Link>
           ) : (
             <>
-              <Link to="/register" className="btn-primary flex items-center gap-2 text-base px-6 py-3">
-                Ücretsiz Başla
+              <Link to="/register?role=owner" className="btn-primary flex items-center gap-2 text-base px-6 py-3">
+                Servis talep et
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link to="/login" className="btn-secondary text-base px-6 py-3">
-                Giriş Yap
+              <Link to="/register?role=pro" className="btn-secondary text-base px-6 py-3">
+                Usta olarak başvur
               </Link>
             </>
           )}
         </div>
+        {!user && (
+          <p className="mt-4 text-sm text-zinc-500">
+            Zaten hesabın var mı?{' '}
+            <Link to="/login" className="text-brand-400 hover:text-brand-300 transition-colors">
+              Giriş yap
+            </Link>
+          </p>
+        )}
       </div>
 
       <div className="grid sm:grid-cols-2 gap-6 mb-16">
@@ -88,7 +96,7 @@ export default function Home() {
         {[
           { icon: Shield, title: 'Güvenli', desc: 'Şifreli iletişim ve doğrulanmış hesaplar' },
           { icon: Zap, title: 'Hızlı', desc: 'İlan verdikten saatler içinde ilk teklifini al' },
-          { icon: Users, title: 'Topluluk', desc: 'Türkiye genelinde büyüyen araç sahibi ve uzman ağı' },
+          { icon: Users, title: 'Topluluk', desc: 'Samsun\'da büyüyen araç sahibi ve usta ağı' },
         ].map(({ icon: Icon, title, desc }) => (
           <div key={title} className="p-6">
             <Icon className="h-6 w-6 text-brand-400 mx-auto mb-3" />
@@ -100,7 +108,7 @@ export default function Home() {
 
       {/* SEO text content */}
       <div className="mt-16 text-center max-w-2xl mx-auto">
-        <h2 className="text-xl font-semibold text-white mb-3">Türkiye'nin Oto Topluluğu</h2>
+        <h2 className="text-xl font-semibold text-white mb-3">Samsun'un Oto Servis Topluluğu</h2>
         <p className="text-zinc-500 text-sm leading-relaxed">
           Torqvia; motor tamiri, kaporta, boya, elektrik, lastik, süspansiyon ve daha fazlası için araç sahiplerini alanında uzman servis profesyonelleriyle bir araya getiriyor. Servis ilanı oluştur, farklı ustalardan teklif al, en uygun fiyatı seç.
         </p>

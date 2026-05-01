@@ -17,6 +17,7 @@ import Feed from './pages/Feed'
 import Profile from './pages/Profile'
 import Messages from './pages/Messages'
 import People from './pages/People'
+import ComingSoon from './pages/ComingSoon'
 import Settings from './pages/Settings'
 import Pricing from './pages/Pricing'
 import Terms from './pages/legal/Terms'
@@ -52,9 +53,11 @@ function NotFound() {
 }
 
 function HomeOrFeed() {
-  const { user, loading } = useAuth()
+  const { user, profile, loading } = useAuth()
   if (loading) return null
-  return user ? <Navigate to="/feed" replace /> : <Home />
+  if (!user) return <Home />
+  const to = profile?.role === 'pro' ? '/listings' : '/dashboard'
+  return <Navigate to={to} replace />
 }
 
 export default function App() {
@@ -72,10 +75,16 @@ export default function App() {
             <Route path="/reset-password"  element={<ResetPassword />} />
 
             <Route path="/dashboard"   element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/feed"        element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+            {/* HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak */}
+            <Route path="/feed"        element={<ProtectedRoute><ComingSoon /></ProtectedRoute>} />
+            {/* <Route path="/feed"        element={<ProtectedRoute><Feed /></ProtectedRoute>} /> */}
             <Route path="/profile/:id" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/messages"    element={<ProtectedRoute><Messages /></ProtectedRoute>} />
-            <Route path="/people"      element={<ProtectedRoute><People /></ProtectedRoute>} />
+            {/* HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak */}
+            <Route path="/messages"    element={<ProtectedRoute><ComingSoon /></ProtectedRoute>} />
+            {/* <Route path="/messages"    element={<ProtectedRoute><Messages /></ProtectedRoute>} /> */}
+            {/* HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak */}
+            <Route path="/people"      element={<ProtectedRoute><ComingSoon /></ProtectedRoute>} />
+            {/* <Route path="/people"      element={<ProtectedRoute><People /></ProtectedRoute>} /> */}
             <Route path="/settings"    element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/pricing"     element={<Pricing />} />
             <Route path="/terms"       element={<Terms />} />
@@ -87,9 +96,13 @@ export default function App() {
             <Route path="/listings/:id"      element={<ProtectedRoute><ListingDetail /></ProtectedRoute>} />
             <Route path="/listings/:id/edit" element={<ProtectedRoute requiredRole="owner"><EditListing /></ProtectedRoute>} />
 
-            <Route path="/communities"     element={<ProtectedRoute><Communities /></ProtectedRoute>} />
-            <Route path="/communities/new" element={<ProtectedRoute><CreateCommunity /></ProtectedRoute>} />
-            <Route path="/communities/:id" element={<ProtectedRoute><CommunityDetail /></ProtectedRoute>} />
+            {/* HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak */}
+            <Route path="/communities"     element={<ProtectedRoute><ComingSoon /></ProtectedRoute>} />
+            {/* <Route path="/communities"     element={<ProtectedRoute><Communities /></ProtectedRoute>} /> */}
+            <Route path="/communities/new" element={<ProtectedRoute><ComingSoon /></ProtectedRoute>} />
+            {/* <Route path="/communities/new" element={<ProtectedRoute><CreateCommunity /></ProtectedRoute>} /> */}
+            <Route path="/communities/:id" element={<ProtectedRoute><ComingSoon /></ProtectedRoute>} />
+            {/* <Route path="/communities/:id" element={<ProtectedRoute><CommunityDetail /></ProtectedRoute>} /> */}
 
             <Route path="/garage"    element={<ProtectedRoute><Garage /></ProtectedRoute>} />
             <Route path="/sales"        element={<ProtectedRoute><CarSales /></ProtectedRoute>} />
@@ -97,7 +110,9 @@ export default function App() {
             <Route path="/sales/:id"    element={<ProtectedRoute><CarSaleDetail /></ProtectedRoute>} />
             <Route path="/search"    element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
             <Route path="/admin"     element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-            <Route path="/posts/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
+            {/* HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak */}
+            <Route path="/posts/:id" element={<ProtectedRoute><ComingSoon /></ProtectedRoute>} />
+            {/* <Route path="/posts/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} /> */}
             <Route path="/events"          element={<ProtectedRoute><Events /></ProtectedRoute>} />
             <Route path="/events/:id"     element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
             <Route path="/payment/success" element={<PaymentCallback />} />
