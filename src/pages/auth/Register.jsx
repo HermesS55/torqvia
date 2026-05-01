@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useT } from '../../contexts/LangContext'
@@ -12,7 +12,15 @@ export default function Register() {
   const { signUp } = useAuth()
   const t = useT()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [form, setForm] = useState({ email: '', password: '', phone: '', role: 'owner' })
+
+  useEffect(() => {
+    const role = searchParams.get('role')
+    if (role === 'owner' || role === 'pro') {
+      setForm(f => ({ ...f, role }))
+    }
+  }, [])
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
