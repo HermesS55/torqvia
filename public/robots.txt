@@ -1,19 +1,23 @@
 User-agent: *
 Allow: /
+Allow: /pricing
+Allow: /terms
+Allow: /privacy
+Allow: /refund
+Disallow: /feed
 Disallow: /dashboard
 Disallow: /settings
 Disallow: /messages
 Disallow: /admin
-Disallow: /listings/new
-Disallow: /listings/*/edit
+Disallow: /listings
+Disallow: /events
+Disallow: /communities
+Disallow: /people
+Disallow: /search
 Disallow: /garage
-Disallow: /communities/new
-
-User-agent: Googlebot
-Allow: /
-Disallow: /dashboard
-Disallow: /settings
-Disallow: /messages
-Disallow: /admin
+Disallow: /sales
+Disallow: /profile/
+Disallow: /posts/
+Disallow: /payment/
 
 Sitemap: https://www.torqvia.net/sitemap.xml
