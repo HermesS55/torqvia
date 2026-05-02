@@ -82,7 +82,9 @@ export default function App() {
             {/* HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak */}
             <Route path="/messages"    element={<ProtectedRoute><ComingSoon /></ProtectedRoute>} />
             {/* <Route path="/messages"    element={<ProtectedRoute><Messages /></ProtectedRoute>} /> */}
-            <Route path="/people"      element={<People />} />
+            {/* HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak */}
+            <Route path="/people"      element={<ProtectedRoute><ComingSoon /></ProtectedRoute>} />
+            {/* <Route path="/people"      element={<ProtectedRoute><People /></ProtectedRoute>} /> */}
             <Route path="/settings"    element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/pricing"     element={<Pricing />} />
             <Route path="/terms"       element={<Terms />} />
