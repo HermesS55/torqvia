@@ -7,6 +7,7 @@ import Spinner from '../../components/ui/Spinner'
 import EmptyState from '../../components/ui/EmptyState'
 import UserAvatar from '../../components/ui/UserAvatar'
 import toast from 'react-hot-toast'
+import { useMeta } from '../../hooks/useMeta'
 
 const CATEGORIES = ['Tümü', 'Motor', 'Kaporta & Boya', 'Tuning', 'Klasik Araçlar', 'Elektrikli Araçlar', 'Off-Road', 'Genel']
 
@@ -21,6 +22,7 @@ const CATEGORY_COLORS = {
 }
 
 export default function Communities() {
+  useMeta('Topluluklar | Torqvia', { description: 'Türkiye\'nin oto topluluklarına katıl, marka ve model gruplarında deneyim ve bilgi paylaş.' })
   const { user } = useAuth()
   const [communities, setCommunities] = useState([])
   const [loading, setLoading]         = useState(true)

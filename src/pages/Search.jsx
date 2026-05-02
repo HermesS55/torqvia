@@ -16,7 +16,7 @@ const TABS = [
 ]
 
 export default function SearchPage() {
-  useMeta('Arama')
+  useMeta('Arama', { robots: 'noindex, follow' })
   const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState(searchParams.get('q') || '')

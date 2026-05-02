@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
+import { useMeta } from '../hooks/useMeta'
 import PlanBadge from '../components/ui/PlanBadge'
 
 const PLANS = [
@@ -291,6 +292,7 @@ function PlanCard({ plan, currentPlan, onUpgradeClick }) {
 }
 
 export default function Pricing() {
+  useMeta('Üyelik Planları | Torqvia', { description: 'Torqvia Free, Turbo ve Elite planlarını karşılaştır; aracını ve işini topluluğun önünde öne çıkar.' })
   const { profile, refetchProfile } = useAuth()
   const currentPlan = profile?.plan || 'free'
   const [activePlan, setActivePlan] = useState(null)

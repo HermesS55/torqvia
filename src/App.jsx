@@ -82,27 +82,21 @@ export default function App() {
             {/* HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak */}
             <Route path="/messages"    element={<ProtectedRoute><ComingSoon /></ProtectedRoute>} />
             {/* <Route path="/messages"    element={<ProtectedRoute><Messages /></ProtectedRoute>} /> */}
-            {/* HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak */}
-            <Route path="/people"      element={<ProtectedRoute><ComingSoon /></ProtectedRoute>} />
-            {/* <Route path="/people"      element={<ProtectedRoute><People /></ProtectedRoute>} /> */}
+            <Route path="/people"      element={<People />} />
             <Route path="/settings"    element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/pricing"     element={<Pricing />} />
             <Route path="/terms"       element={<Terms />} />
             <Route path="/privacy"     element={<Privacy />} />
             <Route path="/refund"      element={<Refund />} />
 
-            <Route path="/listings"          element={<ProtectedRoute><Listings /></ProtectedRoute>} />
+            <Route path="/listings"          element={<Listings />} />
             <Route path="/listings/new"      element={<ProtectedRoute requiredRole="owner"><CreateListing /></ProtectedRoute>} />
-            <Route path="/listings/:id"      element={<ProtectedRoute><ListingDetail /></ProtectedRoute>} />
+            <Route path="/listings/:id"      element={<ListingDetail />} />
             <Route path="/listings/:id/edit" element={<ProtectedRoute requiredRole="owner"><EditListing /></ProtectedRoute>} />
 
-            {/* HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak */}
-            <Route path="/communities"     element={<ProtectedRoute><ComingSoon /></ProtectedRoute>} />
-            {/* <Route path="/communities"     element={<ProtectedRoute><Communities /></ProtectedRoute>} /> */}
-            <Route path="/communities/new" element={<ProtectedRoute><ComingSoon /></ProtectedRoute>} />
-            {/* <Route path="/communities/new" element={<ProtectedRoute><CreateCommunity /></ProtectedRoute>} /> */}
-            <Route path="/communities/:id" element={<ProtectedRoute><ComingSoon /></ProtectedRoute>} />
-            {/* <Route path="/communities/:id" element={<ProtectedRoute><CommunityDetail /></ProtectedRoute>} /> */}
+            <Route path="/communities"     element={<Communities />} />
+            <Route path="/communities/new" element={<ProtectedRoute><CreateCommunity /></ProtectedRoute>} />
+            <Route path="/communities/:id" element={<ProtectedRoute><CommunityDetail /></ProtectedRoute>} />
 
             <Route path="/garage"    element={<ProtectedRoute><Garage /></ProtectedRoute>} />
             <Route path="/sales"        element={<ProtectedRoute><CarSales /></ProtectedRoute>} />
@@ -113,8 +107,8 @@ export default function App() {
             {/* HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak */}
             <Route path="/posts/:id" element={<ProtectedRoute><ComingSoon /></ProtectedRoute>} />
             {/* <Route path="/posts/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} /> */}
-            <Route path="/events"          element={<ProtectedRoute><Events /></ProtectedRoute>} />
-            <Route path="/events/:id"     element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
+            <Route path="/events"          element={<Events />} />
+            <Route path="/events/:id"     element={<EventDetail />} />
             <Route path="/payment/success" element={<PaymentCallback />} />
             <Route path="/payment/failed"  element={<PaymentCallback />} />
 

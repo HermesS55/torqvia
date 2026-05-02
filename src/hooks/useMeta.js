@@ -11,7 +11,7 @@ function setMeta(property, content, isName = false) {
   el.setAttribute('content', content || '')
 }
 
-export function useMeta(title, { description, image } = {}) {
+export function useMeta(title, { description, image, robots } = {}) {
   useEffect(() => {
     const prevTitle = document.title
     const fullTitle = title ? `${title} — Torqvia` : 'Torqvia'
@@ -31,6 +31,16 @@ export function useMeta(title, { description, image } = {}) {
       setMeta('twitter:image', image, true)
     }
 
-    return () => { document.title = prevTitle }
-  }, [title, description, image])
+    if (robots) {
+      setMeta('robots', robots, true)
+    }
+
+    return () => {
+      document.title = prevTitle
+      if (robots) {
+        const el = document.querySelector('meta[name="robots"]')
+        if (el) el.setAttribute('content', 'index, follow')
+      }
+    }
+  }, [title, description, image, robots])
 }

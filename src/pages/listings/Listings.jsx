@@ -152,7 +152,11 @@ export default function Listings() {
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-zinc-800 mb-4">
-        {TABS.filter(t => t.id !== 'mine' || isOwner).map(tabItem => (
+        {TABS.filter(t => {
+          if (t.id === 'mine') return isOwner
+          if (t.id === 'saved') return !!user
+          return true
+        }).map(tabItem => (
           <button key={tabItem.id} onClick={() => setTab(tabItem.id)}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
               tab === tabItem.id ? 'border-brand-500 text-brand-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'

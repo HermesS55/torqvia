@@ -7,6 +7,7 @@ import UserAvatar from '../components/ui/UserAvatar'
 import FollowButton from '../components/profile/FollowButton'
 import PlanBadge from '../components/ui/PlanBadge'
 import toast from 'react-hot-toast'
+import { useMeta } from '../hooks/useMeta'
 
 function SkeletonCard() {
   return (
@@ -131,6 +132,7 @@ function UserCard({ profile }) {
 const PAGE_SIZE = 18
 
 export default function People() {
+  useMeta('Kişiler | Torqvia', { description: 'Torqvia\'daki araç sahiplerini ve servis uzmanlarını keşfet, takip et, teklif gönder.' })
   const { user } = useAuth()
   const [tab, setTab] = useState('all')
   const [roleFilter, setRoleFilter] = useState('all')

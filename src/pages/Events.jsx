@@ -6,7 +6,7 @@ import { uploadEventImage } from '../lib/avatar'
 import UserAvatar from '../components/ui/UserAvatar'
 import Spinner from '../components/ui/Spinner'
 import EmptyState from '../components/ui/EmptyState'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useMeta } from '../hooks/useMeta'
 import toast from 'react-hot-toast'
 import LocationAutocomplete from '../components/ui/LocationAutocomplete'
@@ -270,8 +270,9 @@ function CreateModal({ onClose, onCreated }) {
 
 /* ── Main page ───────────────────────────────────────────── */
 export default function Events() {
-  useMeta('Etkinlikler')
+  useMeta('Etkinlikler', { description: 'Türkiye\'deki oto buluşmalarını, yarışları ve fuar etkinliklerini keşfet, katılımcı ol.' })
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
@@ -295,7 +296,7 @@ export default function Events() {
   }
 
   async function handleJoinToggle(eventId, isJoined) {
-    if (!user) return
+    if (!user) { navigate('/login'); return }
     if (isJoined) {
       await supabase.from('event_attendees').delete().eq('event_id', eventId).eq('user_id', user.id)
     } else {
@@ -331,8 +332,10 @@ export default function Events() {
 
   const TABS = [
     { id: 'upcoming', label: 'Yaklaşan',   count: upcoming.length },
-    { id: 'joined',   label: 'Katıldığım', count: joined.length },
-    { id: 'mine',     label: 'Benimkiler', count: mine.length },
+    ...(user ? [
+      { id: 'joined', label: 'Katıldığım', count: joined.length },
+      { id: 'mine',   label: 'Benimkiler', count: mine.length },
+    ] : []),
     { id: 'past',     label: 'Geçmiş',     count: past.length },
   ]
 
@@ -360,7 +363,7 @@ export default function Events() {
               <Map className="h-3.5 w-3.5" />
             </button>
           </div>
-          <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-1.5 text-sm">
+          <button onClick={() => user ? setShowCreate(true) : navigate('/login')} className="btn-primary flex items-center gap-1.5 text-sm">
             <PlusCircle className="h-4 w-4" />
             <span className="hidden sm:inline">Etkinlik Oluştur</span>
             <span className="sm:hidden">Oluştur</span>
@@ -408,7 +411,7 @@ export default function Events() {
           }
           description={tab === 'upcoming' ? 'İlk etkinliği sen oluştur!' : ''}
           action={(tab === 'upcoming' || tab === 'mine') ? (
-            <button onClick={() => setShowCreate(true)} className="btn-primary">Etkinlik Oluştur</button>
+            <button onClick={() => user ? setShowCreate(true) : navigate('/login')} className="btn-primary">Etkinlik Oluştur</button>
           ) : null}
         />
       ) : (
