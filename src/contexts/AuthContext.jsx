@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext(null)
@@ -7,19 +7,33 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const currentUserIdRef = useRef(null)
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         // Callback MUST be synchronous — async here deadlocks Supabase auth internals.
         // fetchProfile is called without await; it updates state independently.
-        const currentUser = session?.user ?? null
-        setUser(currentUser)
-        if (currentUser) {
-          // TOKEN_REFRESHED fires on tab focus — silently update user without loading flash
-          if (event === 'TOKEN_REFRESHED') return
+        const newUser = session?.user ?? null
+        const newUserId = newUser?.id ?? null
+
+        // Token yenilendi — Supabase zaten halletti, dokunma
+        if (event === 'TOKEN_REFRESHED') return
+
+        // Aynı kullanıcı tab focus / cross-tab sync ile tekrar geldi
+        // SIGNED_IN ama user.id değişmedi → gerçek login değil, loading gösterme
+        if (event === 'SIGNED_IN' && newUserId && newUserId === currentUserIdRef.current) {
+          setUser(newUser)
+          fetchProfile(newUserId, newUser.user_metadata, true)
+          return
+        }
+
+        // Gerçek auth değişimi: ilk yüklenme, farklı kullanıcı login, logout
+        currentUserIdRef.current = newUserId
+        setUser(newUser)
+        if (newUser) {
           setLoading(true)
-          fetchProfile(currentUser.id, currentUser.user_metadata)
+          fetchProfile(newUserId, newUser.user_metadata)
         } else {
           setProfile(null)
           setLoading(false)
@@ -29,7 +43,7 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  async function fetchProfile(userId, meta = {}) {
+  async function fetchProfile(userId, meta = {}, silent = false) {
     try {
       const { data } = await supabase
         .from('profiles')
@@ -41,7 +55,7 @@ export function AuthProvider({ children }) {
         if (data.banned) {
           await supabase.auth.signOut()
           setProfile(null)
-          setLoading(false)
+          if (!silent) setLoading(false)
           return
         }
         setProfile(data)
@@ -67,7 +81,7 @@ export function AuthProvider({ children }) {
     } catch {
       setProfile(null)
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }
 
