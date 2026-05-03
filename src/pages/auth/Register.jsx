@@ -8,12 +8,17 @@ import Spinner from '../../components/ui/Spinner'
 import toast from 'react-hot-toast'
 import { checkRateLimit } from '../../lib/security'
 
+const SPECIALTIES = ['Motor', 'Kaporta-Boya', 'Elektrik', 'Lastik-Jant', 'Klima', 'Genel Bakım', 'Diğer']
+
 export default function Register() {
   const { signUp } = useAuth()
   const t = useT()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const [form, setForm] = useState({ email: '', password: '', phone: '', role: 'owner' })
+  const [form, setForm] = useState({
+    email: '', password: '', phone: '', role: 'owner',
+    full_name: '', shop_name: '', city: '', specialties: [],
+  })
 
   useEffect(() => {
     const role = searchParams.get('role')
@@ -21,6 +26,7 @@ export default function Register() {
       setForm(f => ({ ...f, role }))
     }
   }, [])
+
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -30,10 +36,27 @@ export default function Register() {
     setError('')
   }
 
+  function toggleSpecialty(s) {
+    setForm(f => ({
+      ...f,
+      specialties: f.specialties.includes(s)
+        ? f.specialties.filter(x => x !== s)
+        : [...f.specialties, s],
+    }))
+    setError('')
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
+    const _fn = form.full_name.trim()
+    if (_fn.replace(/\s+/g, '').length < 3 || _fn.split(/\s+/).filter(w => w.length > 0).length < 2) { setError('Lütfen ad ve soyadınızı tam yazın'); return }
     if (form.password.length < 8) { setError(t('auth.passwordShort')); return }
-    if (!form.phone.match(/^\+?[\d\s\-()]{7,}$/)) { setError(t('auth.phoneInvalid')); return }
+    if (form.phone.replace(/\D/g, '').length < 10) { setError(t('auth.phoneInvalid')); return }
+    if (form.role === 'pro') {
+      if (form.shop_name.trim().length < 2) { setError('Dükkan adı en az 2 karakter olmalı'); return }
+      if (form.city.trim().length < 2) { setError('Şehir/ilçe bilgisi en az 2 karakter olmalı'); return }
+      if (form.specialties.length === 0) { setError('En az 1 uzmanlık alanı seçmelisin'); return }
+    }
     try {
       checkRateLimit(`register:${form.email}`, 3, 300_000)
     } catch (err) {
@@ -102,6 +125,12 @@ export default function Register() {
         </div>
 
         <div>
+          <label className="block text-sm font-medium text-zinc-300 mb-1.5">Ad Soyad</label>
+          <input type="text" name="full_name" value={form.full_name} onChange={handleChange}
+            placeholder="Adınız Soyadınız" required className="input-base" />
+        </div>
+
+        <div>
           <label className="block text-sm font-medium text-zinc-300 mb-1.5">{t('auth.email')}</label>
           <input type="email" name="email" value={form.email} onChange={handleChange}
             placeholder="you@example.com" required className="input-base" />
@@ -110,7 +139,7 @@ export default function Register() {
         <div>
           <label className="block text-sm font-medium text-zinc-300 mb-1.5">{t('auth.phone')}</label>
           <input type="tel" name="phone" value={form.phone} onChange={handleChange}
-            placeholder="+90 555 000 0000" required className="input-base" />
+            placeholder="05XX XXX XX XX" required className="input-base" />
         </div>
 
         <div>
@@ -131,6 +160,45 @@ export default function Register() {
             </button>
           </div>
         </div>
+
+        {form.role === 'pro' && (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Dükkan Adı</label>
+              <input type="text" name="shop_name" value={form.shop_name} onChange={handleChange}
+                placeholder="Örn: Ahmet Oto" required className="input-base" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Şehir / İlçe</label>
+              <input type="text" name="city" value={form.city} onChange={handleChange}
+                placeholder="Örn: Samsun / Atakum" required className="input-base" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                Hangi hizmetleri veriyorsunuz?{' '}
+                <span className="text-zinc-500 font-normal">(en az 1 seçim)</span>
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {SPECIALTIES.map(s => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => toggleSpecialty(s)}
+                    className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
+                      form.specialties.includes(s)
+                        ? 'bg-brand-500 text-white border-brand-500'
+                        : 'border-zinc-700 text-zinc-300 hover:border-zinc-500'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
 
         <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 mt-2">
           {loading ? <Spinner size="sm" /> : t('auth.register.submit')}

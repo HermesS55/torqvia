@@ -71,11 +71,11 @@ export function AuthProvider({ children }) {
     }
   }
 
-  async function signUp({ email, password, phone, role }) {
+  async function signUp({ email, password, phone, role, full_name = '', shop_name = '', city = '', specialties = [] }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { role, phone, full_name: '' } },
+      options: { data: { role, phone, full_name, shop_name, city, specialties } },
     })
     if (error) throw error
     // Supabase, e-posta doğrulama kapalıyken mevcut e-posta ile kayıt denemesinde
