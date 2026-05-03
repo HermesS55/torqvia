@@ -37,6 +37,7 @@ import PostDetail from './pages/PostDetail'
 import Events from './pages/Events'
 import EventDetail from './pages/EventDetail'
 import PaymentCallback from './pages/payment/PaymentCallback'
+import PublicProProfile from './pages/PublicProProfile'
 
 function NotFound() {
   return (
@@ -111,6 +112,7 @@ export default function App() {
             {/* <Route path="/posts/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} /> */}
             <Route path="/events"          element={<Events />} />
             <Route path="/events/:id"     element={<EventDetail />} />
+            <Route path="/usta/:id"       element={<PublicProProfile />} />
             <Route path="/payment/success" element={<PaymentCallback />} />
             <Route path="/payment/failed"  element={<PaymentCallback />} />
 
