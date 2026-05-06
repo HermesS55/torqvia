@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
-import { useT } from '../../contexts/LangContext'
+import { useT, useLang } from '../../contexts/LangContext'
 import AuthCard from '../../components/auth/AuthCard'
 import Spinner from '../../components/ui/Spinner'
 import toast from 'react-hot-toast'
@@ -13,6 +13,7 @@ const SPECIALTIES = ['Motor', 'Kaporta-Boya', 'Elektrik', 'Lastik-Jant', 'Klima'
 export default function Register() {
   const { signUp } = useAuth()
   const t = useT()
+  const { lang } = useLang()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [form, setForm] = useState({
@@ -125,9 +126,11 @@ export default function Register() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-zinc-300 mb-1.5">Ad Soyad</label>
+          <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+            {lang === 'tr' ? 'Ad Soyad' : 'Full Name'}
+          </label>
           <input type="text" name="full_name" value={form.full_name} onChange={handleChange}
-            placeholder="Adınız Soyadınız" required className="input-base" />
+            placeholder={lang === 'tr' ? 'Adınız Soyadınız' : 'Your Full Name'} required className="input-base" />
         </div>
 
         <div>
@@ -164,21 +167,29 @@ export default function Register() {
         {form.role === 'pro' && (
           <>
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Dükkan Adı</label>
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                {lang === 'tr' ? 'Dükkan Adı' : 'Shop Name'}
+              </label>
               <input type="text" name="shop_name" value={form.shop_name} onChange={handleChange}
-                placeholder="Örn: Ahmet Oto" required className="input-base" />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Şehir / İlçe</label>
-              <input type="text" name="city" value={form.city} onChange={handleChange}
-                placeholder="Örn: Samsun / Atakum" required className="input-base" />
+                placeholder={lang === 'tr' ? 'Örn: Ahmet Oto' : 'e.g. Ahmet Auto'}
+                required className="input-base" />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-                Hangi hizmetleri veriyorsunuz?{' '}
-                <span className="text-zinc-500 font-normal">(en az 1 seçim)</span>
+                {lang === 'tr' ? 'Şehir / İlçe' : 'City / District'}
+              </label>
+              <input type="text" name="city" value={form.city} onChange={handleChange}
+                placeholder={lang === 'tr' ? 'Örn: Samsun / Atakum' : 'e.g. Samsun / Atakum'}
+                required className="input-base" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                {lang === 'tr' ? 'Hangi hizmetleri veriyorsunuz?' : 'What services do you offer?'}{' '}
+                <span className="text-zinc-500 font-normal">
+                  {lang === 'tr' ? '(en az 1 seçim)' : '(select at least 1)'}
+                </span>
               </label>
               <div className="flex flex-wrap gap-2">
                 {SPECIALTIES.map(s => (

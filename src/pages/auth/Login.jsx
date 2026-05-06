@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
-import { useT } from '../../contexts/LangContext'
+import { useT, useLang } from '../../contexts/LangContext'
 import AuthCard from '../../components/auth/AuthCard'
 import Spinner from '../../components/ui/Spinner'
 import toast from 'react-hot-toast'
@@ -11,6 +11,7 @@ import { checkRateLimit } from '../../lib/security'
 export default function Login() {
   const { signIn } = useAuth()
   const t = useT()
+  const { lang } = useLang()
   const navigate = useNavigate()
   const [form, setForm] = useState({ email: '', password: '' })
   const [showPassword, setShowPassword] = useState(false)
@@ -125,7 +126,7 @@ export default function Login() {
             onClick={() => setRememberMe(v => !v)}
             className="text-sm text-zinc-400 cursor-pointer select-none"
           >
-            Oturumu açık bırak
+            {lang === 'tr' ? 'Oturumu açık bırak' : 'Stay signed in'}
           </span>
         </div>
 

@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
+import { Globe } from 'lucide-react'
 import TorqviaLogo from '../ui/TorqviaLogo'
+import { useLang } from '../../contexts/LangContext'
 
-/* ── Animated Background ──────────────────────────────────── */
 function AuthBackground() {
   const sparks = Array.from({ length: 12 }, (_, i) => ({
     id: i,
@@ -15,10 +16,8 @@ function AuthBackground() {
 
   return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
-      {/* Base */}
       <div className="absolute inset-0 bg-zinc-950" />
 
-      {/* Gradient orbs */}
       <div className="absolute inset-0">
         <div style={{
           position: 'absolute', top: '10%', left: '15%',
@@ -43,7 +42,6 @@ function AuthBackground() {
         }} />
       </div>
 
-      {/* Grid */}
       <div style={{
         position: 'absolute', inset: 0,
         backgroundImage:
@@ -53,7 +51,6 @@ function AuthBackground() {
         animation: 'grid-fade 8s ease-in-out infinite',
       }} />
 
-      {/* Scan line */}
       <div style={{
         position: 'absolute', left: 0, right: 0, height: 1,
         background: 'linear-gradient(90deg, transparent 0%, rgba(249,115,22,0.15) 30%, rgba(249,115,22,0.4) 50%, rgba(249,115,22,0.15) 70%, transparent 100%)',
@@ -61,7 +58,6 @@ function AuthBackground() {
         animationDelay: '2s',
       }} />
 
-      {/* Floating sparks */}
       {sparks.map(s => (
         <div key={s.id} style={{
           position: 'absolute',
@@ -76,7 +72,6 @@ function AuthBackground() {
         }} />
       ))}
 
-      {/* Vignette */}
       <div style={{
         position: 'absolute', inset: 0,
         background: 'radial-gradient(ellipse at center, transparent 40%, rgba(9,9,11,0.7) 100%)',
@@ -85,11 +80,22 @@ function AuthBackground() {
   )
 }
 
-/* ── AuthCard ─────────────────────────────────────────────── */
 export default function AuthCard({ title, subtitle, children, footer }) {
+  const { lang, toggle } = useLang()
+
   return (
     <div className="min-h-[100dvh] flex items-center justify-center px-4 py-12 relative">
       <AuthBackground />
+
+      {/* Lang toggle — top right */}
+      <button
+        onClick={toggle}
+        title={lang === 'tr' ? 'Switch to English' : "Türkçe'ye geç"}
+        className="fixed top-4 right-4 z-20 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/80 hover:border-zinc-700 hover:bg-zinc-800/60 backdrop-blur transition-colors text-xs font-medium text-zinc-500 hover:text-zinc-300"
+      >
+        <Globe className="h-3.5 w-3.5" />
+        {lang === 'tr' ? 'EN' : 'TR'}
+      </button>
 
       <div
         className="w-full max-w-md relative z-10"
@@ -99,7 +105,6 @@ export default function AuthCard({ title, subtitle, children, footer }) {
         <div className="flex flex-col items-center mb-8">
           <Link to="/" className="flex flex-col items-center gap-3 group">
             <div className="relative">
-              {/* Logo outer glow ring */}
               <div style={{
                 position: 'absolute', inset: -8, borderRadius: '50%',
                 background: 'radial-gradient(circle, rgba(249,115,22,0.15) 0%, transparent 70%)',
