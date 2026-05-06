@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
-  Car, Wrench, Globe, Phone, Edit2, Camera,
+  Car, Wrench, Store, Globe, Phone, Edit2, Camera,
   MessageCircle, Star, Grid3X3, FileText,
   Flag, ShieldOff, Crown, Zap, Flame, Ban,
   Image as ImageIcon, PlusCircle, Trash2, UserCheck, UserX,
@@ -62,6 +62,8 @@ const SKILLS_OPTIONS = [
   'Süspansiyon', 'Fren', 'Tuning', 'Detailing', 'Egzoz',
   'Klima', 'Cam', 'Döşeme', 'Yakıt Sistemi',
 ]
+
+const SPECIALTIES_OPTIONS = ['Motor', 'Kaporta-Boya', 'Elektrik', 'Lastik-Jant', 'Klima', 'Genel Bakım', 'Diğer']
 
 export default function Profile() {
   const { id } = useParams()
@@ -193,6 +195,9 @@ export default function Profile() {
       location: p?.location || '',
       service_hours: p?.service_hours || '',
       price_range: p?.price_range || '',
+      shop_name: p?.shop_name || '',
+      city: p?.city || '',
+      specialties: p?.specialties || [],
     })
 
     const uid = user?.id
@@ -247,6 +252,9 @@ export default function Profile() {
         location: sanitizeText(editForm.location, 100),
         service_hours: sanitizeText(editForm.service_hours, 100),
         price_range: sanitizeText(editForm.price_range, 50),
+        shop_name: sanitizeText(editForm.shop_name, 100),
+        city: sanitizeText(editForm.city, 100),
+        specialties: editForm.specialties,
       }).eq('id', user.id)
       if (error) throw error
       setProfile(p => ({ ...p, ...editForm }))
@@ -323,6 +331,13 @@ export default function Profile() {
     setEditForm(f => ({
       ...f,
       skills: f.skills.includes(skill) ? f.skills.filter(s => s !== skill) : [...f.skills, skill],
+    }))
+  }
+
+  function toggleSpecialty(s) {
+    setEditForm(f => ({
+      ...f,
+      specialties: f.specialties.includes(s) ? f.specialties.filter(x => x !== s) : [...f.specialties, s],
     }))
   }
 
@@ -519,6 +534,12 @@ export default function Profile() {
             {isPro && profile.specialty && (
               <p className="text-sm font-medium mt-0.5 text-blue-300">{profile.specialty}</p>
             )}
+            {isPro && profile.shop_name && (
+              <p className="flex items-center gap-1 text-sm text-zinc-300 font-medium mt-0.5">
+                <Store className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+                {profile.shop_name}
+              </p>
+            )}
             {isPro && avgRating !== null && (
               <div className="flex items-center gap-1.5 mt-1.5">
                 {[1,2,3,4,5].map(s => (
@@ -637,6 +658,31 @@ export default function Profile() {
               </div>
               {isPro && (
                 <>
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-300 mb-1.5">Dükkan Adı</label>
+                    <input value={editForm.shop_name} onChange={e => setEditForm(f => ({ ...f, shop_name: e.target.value }))}
+                      placeholder="Örn: Ahmet Oto" className="input-base" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-300 mb-1.5">Şehir / İlçe</label>
+                    <input value={editForm.city} onChange={e => setEditForm(f => ({ ...f, city: e.target.value }))}
+                      placeholder="Örn: Samsun / Atakum" className="input-base" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-300 mb-1.5">Uzmanlık Alanları</label>
+                    <div className="flex flex-wrap gap-2">
+                      {SPECIALTIES_OPTIONS.map(s => (
+                        <button key={s} type="button" onClick={() => toggleSpecialty(s)}
+                          className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
+                            editForm.specialties.includes(s)
+                              ? 'bg-blue-500/20 border-blue-500/50 text-blue-300'
+                              : 'bg-zinc-800 border-zinc-700 text-zinc-500 hover:border-zinc-600'
+                          }`}>
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-zinc-300 mb-1.5">Uzmanlık Alanı</label>
                     <input value={editForm.specialty} onChange={e => setEditForm(f => ({ ...f, specialty: e.target.value }))}
