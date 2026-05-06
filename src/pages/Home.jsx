@@ -13,6 +13,76 @@ function SectionLabel({ text }) {
   )
 }
 
+function HomeBackground() {
+  const sparks = Array.from({ length: 10 }, (_, i) => ({
+    id: i,
+    left: `${8 + (i * 9.7) % 84}%`,
+    top: `${20 + (i * 15.3) % 60}%`,
+    delay: `${(i * 0.85) % 6}s`,
+    dur: `${3.2 + (i * 0.45) % 3.2}s`,
+    dx: `${-28 + (i * 13) % 56}px`,
+    size: i % 3 === 0 ? 2.5 : i % 3 === 1 ? 1.8 : 1.2,
+  }))
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}
+      aria-hidden="true"
+    >
+      {/* Top-center spotlight — warm glow from above */}
+      <div style={{
+        position: 'absolute', top: -80, left: '50%', transform: 'translateX(-50%)',
+        width: 900, height: 420,
+        background: 'radial-gradient(ellipse at 50% 0%, rgba(249,115,22,0.2) 0%, transparent 68%)',
+        filter: 'blur(45px)',
+      }} />
+
+      {/* Drift orbs */}
+      <div style={{ position: 'absolute', top: '2%', left: '2%', width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(249,115,22,0.14) 0%, transparent 68%)', filter: 'blur(55px)', animation: 'orb-drift-1 20s ease-in-out infinite' }} />
+      <div style={{ position: 'absolute', top: '42%', right: '-4%', width: 580, height: 580, borderRadius: '50%', background: 'radial-gradient(circle, rgba(249,115,22,0.11) 0%, transparent 68%)', filter: 'blur(65px)', animation: 'orb-drift-2 27s ease-in-out infinite' }} />
+      <div style={{ position: 'absolute', bottom: '-6%', left: '18%', width: 520, height: 520, borderRadius: '50%', background: 'radial-gradient(circle, rgba(251,146,60,0.1) 0%, transparent 68%)', filter: 'blur(60px)', animation: 'orb-drift-3 35s ease-in-out infinite' }} />
+
+      {/* Grid */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        backgroundImage:
+          'linear-gradient(rgba(249,115,22,0.032) 1px, transparent 1px),' +
+          'linear-gradient(90deg, rgba(249,115,22,0.032) 1px, transparent 1px)',
+        backgroundSize: '64px 64px',
+        animation: 'grid-fade 9s ease-in-out infinite',
+      }} />
+
+      {/* Scan line */}
+      <div style={{
+        position: 'absolute', left: 0, right: 0, height: 1,
+        background: 'linear-gradient(90deg, transparent 0%, rgba(249,115,22,0.1) 25%, rgba(249,115,22,0.32) 50%, rgba(249,115,22,0.1) 75%, transparent 100%)',
+        animation: 'line-scan 11s linear infinite',
+        animationDelay: '1s',
+      }} />
+
+      {/* Floating sparks */}
+      {sparks.map(s => (
+        <div key={s.id} style={{
+          position: 'absolute', left: s.left, top: s.top,
+          width: s.size, height: s.size, borderRadius: '50%',
+          backgroundColor: '#f97316',
+          boxShadow: `0 0 ${s.size * 4}px rgba(249,115,22,0.95)`,
+          '--dx': s.dx,
+          animation: `spark-float ${s.dur} ease-in-out infinite`,
+          animationDelay: s.delay,
+          opacity: 0,
+        }} />
+      ))}
+
+      {/* Edge vignette */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'radial-gradient(ellipse at 50% 35%, transparent 30%, rgba(9,9,11,0.72) 100%)',
+      }} />
+    </div>
+  )
+}
+
 function TickerBar({ lang }) {
   const tr = [
     'SYS.DURUM: AKTİF',
@@ -274,20 +344,14 @@ export default function Home() {
 
   return (
     <div>
+      <HomeBackground />
       {/* ── Ticker Bar ── */}
       <TickerBar lang={lang} />
 
       {/* ── Hero ── */}
-      <section className="relative text-center py-10 sm:py-14">
-        {/* Background blobs */}
-        <div className="absolute inset-0 pointer-events-none" aria-hidden="true" style={{ overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: '-10%', left: '-5%', width: 520, height: 520, borderRadius: '50%', background: 'radial-gradient(circle, rgba(249,115,22,0.09) 0%, transparent 65%)', filter: 'blur(70px)', animation: 'orb-drift-1 22s ease-in-out infinite' }} />
-          <div style={{ position: 'absolute', bottom: '-15%', right: '-5%', width: 440, height: 440, borderRadius: '50%', background: 'radial-gradient(circle, rgba(249,115,22,0.07) 0%, transparent 65%)', filter: 'blur(80px)', animation: 'orb-drift-2 30s ease-in-out infinite' }} />
-          <div style={{ position: 'absolute', top: '20%', right: '15%', width: 260, height: 260, borderRadius: '50%', background: 'radial-gradient(circle, rgba(251,146,60,0.06) 0%, transparent 70%)', filter: 'blur(50px)', animation: 'orb-drift-3 38s ease-in-out infinite' }} />
-        </div>
-
-        <div className="relative max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 mb-5 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-400">
+      <section className="text-center py-10 sm:py-14">
+        <div className="max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-2 mb-5 px-3 py-1.5 rounded-full bg-zinc-900/80 border border-zinc-800 text-[11px] font-mono text-zinc-400">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
             {tr ? "SAMSUN'DA #1 OTO SERVİS PLATFORMU" : '#1 AUTO SERVICE PLATFORM IN SAMSUN'}
           </div>
