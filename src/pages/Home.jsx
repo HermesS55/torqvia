@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Star, Shield, Clock, CheckCircle, ChevronDown, ChevronUp, Wrench } from 'lucide-react'
+import { ArrowRight, Star, Shield, Clock, CheckCircle, Wrench } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useMeta } from '../hooks/useMeta'
 import { useLang } from '../contexts/LangContext'
@@ -120,18 +120,20 @@ function MechanicCard({ name, rating, reviews, distance, specialties, response, 
 function FAQItem({ q, a }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="border border-zinc-800 rounded-xl overflow-hidden">
+    <div className="border-b border-zinc-900/80 last:border-b-0">
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-900/50 transition-colors"
+        className="w-full flex items-start justify-between py-4 text-left group"
       >
-        <span className="font-medium text-zinc-200 text-sm pr-4">{q}</span>
-        {open
-          ? <ChevronUp className="h-4 w-4 text-zinc-500 shrink-0" />
-          : <ChevronDown className="h-4 w-4 text-zinc-500 shrink-0" />}
+        <span className={`text-sm pr-6 leading-snug transition-colors ${open ? 'text-white font-medium' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
+          {q}
+        </span>
+        <span className="text-zinc-700 text-xl leading-none mt-0 shrink-0 select-none group-hover:text-zinc-500 transition-colors">
+          {open ? '−' : '+'}
+        </span>
       </button>
       {open && (
-        <div className="px-5 pb-4 text-sm text-zinc-500 leading-relaxed border-t border-zinc-800/60 pt-3">
+        <div className="pb-4 text-sm text-zinc-600 leading-relaxed">
           {a}
         </div>
       )}
@@ -193,20 +195,20 @@ export default function Home() {
       price: '₺0',
       period: tr ? '/ ay' : '/ mo',
       features: tr
-        ? ['Profil oluştur', 'Feed\'i görüntüle & beğen', 'Aylık 5 teklif']
-        : ['Create profile', 'Browse & like feed', '5 offers / month'],
-      accent: 'border-zinc-700',
+        ? ['Profil oluştur', '5 randevu / ay', 'Temel özellikler']
+        : ['Create profile', '5 appointments / mo', 'Basic features'],
+      accent: 'border-zinc-800',
       popular: false,
       cta: tr ? 'Başla' : 'Get Started',
       to: '/register',
     },
     {
       name: 'Pro',
-      price: '₺499',
+      price: '₺80',
       period: tr ? '/ ay' : '/ mo',
       features: tr
-        ? ["Ücretsiz'in her şeyi", 'Video paylaşımı', 'Sınırsız teklif', 'Öncelikli sıralama']
-        : ['Everything in Free', 'Video sharing', 'Unlimited offers', 'Priority listing'],
+        ? ["Ücretsiz'in her şeyi", 'Sınırsız randevu', 'Öncelikli listeleme', 'Analitik', 'Onaylı rozet']
+        : ['Everything in Free', 'Unlimited appointments', 'Priority listing', 'Analytics', 'Verified badge'],
       accent: 'border-brand-500/50',
       popular: true,
       cta: tr ? "Pro'ya Geç" : 'Get Pro',
@@ -214,11 +216,11 @@ export default function Home() {
     },
     {
       name: 'Turbo',
-      price: '₺999',
+      price: '₺200',
       period: tr ? '/ ay' : '/ mo',
       features: tr
-        ? ["Pro'nun her şeyi", 'İlan öne çıkarma', 'Verified rozet', 'Detaylı analitik']
-        : ["Everything in Pro", 'Boost listings', 'Verified badge', 'Detailed analytics'],
+        ? ["Pro'nun her şeyi", 'Spotlight listeleme', 'Öncelikli destek', 'Özel rozet']
+        : ["Everything in Pro", 'Spotlight listing', 'Priority support', 'Custom badge'],
       accent: 'border-orange-500/40',
       popular: false,
       cta: tr ? "Turbo'ya Geç" : 'Get Turbo',
@@ -276,53 +278,62 @@ export default function Home() {
       <TickerBar lang={lang} />
 
       {/* ── Hero ── */}
-      <section className="text-center py-20 sm:py-28 max-w-3xl mx-auto">
-        <div className="inline-flex items-center gap-2 mb-6 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-400">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-          {tr ? "SAMSUN'DA #1 OTO SERVİS PLATFORMU" : '#1 AUTO SERVICE PLATFORM IN SAMSUN'}
+      <section className="relative text-center py-10 sm:py-14">
+        {/* Background blobs */}
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true" style={{ overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: '-10%', left: '-5%', width: 520, height: 520, borderRadius: '50%', background: 'radial-gradient(circle, rgba(249,115,22,0.09) 0%, transparent 65%)', filter: 'blur(70px)', animation: 'orb-drift-1 22s ease-in-out infinite' }} />
+          <div style={{ position: 'absolute', bottom: '-15%', right: '-5%', width: 440, height: 440, borderRadius: '50%', background: 'radial-gradient(circle, rgba(249,115,22,0.07) 0%, transparent 65%)', filter: 'blur(80px)', animation: 'orb-drift-2 30s ease-in-out infinite' }} />
+          <div style={{ position: 'absolute', top: '20%', right: '15%', width: 260, height: 260, borderRadius: '50%', background: 'radial-gradient(circle, rgba(251,146,60,0.06) 0%, transparent 70%)', filter: 'blur(50px)', animation: 'orb-drift-3 38s ease-in-out infinite' }} />
         </div>
 
-        <h1 className="text-4xl sm:text-6xl font-black text-white mb-6 leading-[1.08] tracking-tight">
-          {tr ? (
-            <>Güvenilir bir<br /><span className="text-brand-400">usta bul</span></>
-          ) : (
-            <>Find a mechanic<br /><span className="text-brand-400">you can trust</span></>
-          )}
-        </h1>
+        <div className="relative max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-2 mb-5 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            {tr ? "SAMSUN'DA #1 OTO SERVİS PLATFORMU" : '#1 AUTO SERVICE PLATFORM IN SAMSUN'}
+          </div>
 
-        <p className="text-zinc-400 text-base sm:text-lg mb-10 max-w-xl mx-auto leading-relaxed">
-          {tr
-            ? 'Araç sorununu anlat, bölgenizdeki doğrulanmış ustalarla eşleş, fiyatları karşılaştır ve rezervasyon yap — 2 dakikadan az sürede.'
-            : 'Describe your car problem, get matched with nearby verified mechanics, compare transparent prices, and book — all in under 2 minutes.'}
-        </p>
+          <h1 className="text-4xl sm:text-6xl font-black text-white mb-5 leading-[1.08] tracking-tight">
+            {tr ? (
+              <>Güvenilir bir<br /><span className="text-brand-400">usta bul</span></>
+            ) : (
+              <>Find a mechanic<br /><span className="text-brand-400">you can trust</span></>
+            )}
+          </h1>
 
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          {user ? (
-            <Link to="/feed" className="btn-primary flex items-center gap-2 text-base px-6 py-3">
-              {tr ? 'Akışa Git' : 'Go to Feed'}
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          ) : (
-            <>
-              <Link to="/register?role=owner" className="btn-primary flex items-center gap-2 text-base px-6 py-3">
-                {tr ? 'Servis Talep Et' : 'Request Service'}
+          <p className="text-zinc-400 text-base sm:text-lg mb-8 max-w-xl mx-auto leading-relaxed">
+            {tr
+              ? 'Araç sorununu anlat, bölgenizdeki doğrulanmış ustalarla eşleş, fiyatları karşılaştır ve rezervasyon yap — 2 dakikadan az sürede.'
+              : 'Describe your car problem, get matched with nearby verified mechanics, compare transparent prices, and book — all in under 2 minutes.'}
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {user ? (
+              <Link to="/feed" className="btn-primary flex items-center gap-2 text-base px-6 py-3">
+                {tr ? 'Akışa Git' : 'Go to Feed'}
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              <a href="#how-it-works" className="btn-secondary text-base px-6 py-3">
-                {tr ? 'Nasıl Çalışır →' : 'See how it works →'}
-              </a>
-            </>
+            ) : (
+              <>
+                <Link to="/register?role=owner" className="btn-primary flex items-center gap-2 text-base px-6 py-3">
+                  {tr ? 'Servis Talep Et' : 'Request Service'}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <a href="#how-it-works" className="btn-secondary text-base px-6 py-3">
+                  {tr ? 'Nasıl Çalışır →' : 'See how it works →'}
+                </a>
+              </>
+            )}
+          </div>
+
+          {!user && (
+            <p className="mt-4 text-sm text-zinc-600">
+              {tr ? 'Hesabın var mı?' : 'Already have an account?'}{' '}
+              <Link to="/login" className="text-brand-400 hover:text-brand-300 transition-colors">
+                {tr ? 'Giriş yap' : 'Sign in'}
+              </Link>
+            </p>
           )}
         </div>
-
-        {!user && (
-          <p className="mt-5 text-sm text-zinc-600">
-            {tr ? 'Hesabın var mı?' : 'Already have an account?'}{' '}
-            <Link to="/login" className="text-brand-400 hover:text-brand-300 transition-colors">
-              {tr ? 'Giriş yap' : 'Sign in'}
-            </Link>
-          </p>
-        )}
       </section>
 
       {/* ── How It Works ── */}
@@ -504,9 +515,11 @@ export default function Home() {
           {tr ? 'Sık Sorulan Sorular' : 'Frequently Asked Questions'}
         </h2>
 
-        <div className="space-y-2">
+        <div className="border border-zinc-900 rounded-xl overflow-hidden">
           {faqItems.map((item, i) => (
-            <FAQItem key={i} {...item} />
+            <div key={i} className="px-5">
+              <FAQItem {...item} />
+            </div>
           ))}
         </div>
       </section>
