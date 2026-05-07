@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Globe } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
@@ -7,6 +7,59 @@ import Spinner from '../../components/ui/Spinner'
 import TorqviaLogo from '../../components/ui/TorqviaLogo'
 import toast from 'react-hot-toast'
 import { checkRateLimit } from '../../lib/security'
+
+function ParticleCanvas() {
+  const ref = useRef(null)
+  useEffect(() => {
+    const canvas = ref.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    let raf
+    canvas.width = canvas.offsetWidth
+    canvas.height = canvas.offsetHeight
+    const N = 40
+    const pts = Array.from({ length: N }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+    }))
+    function frame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      for (let i = 0; i < N; i++) {
+        const p = pts[i]
+        p.x += p.vx; p.y += p.vy
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, 1.2, 0, Math.PI * 2)
+        ctx.fillStyle = 'rgba(255,107,0,0.7)'
+        ctx.fill()
+        for (let j = i + 1; j < N; j++) {
+          const q = pts[j]
+          const d = Math.hypot(p.x - q.x, p.y - q.y)
+          if (d < 100) {
+            ctx.beginPath()
+            ctx.moveTo(p.x, p.y)
+            ctx.lineTo(q.x, q.y)
+            ctx.strokeStyle = `rgba(255,107,0,${(1 - d / 100) * 0.18})`
+            ctx.lineWidth = 0.5
+            ctx.stroke()
+          }
+        }
+      }
+      raf = requestAnimationFrame(frame)
+    }
+    frame()
+    const ro = new ResizeObserver(() => {
+      canvas.width = canvas.offsetWidth
+      canvas.height = canvas.offsetHeight
+    })
+    ro.observe(canvas)
+    return () => { cancelAnimationFrame(raf); ro.disconnect() }
+  }, [])
+  return <canvas ref={ref} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }} />
+}
 
 export default function Login() {
   const { signIn } = useAuth()
@@ -44,155 +97,175 @@ export default function Login() {
     }
   }
 
+  const inputStyle = {
+    display: 'block', width: '100%', boxSizing: 'border-box',
+    background: '#0e0e0e', border: '1px solid #1a1a1a', borderRadius: 8,
+    color: '#f0f0f0', fontSize: 14, padding: '11px 14px',
+    outline: 'none', transition: 'border-color 0.2s',
+  }
+
+  const labelStyle = {
+    display: 'block', fontFamily: 'monospace', fontSize: 10,
+    color: '#444', textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: 7,
+  }
+
   return (
-    <div
-      style={{
-        minHeight: '100dvh',
-        background: '#0a0a0a',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '2rem 1rem',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      {/* Background blobs */}
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }} aria-hidden="true">
-        <div style={{ position: 'absolute', top: '5%', left: '5%', width: 480, height: 480, borderRadius: '50%', background: 'radial-gradient(circle, rgba(249,115,22,0.1) 0%, transparent 65%)', filter: 'blur(70px)', animation: 'orb-drift-1 22s ease-in-out infinite' }} />
-        <div style={{ position: 'absolute', bottom: '5%', right: '5%', width: 380, height: 380, borderRadius: '50%', background: 'radial-gradient(circle, rgba(249,115,22,0.07) 0%, transparent 65%)', filter: 'blur(80px)', animation: 'orb-drift-2 30s ease-in-out infinite' }} />
+    <div style={{
+      position: 'fixed', inset: 0, background: '#080808',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '2rem 1rem', zIndex: 100, overflow: 'hidden',
+    }}>
+      {/* Canvas bg */}
+      <ParticleCanvas />
+
+      {/* Glow orbs */}
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }} aria-hidden>
+        <div style={{ position: 'absolute', top: '10%', left: '10%', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,107,0,0.06) 0%, transparent 65%)', filter: 'blur(60px)', animation: 'orb-drift-1 22s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', bottom: '10%', right: '10%', width: 320, height: 320, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,107,0,0.04) 0%, transparent 65%)', filter: 'blur(70px)', animation: 'orb-drift-2 30s ease-in-out infinite' }} />
       </div>
 
       {/* Lang toggle */}
-      <button
-        onClick={toggle}
-        title={lang === 'tr' ? 'Switch to English' : "Türkçe'ye geç"}
-        style={{ position: 'fixed', top: 16, right: 16, zIndex: 20 }}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/80 hover:border-zinc-700 hover:bg-zinc-800/50 backdrop-blur transition-colors text-xs font-medium text-zinc-500 hover:text-zinc-300"
-      >
+      <button onClick={toggle} title={lang === 'tr' ? 'Switch to English' : "Türkçe'ye geç"}
+        style={{ position: 'fixed', top: 16, right: 16, zIndex: 110 }}
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/80 hover:border-zinc-700 backdrop-blur transition-colors text-xs font-medium text-zinc-500 hover:text-zinc-300">
         <Globe className="h-3.5 w-3.5" />
         {lang === 'tr' ? 'EN' : 'TR'}
       </button>
 
-      {/* Card container */}
-      <div
-        className="w-full relative z-10"
-        style={{ maxWidth: 420, animation: 'fade-up 0.4s ease both' }}
-      >
+      {/* Card */}
+      <div style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 10, animation: 'fade-up 0.4s ease both' }}>
         {/* Logo */}
-        <div className="flex flex-col items-center mb-7">
-          <Link to="/" className="flex flex-col items-center gap-3 mb-4">
-            <div style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #252525 100%)', borderRadius: '50%', padding: 14, border: '1px solid rgba(249,115,22,0.18)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 28 }}>
+          <Link to="/" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginBottom: 16, textDecoration: 'none' }}>
+            <div style={{ background: 'linear-gradient(135deg, #111 0%, #1a1a1a 100%)', borderRadius: '50%', padding: 14, border: '1px solid rgba(255,107,0,0.15)' }}>
               <TorqviaLogo size={42} />
             </div>
-            <div className="text-center">
-              <span style={{ background: 'linear-gradient(135deg, #ffffff 40%, #fb923c 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontSize: 21, fontWeight: 700, letterSpacing: '-0.01em', display: 'block' }}>
+            <div style={{ textAlign: 'center' }}>
+              <span style={{ background: 'linear-gradient(135deg, #f0f0f0 40%, #ff6b00 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontSize: 22, fontWeight: 700, letterSpacing: '-0.01em', display: 'block' }}>
                 Torqvia
               </span>
-              <p style={{ fontFamily: 'monospace', fontSize: 9.5, color: '#3f3f46', letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 2 }}>
+              <p style={{ fontFamily: 'monospace', fontSize: 9, color: '#333', letterSpacing: '0.22em', textTransform: 'uppercase', marginTop: 2 }}>
                 Automotive Community
               </p>
             </div>
           </Link>
-
-          <p style={{ fontFamily: 'monospace', fontSize: 11, color: '#3f3f46', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
+          <p style={{ fontFamily: 'monospace', fontSize: 11, color: '#444', letterSpacing: '0.22em', textTransform: 'uppercase' }}>
             {lang === 'tr' ? '// GİRİŞ YAP' : '// SIGN IN'}
           </p>
         </div>
 
         {/* Form card */}
-        <div style={{ background: '#111111', border: '1px solid #1e1e1e', borderRadius: 12, padding: '26px 22px', boxShadow: '0 12px 48px rgba(0,0,0,0.6)' }}>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <div style={{ background: '#0a0a0a', border: '1px solid #1a1a1a', borderRadius: 12, padding: '26px 22px', boxShadow: '0 16px 56px rgba(0,0,0,0.7)' }}>
+          <form onSubmit={handleSubmit}>
             {error && (
-              <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 text-red-400 text-sm">
+              <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, padding: '10px 14px', color: '#f87171', fontSize: 13, marginBottom: 16 }}>
                 {error}
               </div>
             )}
 
-            <div>
-              <label style={{ display: 'block', fontSize: 11, fontFamily: 'monospace', color: '#3f3f46', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 7 }}>
-                {t('auth.email')}
-              </label>
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>{t('auth.email')}</label>
               <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                placeholder="you@example.com"
-                required
-                className="input-base"
+                type="email" name="email" value={form.email} onChange={handleChange}
+                placeholder="you@example.com" required
+                style={inputStyle}
+                onFocus={e => { e.target.style.borderColor = '#ff6b00'; e.target.style.boxShadow = '0 0 0 3px rgba(255,107,0,0.08)' }}
+                onBlur={e => { e.target.style.borderColor = '#1a1a1a'; e.target.style.boxShadow = 'none' }}
               />
             </div>
 
-            <div>
-              <label style={{ display: 'block', fontSize: 11, fontFamily: 'monospace', color: '#3f3f46', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 7 }}>
-                {t('auth.password')}
-              </label>
-              <div className="relative">
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>{t('auth.password')}</label>
+              <div style={{ position: 'relative' }}>
                 <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={form.password}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  required
-                  className="input-base pr-10"
+                  type={showPassword ? 'text' : 'password'} name="password"
+                  value={form.password} onChange={handleChange}
+                  placeholder="••••••••" required
+                  style={{ ...inputStyle, paddingRight: 42 }}
+                  onFocus={e => { e.target.style.borderColor = '#ff6b00'; e.target.style.boxShadow = '0 0 0 3px rgba(255,107,0,0.08)' }}
+                  onBlur={e => { e.target.style.borderColor = '#1a1a1a'; e.target.style.boxShadow = 'none' }}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(s => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400 transition-colors"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                <button type="button" onClick={() => setShowPassword(s => !s)}
+                  style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#444', cursor: 'pointer', padding: 4, display: 'flex' }}>
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
-              <div className="text-right mt-1.5">
-                <Link
-                  to="/forgot-password"
-                  style={{ fontSize: 12, color: '#3f3f46' }}
-                  className="hover:text-brand-400 transition-colors"
-                >
+              <div style={{ textAlign: 'right', marginTop: 6 }}>
+                <Link to="/forgot-password" style={{ fontSize: 12, color: '#444', textDecoration: 'none' }}
+                  className="hover:text-brand-400 transition-colors">
                   {t('auth.forgotPassword')}
                 </Link>
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                role="checkbox"
-                aria-checked={rememberMe}
+            {/* Remember me */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+              <button type="button" role="checkbox" aria-checked={rememberMe}
                 onClick={() => setRememberMe(v => !v)}
-                className={`w-4.5 h-4.5 rounded flex items-center justify-center border transition-colors shrink-0 ${
-                  rememberMe
-                    ? 'bg-brand-500 border-brand-500'
-                    : 'bg-transparent border-zinc-700 hover:border-zinc-500'
-                }`}
-              >
+                style={{
+                  width: 18, height: 18, borderRadius: 4, border: `1px solid ${rememberMe ? '#ff6b00' : '#333'}`,
+                  background: rememberMe ? '#ff6b00' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s',
+                }}>
                 {rememberMe && (
-                  <svg viewBox="0 0 10 8" fill="none" className="w-2.5 h-2.5">
+                  <svg viewBox="0 0 10 8" fill="none" width={10} height={8}>
                     <path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 )}
               </button>
-              <span
-                onClick={() => setRememberMe(v => !v)}
-                className="text-sm text-zinc-600 cursor-pointer select-none hover:text-zinc-400 transition-colors"
-              >
+              <span onClick={() => setRememberMe(v => !v)} style={{ fontSize: 13, color: '#555', cursor: 'pointer', userSelect: 'none' }}>
                 {lang === 'tr' ? 'Oturumu açık bırak' : 'Stay signed in'}
               </span>
             </div>
 
-            <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 mt-1">
-              {loading ? <Spinner size="sm" /> : t('auth.login.submit')}
+            {/* Submit */}
+            <button type="submit" disabled={loading}
+              style={{
+                width: '100%', padding: '12px 0', borderRadius: 10, border: 'none',
+                background: loading ? '#7c3500' : '#ff6b00', color: '#fff', fontWeight: 700,
+                fontSize: 15, cursor: loading ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                transition: 'background 0.2s',
+              }}>
+              {loading ? <Spinner size="sm" /> : (lang === 'tr' ? 'Giriş Yap' : 'Sign In')}
+            </button>
+
+            {/* Divider */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0' }}>
+              <div style={{ flex: 1, height: 1, background: '#1a1a1a' }} />
+              <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#333', letterSpacing: '0.1em' }}>
+                {lang === 'tr' ? '— VEYA —' : '— OR —'}
+              </span>
+              <div style={{ flex: 1, height: 1, background: '#1a1a1a' }} />
+            </div>
+
+            {/* Google */}
+            <button type="button"
+              onClick={() => toast.error(lang === 'tr' ? 'Google girişi yakında' : 'Google sign-in coming soon')}
+              style={{
+                width: '100%', padding: '11px 0', borderRadius: 10,
+                background: '#0e0e0e', border: '1px solid #1a1a1a', color: '#888',
+                fontWeight: 600, fontSize: 14, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                transition: 'border-color 0.2s, color 0.2s',
+              }}
+              onMouseOver={e => { e.currentTarget.style.borderColor = '#333'; e.currentTarget.style.color = '#f0f0f0' }}
+              onMouseOut={e => { e.currentTarget.style.borderColor = '#1a1a1a'; e.currentTarget.style.color = '#888' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+              {lang === 'tr' ? 'Google ile devam et' : 'Continue with Google'}
             </button>
           </form>
         </div>
 
-        {/* Footer */}
-        <div className="text-center mt-5 text-sm" style={{ color: '#3f3f46' }}>
+        {/* Footer links */}
+        <div style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: '#444' }}>
           {t('auth.login.noAccount')}{' '}
-          <Link to="/register" className="text-brand-400 hover:text-brand-300 transition-colors">
+          <Link to="/register" style={{ color: '#ff6b00', textDecoration: 'none' }}>
             {t('auth.login.create')}
           </Link>
         </div>

@@ -5,9 +5,124 @@ import {
   MessageCircle, Star, Grid3X3, FileText,
   Flag, ShieldOff, Crown, Zap, Flame, Ban,
   Image as ImageIcon, PlusCircle, Trash2, UserCheck, UserX,
-  MapPin, Clock, Banknote,
+  MapPin, Clock, Banknote, ChevronLeft,
 } from 'lucide-react'
 import TorqviaLogo from '../components/ui/TorqviaLogo'
+
+function EliteParticleCanvas() {
+  const ref = useRef(null)
+  useEffect(() => {
+    const canvas = ref.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    let raf
+    canvas.width = canvas.offsetWidth
+    canvas.height = canvas.offsetHeight
+    const colors = ['#8b5cf6', '#c4a000', '#a78bfa', '#d4aa00']
+    const N = 55
+    const pts = Array.from({ length: N }, (_, i) => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      color: colors[i % colors.length],
+      size: 0.8 + Math.random() * 1.4,
+      isStar: i % 5 === 0,
+      pulse: Math.random() * Math.PI * 2,
+      pulseSpeed: 0.02 + Math.random() * 0.025,
+    }))
+    function drawStar(x, y, r, color) {
+      ctx.save()
+      ctx.translate(x, y)
+      ctx.fillStyle = color
+      const spikes = 4
+      ctx.beginPath()
+      for (let k = 0; k < spikes * 2; k++) {
+        const angle = (k * Math.PI) / spikes - Math.PI / 2
+        const rad = k % 2 === 0 ? r : r * 0.38
+        ctx[k === 0 ? 'moveTo' : 'lineTo'](Math.cos(angle) * rad, Math.sin(angle) * rad)
+      }
+      ctx.closePath()
+      ctx.fill()
+      ctx.restore()
+    }
+    function frame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      for (let i = 0; i < N; i++) {
+        const p = pts[i]
+        p.x += p.vx; p.y += p.vy
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1
+        p.pulse += p.pulseSpeed
+        const ps = 1 + Math.sin(p.pulse) * 0.4
+        if (p.isStar) {
+          drawStar(p.x, p.y, p.size * 2.5 * ps, p.color)
+        } else {
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+          ctx.fillStyle = p.color
+          ctx.fill()
+        }
+        for (let j = i + 1; j < N; j++) {
+          const q = pts[j]
+          const d = Math.hypot(p.x - q.x, p.y - q.y)
+          if (d < 90) {
+            const alpha = (1 - d / 90) * 0.2
+            ctx.beginPath()
+            ctx.moveTo(p.x, p.y)
+            ctx.lineTo(q.x, q.y)
+            const grd = ctx.createLinearGradient(p.x, p.y, q.x, q.y)
+            grd.addColorStop(0, `rgba(139,92,246,${alpha})`)
+            grd.addColorStop(1, `rgba(196,160,0,${alpha})`)
+            ctx.strokeStyle = grd
+            ctx.lineWidth = 0.5
+            ctx.stroke()
+          }
+        }
+      }
+      raf = requestAnimationFrame(frame)
+    }
+    frame()
+    const ro = new ResizeObserver(() => {
+      canvas.width = canvas.offsetWidth
+      canvas.height = canvas.offsetHeight
+    })
+    ro.observe(canvas)
+    return () => { cancelAnimationFrame(raf); ro.disconnect() }
+  }, [])
+  return <canvas ref={ref} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }} />
+}
+
+function EliteAvatarRings({ children }) {
+  return (
+    <div style={{ position: 'relative', display: 'inline-block', padding: 16 }}>
+      {/* Outer pulse ring */}
+      <div style={{
+        position: 'absolute', inset: 3, borderRadius: '50%',
+        border: '1px solid rgba(139,92,246,0.25)',
+        boxShadow: '0 0 20px rgba(139,92,246,0.3)',
+        animation: 'pulse-outer-ring 2.5s ease-in-out infinite',
+      }} />
+      {/* Inner ring CCW — purple+gold */}
+      <div style={{
+        position: 'absolute', inset: 8, borderRadius: '50%',
+        background: 'conic-gradient(from 0deg, #8b5cf6, #c4a000, #8b5cf6, #c4a000)',
+        animation: 'spin-ring-ccw 4s linear infinite',
+        maskImage: 'radial-gradient(farthest-side at 50% 50%, transparent calc(100% - 2px), black 100%)',
+        WebkitMaskImage: 'radial-gradient(farthest-side at 50% 50%, transparent calc(100% - 2px), black 100%)',
+      }} />
+      {/* Outer ring CW */}
+      <div style={{
+        position: 'absolute', inset: 3, borderRadius: '50%',
+        background: 'conic-gradient(from 90deg, rgba(196,160,0,0.55), transparent 40%, rgba(139,92,246,0.45), transparent 80%)',
+        animation: 'spin-ring-cw 6s linear infinite',
+        maskImage: 'radial-gradient(farthest-side at 50% 50%, transparent calc(100% - 2px), black 100%)',
+        WebkitMaskImage: 'radial-gradient(farthest-side at 50% 50%, transparent calc(100% - 2px), black 100%)',
+      }} />
+      {children}
+    </div>
+  )
+}
 import { supabase } from '../lib/supabase'
 import { uploadAvatar } from '../lib/avatar'
 import { useAuth } from '../contexts/AuthContext'
@@ -412,9 +527,11 @@ export default function Profile() {
         {isTurbo && <div className="h-0.5 bg-gradient-to-r from-orange-600 via-red-500 to-orange-600" />}
 
         {/* Cover */}
-        <div className={`relative overflow-hidden ${coverH}`} style={coverStyle}>
-          {/* Elite particles */}
-          {isElite && eliteParticles.map(p => (
+        <div className={`relative overflow-hidden ${coverH}`} style={isElite ? { background: '#080808' } : coverStyle}>
+          {/* Elite canvas */}
+          {isElite && <EliteParticleCanvas />}
+          {/* Non-elite particles kept as fallback */}
+          {!isElite && eliteParticles.map(p => (
             <div key={p.id} style={{
               position: 'absolute', bottom: 0, left: p.left,
               width: p.size, height: p.size, borderRadius: '50%',
@@ -426,20 +543,37 @@ export default function Profile() {
             }} />
           ))}
 
+          {/* Elite radial glow */}
+          {isElite && (
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: 'radial-gradient(ellipse at 50% 50%, rgba(139,92,246,0.18) 0%, transparent 70%)',
+              pointerEvents: 'none',
+            }} />
+          )}
+
           {/* Watermark logo */}
           <div className="absolute inset-0 flex items-center justify-end pr-6 opacity-[0.04] pointer-events-none">
             <TorqviaLogo size={isElite ? 100 : 70} />
           </div>
 
-          {/* Elite crown banner */}
+          {/* Elite banner */}
           {isElite && (
-            <div className="absolute top-3 left-4 flex items-center gap-1.5">
-              <Crown className="h-4 w-4 text-amber-400" style={{ animation: 'elite-pulse 2s ease-in-out infinite' }} />
+            <div style={{
+              position: 'absolute', top: 10, left: 12, right: 12,
+              background: 'linear-gradient(90deg, rgba(139,92,246,0.15), rgba(196,160,0,0.1))',
+              border: '1px solid rgba(139,92,246,0.25)',
+              borderRadius: 8, padding: '6px 12px',
+              display: 'flex', alignItems: 'center', gap: 8,
+            }}>
+              <Crown size={13} style={{ color: '#c4a000', animation: 'elite-pulse 2s ease-in-out infinite' }} />
               <span style={{
-                fontSize: 10, fontWeight: 700, letterSpacing: '0.12em',
+                fontSize: 10, fontWeight: 800, letterSpacing: '0.14em',
                 background: 'linear-gradient(90deg, #fbbf24, #a78bfa)',
                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-              }}>ELITE ÜYESİ</span>
+                backgroundSize: '200% auto', animation: 'elite-shimmer 3s linear infinite',
+              }}>⚡ ELITE ÜYE</span>
+              <span style={{ marginLeft: 'auto', fontSize: 10, color: '#555' }}>Öncelikli erişim aktif</span>
             </div>
           )}
           {isTurbo && (
@@ -454,16 +588,36 @@ export default function Profile() {
           {/* Avatar row — only avatar + small ⋮ menu, so nothing overlaps the cover */}
           <div className="flex items-end justify-between -mt-10 mb-3">
             <div className="relative shrink-0">
-              <div style={avatarRing}>
-                <UserAvatar profile={profile} email={email} size="xl" />
-              </div>
-              {isOwn && (
+              {isElite ? (
+                <EliteAvatarRings>
+                  <div style={{ position: 'relative' }}>
+                    <UserAvatar profile={profile} email={email} size="xl" />
+                    {isOwn && (
+                      <>
+                        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                        <button onClick={() => fileRef.current?.click()} disabled={avatarUploading}
+                          style={{ position: 'absolute', bottom: 0, right: 0 }}
+                          className="p-1.5 bg-zinc-800 border border-zinc-700 rounded-full hover:bg-zinc-700 transition-colors">
+                          {avatarUploading ? <Spinner size="sm" /> : <Camera className="h-3.5 w-3.5 text-zinc-300" />}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </EliteAvatarRings>
+              ) : (
                 <>
-                  <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-                  <button onClick={() => fileRef.current?.click()} disabled={avatarUploading}
-                    className="absolute bottom-0 right-0 p-1.5 bg-zinc-800 border border-zinc-700 rounded-full hover:bg-zinc-700 transition-colors">
-                    {avatarUploading ? <Spinner size="sm" /> : <Camera className="h-3.5 w-3.5 text-zinc-300" />}
-                  </button>
+                  <div style={avatarRing}>
+                    <UserAvatar profile={profile} email={email} size="xl" />
+                  </div>
+                  {isOwn && (
+                    <>
+                      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                      <button onClick={() => fileRef.current?.click()} disabled={avatarUploading}
+                        className="absolute bottom-0 right-0 p-1.5 bg-zinc-800 border border-zinc-700 rounded-full hover:bg-zinc-700 transition-colors">
+                        {avatarUploading ? <Spinner size="sm" /> : <Camera className="h-3.5 w-3.5 text-zinc-300" />}
+                      </button>
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -473,6 +627,23 @@ export default function Profile() {
                 onBlock={handleBlock}
                 isBlocked={isBlocked}
               />
+            )}
+            {isElite && isOwn && (
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '6px 14px', borderRadius: 99,
+                background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.3)',
+                color: '#a78bfa', fontSize: 12, fontWeight: 800,
+                animation: 'badge-elite-glow 2.5s ease-in-out infinite',
+                backgroundImage: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)',
+                backgroundSize: '200% auto',
+                animationName: 'badge-elite-glow, shimmer-sweep',
+                animationDuration: '2.5s, 3s',
+                animationTimingFunction: 'ease-in-out, linear',
+                animationIterationCount: 'infinite',
+              }}>
+                ⚡ ELITE ÜYE
+              </div>
             )}
           </div>
 
@@ -781,6 +952,127 @@ export default function Profile() {
         </div>
       )}
 
+      {/* ── Owner 2-column layout ── */}
+      {isOwner && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 16, marginBottom: 28 }}
+          className="owner-profile-grid">
+          {/* Left: Araçlarım + Son İlanlar */}
+          <div>
+            <p style={{ fontFamily: 'monospace', fontSize: 9, color: isElite ? '#8b5cf6' : '#444', textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: 12 }}>
+              // ARAÇLARIM
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+              {vehicles.length === 0 ? (
+                <div style={{ background: '#0b0b0b', border: '1px solid #141414', borderRadius: 10, padding: '16px', textAlign: 'center', color: '#333', fontSize: 12 }}>
+                  {isOwn ? (
+                    <Link to="/garage" style={{ color: isElite ? '#8b5cf6' : '#ff6b00', textDecoration: 'none' }}>Araç ekle →</Link>
+                  ) : 'Araç yok'}
+                </div>
+              ) : vehicles.slice(0, 3).map(v => (
+                <div key={v.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  background: '#0b0b0b', border: `1px solid ${isElite ? 'rgba(139,92,246,0.15)' : '#141414'}`,
+                  borderRadius: 10, padding: '12px 14px',
+                }}>
+                  <div style={{
+                    width: 38, height: 38, borderRadius: 8,
+                    background: isElite ? 'rgba(139,92,246,0.1)' : 'rgba(255,107,0,0.07)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}>
+                    <Car size={16} style={{ color: isElite ? '#8b5cf6' : '#ff6b00' }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#f0f0f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {v.year} {v.brand} {v.model}
+                    </div>
+                    {v.mileage && <div style={{ fontSize: 11, color: '#444', marginTop: 2 }}>{v.mileage?.toLocaleString('tr-TR')} km</div>}
+                  </div>
+                  <span style={{
+                    fontSize: 10, padding: '3px 8px', borderRadius: 99,
+                    background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', color: '#22c55e',
+                  }}>Aktif</span>
+                </div>
+              ))}
+              {isOwn && (
+                <Link to="/garage" style={{ fontSize: 12, color: isElite ? '#8b5cf6' : '#ff6b00', textDecoration: 'none', textAlign: 'center', padding: '8px 0' }}>
+                  Garajı Yönet →
+                </Link>
+              )}
+            </div>
+
+            <p style={{ fontFamily: 'monospace', fontSize: 9, color: isElite ? '#8b5cf6' : '#444', textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: 12 }}>
+              // SON İLANLAR
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {listings.length === 0 ? (
+                <div style={{ background: '#0b0b0b', border: '1px solid #141414', borderRadius: 10, padding: '14px', textAlign: 'center', color: '#333', fontSize: 12 }}>
+                  İlan yok
+                </div>
+              ) : listings.slice(0, 3).map(l => (
+                <Link key={l.id} to={`/listings/${l.id}`} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: '#0b0b0b', border: `1px solid ${isElite ? 'rgba(139,92,246,0.12)' : '#141414'}`,
+                  borderRadius: 10, padding: '11px 14px', textDecoration: 'none',
+                }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#f0f0f0' }}>{l.brand} {l.model}</div>
+                    <div style={{ fontSize: 10, color: '#444', marginTop: 2 }}>{new Date(l.created_at).toLocaleDateString('tr-TR')}</div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: Özet + Favori Ustalar */}
+          <div>
+            <p style={{ fontFamily: 'monospace', fontSize: 9, color: isElite ? '#8b5cf6' : '#444', textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: 12 }}>
+              // ÖZET
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 20 }}>
+              {[
+                { label: 'Araç', value: vehicles.length },
+                { label: 'İlan', value: listings.length },
+                { label: 'Plan', value: (plan === 'elite' ? 'ELITE' : plan === 'turbo' ? 'TURBO' : 'FREE') },
+                { label: 'Üye', value: profile.created_at ? new Date(profile.created_at).getFullYear() : '—' },
+              ].map(item => (
+                <div key={item.label} style={{
+                  background: '#0b0b0b',
+                  border: `1px solid ${isElite ? 'rgba(139,92,246,0.15)' : '#141414'}`,
+                  borderRadius: 10, padding: '12px 14px',
+                }}>
+                  <div style={{ fontSize: 9, color: '#333', marginBottom: 4, fontFamily: 'monospace', letterSpacing: '0.1em' }}>{item.label}</div>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: isElite ? '#a78bfa' : '#f0f0f0' }}>{item.value}</div>
+                </div>
+              ))}
+            </div>
+
+            <p style={{ fontFamily: 'monospace', fontSize: 9, color: isElite ? '#8b5cf6' : '#444', textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: 12 }}>
+              // FAVORİ USTALAR
+            </p>
+            <div style={{ background: '#0b0b0b', border: `1px solid ${isElite ? 'rgba(139,92,246,0.15)' : '#141414'}`, borderRadius: 10, padding: '16px' }}>
+              {[
+                { name: 'Ahmet Oto Tamiri', spec: 'Motor · Elektrik', rating: 4.9 },
+                { name: 'Tuğrul Lastik', spec: 'Lastik · Jant', rating: 4.7 },
+              ].map((m, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, paddingBottom: i < 1 ? 10 : 0, marginBottom: i < 1 ? 10 : 0, borderBottom: i < 1 ? '1px solid #141414' : 'none' }}>
+                  <div style={{ width: 34, height: 34, borderRadius: '50%', background: isElite ? 'rgba(139,92,246,0.1)' : 'rgba(255,107,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 14, fontWeight: 700, color: isElite ? '#8b5cf6' : '#ff6b00' }}>
+                    {m.name[0]}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#888' }}>{m.name}</div>
+                    <div style={{ fontSize: 10, color: '#444', marginTop: 1 }}>{m.spec}</div>
+                  </div>
+                  <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 700 }}>★{m.rating}</span>
+                </div>
+              ))}
+              <Link to="/listings" style={{ display: 'block', textAlign: 'center', marginTop: 12, fontSize: 12, color: isElite ? '#8b5cf6' : '#ff6b00', textDecoration: 'none' }}>
+                Usta Ara →
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       <>
           {/* Tabs */}
           <div className="flex gap-1 border-b border-zinc-800 mb-6">
@@ -990,6 +1282,12 @@ export default function Profile() {
             </div>
           )}
       </>
+
+      <style>{`
+        @media (max-width: 640px) {
+          .owner-profile-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
 
       {followModal && (
         <FollowListModal userId={id} type={followModal} onClose={() => setFollowModal(null)} />

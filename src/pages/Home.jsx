@@ -1,127 +1,80 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Star, Shield, Clock, CheckCircle, Wrench } from 'lucide-react'
+import { ArrowRight, CheckCircle, Shield, Star, Clock, Zap, Users, MapPin } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useMeta } from '../hooks/useMeta'
 import { useLang } from '../contexts/LangContext'
 
-function SectionLabel({ text }) {
-  return (
-    <p className="font-mono text-[11px] text-zinc-600 tracking-[0.2em] uppercase mb-3">
-      {text}
-    </p>
-  )
-}
-
-function HomeBackground() {
-  const sparks = Array.from({ length: 10 }, (_, i) => ({
-    id: i,
-    left: `${8 + (i * 9.7) % 84}%`,
-    top: `${20 + (i * 15.3) % 60}%`,
-    delay: `${(i * 0.85) % 6}s`,
-    dur: `${3.2 + (i * 0.45) % 3.2}s`,
-    dx: `${-28 + (i * 13) % 56}px`,
-    size: i % 3 === 0 ? 2.5 : i % 3 === 1 ? 1.8 : 1.2,
-  }))
-
-  return (
-    <div
-      style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}
-      aria-hidden="true"
-    >
-      {/* Top-center spotlight — warm glow from above */}
-      <div style={{
-        position: 'absolute', top: -80, left: '50%', transform: 'translateX(-50%)',
-        width: 900, height: 420,
-        background: 'radial-gradient(ellipse at 50% 0%, rgba(249,115,22,0.2) 0%, transparent 68%)',
-        filter: 'blur(45px)',
-      }} />
-
-      {/* Drift orbs */}
-      <div style={{ position: 'absolute', top: '2%', left: '2%', width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(249,115,22,0.14) 0%, transparent 68%)', filter: 'blur(55px)', animation: 'orb-drift-1 20s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', top: '42%', right: '-4%', width: 580, height: 580, borderRadius: '50%', background: 'radial-gradient(circle, rgba(249,115,22,0.11) 0%, transparent 68%)', filter: 'blur(65px)', animation: 'orb-drift-2 27s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', bottom: '-6%', left: '18%', width: 520, height: 520, borderRadius: '50%', background: 'radial-gradient(circle, rgba(251,146,60,0.1) 0%, transparent 68%)', filter: 'blur(60px)', animation: 'orb-drift-3 35s ease-in-out infinite' }} />
-
-      {/* Grid */}
-      <div style={{
-        position: 'absolute', inset: 0,
-        backgroundImage:
-          'linear-gradient(rgba(249,115,22,0.032) 1px, transparent 1px),' +
-          'linear-gradient(90deg, rgba(249,115,22,0.032) 1px, transparent 1px)',
-        backgroundSize: '64px 64px',
-        animation: 'grid-fade 9s ease-in-out infinite',
-      }} />
-
-      {/* Scan line */}
-      <div style={{
-        position: 'absolute', left: 0, right: 0, height: 1,
-        background: 'linear-gradient(90deg, transparent 0%, rgba(249,115,22,0.1) 25%, rgba(249,115,22,0.32) 50%, rgba(249,115,22,0.1) 75%, transparent 100%)',
-        animation: 'line-scan 11s linear infinite',
-        animationDelay: '1s',
-      }} />
-
-      {/* Floating sparks */}
-      {sparks.map(s => (
-        <div key={s.id} style={{
-          position: 'absolute', left: s.left, top: s.top,
-          width: s.size, height: s.size, borderRadius: '50%',
-          backgroundColor: '#f97316',
-          boxShadow: `0 0 ${s.size * 4}px rgba(249,115,22,0.95)`,
-          '--dx': s.dx,
-          animation: `spark-float ${s.dur} ease-in-out infinite`,
-          animationDelay: s.delay,
-          opacity: 0,
-        }} />
-      ))}
-
-      {/* Edge vignette */}
-      <div style={{
-        position: 'absolute', inset: 0,
-        background: 'radial-gradient(ellipse at 50% 35%, transparent 30%, rgba(9,9,11,0.72) 100%)',
-      }} />
-    </div>
-  )
+function ParticleCanvas({ style = {} }) {
+  const ref = useRef(null)
+  useEffect(() => {
+    const canvas = ref.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    let raf
+    canvas.width = canvas.offsetWidth
+    canvas.height = canvas.offsetHeight
+    const N = 55
+    const pts = Array.from({ length: N }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.38,
+      vy: (Math.random() - 0.5) * 0.38,
+    }))
+    function frame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      for (let i = 0; i < N; i++) {
+        const p = pts[i]
+        p.x += p.vx; p.y += p.vy
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, 1.5, 0, Math.PI * 2)
+        ctx.fillStyle = '#ff6b00'
+        ctx.shadowColor = '#ff6b00'
+        ctx.shadowBlur = 4
+        ctx.fill()
+        ctx.shadowBlur = 0
+        for (let j = i + 1; j < N; j++) {
+          const q = pts[j]
+          const d = Math.hypot(p.x - q.x, p.y - q.y)
+          if (d < 110) {
+            ctx.beginPath()
+            ctx.moveTo(p.x, p.y)
+            ctx.lineTo(q.x, q.y)
+            ctx.strokeStyle = `rgba(255,107,0,${(1 - d / 110) * 0.28})`
+            ctx.lineWidth = 0.6
+            ctx.stroke()
+          }
+        }
+      }
+      raf = requestAnimationFrame(frame)
+    }
+    frame()
+    const ro = new ResizeObserver(() => {
+      canvas.width = canvas.offsetWidth
+      canvas.height = canvas.offsetHeight
+    })
+    ro.observe(canvas)
+    return () => { cancelAnimationFrame(raf); ro.disconnect() }
+  }, [])
+  return <canvas ref={ref} style={{ width: '100%', height: '100%', display: 'block', ...style }} />
 }
 
 function TickerBar({ lang }) {
-  const tr = [
-    'SYS.DURUM: AKTİF',
-    'ENLEM: 41.2867° K',
-    'BOYLAM: 36.3300° D',
-    'BÖLGE: TR-55',
-    'USTALAR: 2.847',
-    'BUGÜNKÜ İŞLER: 1.203',
-    'ORT. PUAN: 4.7★',
-    'ÇALIŞMA SÜRESİ: %99.98',
-  ]
-  const en = [
-    'SYS.STATUS: ONLINE',
-    'LAT: 41.2867° N',
-    'LON: 36.3300° E',
-    'REGION: TR-55',
-    'MECHANICS: 2,847',
-    'JOBS TODAY: 1,203',
-    'AVG RATING: 4.7★',
-    'UPTIME: 99.98%',
-  ]
+  const tr = ['SYS.DURUM: AKTİF', 'USTALAR: 2.847', 'BUGÜNKÜ İŞLER: 1.203', 'ORT. PUAN: 4.7★', 'UPTIME: %99.98', 'ENLEM: 41.29° K', 'BÖLGE: TR-55']
+  const en = ['SYS.STATUS: ONLINE', 'MECHANICS: 2,847', 'JOBS TODAY: 1,203', 'AVG RATING: 4.7★', 'UPTIME: 99.98%', 'LAT: 41.29° N', 'REGION: TR-55']
   const items = lang === 'tr' ? tr : en
   const doubled = [...items, ...items]
-
   return (
     <div
-      className="-mx-3 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-8 mb-0 bg-black border-b border-zinc-900/80 overflow-hidden"
-      style={{ height: 38 }}
+      className="-mx-3 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-8 mb-0 overflow-hidden"
+      style={{ background: '#080808', borderBottom: '1px solid #141414', height: 36 }}
     >
-      <div
-        className="flex items-center h-full"
-        style={{ animation: 'ticker 40s linear infinite', width: 'max-content' }}
-      >
+      <div className="flex items-center h-full" style={{ animation: 'ticker 38s linear infinite', width: 'max-content' }}>
         {doubled.map((item, i) => (
-          <span
-            key={i}
-            className="inline-flex items-center gap-2 px-6 font-mono text-[11px] text-zinc-500 whitespace-nowrap"
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+          <span key={i} className="inline-flex items-center gap-2 px-6 whitespace-nowrap" style={{ fontFamily: 'monospace', fontSize: 11, color: '#444', letterSpacing: '0.08em' }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e', flexShrink: 0, display: 'inline-block' }} />
             {item}
           </span>
         ))}
@@ -130,83 +83,43 @@ function TickerBar({ lang }) {
   )
 }
 
-function MechanicCard({ name, rating, reviews, distance, specialties, response, price, status, city, lang }) {
-  const isOnline = status === 'ONLINE' || status === 'ÇEVRİMİÇİ'
+function LiveMatchCard({ lang }) {
+  const tr = lang === 'tr'
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors">
-      <div className="flex items-start justify-between mb-3">
-        <div>
-          <h4 className="font-semibold text-white text-sm">{name}</h4>
-          <p className="text-xs text-zinc-500 mt-0.5">{city}</p>
+    <div style={{
+      background: '#fff', borderRadius: 14, padding: '18px 20px',
+      boxShadow: '0 8px 40px rgba(0,0,0,0.6)', maxWidth: 320, width: '100%',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <span style={{ fontFamily: 'monospace', fontSize: 10, color: '#555', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+          {tr ? '// CANLI EŞLEŞİLDİ' : '// LIVE MATCH'}
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#16a34a', fontWeight: 600 }}>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#16a34a', animation: 'badge-turbo-glow 2s ease-in-out infinite', display: 'inline-block' }} />
+          {tr ? 'Canlı' : 'Live'}
+        </span>
+      </div>
+      {[
+        { name: tr ? 'Ahmet Oto Tamiri' : 'Ahmet Auto Repair', city: 'Samsun / Atakum', rating: '4.9', spec: tr ? 'Motor · Elektrik' : 'Engine · Electric', time: '≈12 dk', color: '#f97316' },
+        { name: tr ? 'Tuğrul Lastik' : 'Tuğrul Tires', city: 'Samsun / Canik', rating: '4.7', spec: tr ? 'Lastik · Jant' : 'Tires · Rims', time: '≈8 dk', color: '#8b5cf6' },
+      ].map((m, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: i === 0 ? '1px solid #f0f0f0' : 'none' }}>
+          <div style={{ width: 40, height: 40, borderRadius: '50%', background: m.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <span style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>{m.name[0]}</span>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#111', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</div>
+            <div style={{ fontSize: 11, color: '#777', marginTop: 1 }}>{m.spec} · ★{m.rating}</div>
+          </div>
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#16a34a' }}>{m.time}</div>
+            <div style={{ fontSize: 10, color: '#aaa' }}>{m.city}</div>
+          </div>
         </div>
-        <span
-          className={`inline-flex items-center gap-1.5 text-[10px] font-mono font-bold px-2 py-1 rounded border ${
-            isOnline
-              ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10'
-              : 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10'
-          }`}
-        >
-          <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${isOnline ? 'bg-emerald-500' : 'bg-yellow-500'}`} />
-          {status}
-        </span>
+      ))}
+      <div style={{ marginTop: 14, background: '#ff6b00', borderRadius: 8, padding: '9px 0', textAlign: 'center', fontSize: 13, fontWeight: 700, color: '#fff', cursor: 'pointer' }}>
+        {tr ? 'Randevu Al →' : 'Book Now →'}
       </div>
-
-      <div className="flex items-center gap-1.5 mb-3">
-        <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
-        <span className="text-sm font-bold text-white">{rating}</span>
-        <span className="text-xs text-zinc-600">
-          ({reviews} {lang === 'tr' ? 'yorum' : 'reviews'})
-        </span>
-        <span className="text-zinc-700 mx-1">·</span>
-        <span className="text-xs text-zinc-500">{distance}</span>
-      </div>
-
-      <div className="flex flex-wrap gap-1.5 mb-4">
-        {specialties.map(s => (
-          <span key={s} className="text-[11px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/50">
-            {s}
-          </span>
-        ))}
-      </div>
-
-      <div className="flex items-center justify-between pt-3 border-t border-zinc-800">
-        <div className="flex items-center gap-3 text-xs text-zinc-500">
-          <span className="flex items-center gap-1">
-            <Clock className="h-3 w-3" /> {response}
-          </span>
-          <span className="font-semibold text-zinc-300">{price}</span>
-        </div>
-        <Link
-          to="/register?role=owner"
-          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-brand-500 text-white hover:bg-brand-600 transition-colors"
-        >
-          {lang === 'tr' ? 'Teklif İste' : 'Get Quote'}
-        </Link>
-      </div>
-    </div>
-  )
-}
-
-function FAQItem({ q, a }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <div className="border-b border-zinc-900/80 last:border-b-0">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-start justify-between py-4 text-left group"
-      >
-        <span className={`text-sm pr-6 leading-snug transition-colors ${open ? 'text-white font-medium' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
-          {q}
-        </span>
-        <span className="text-zinc-700 text-xl leading-none mt-0 shrink-0 select-none group-hover:text-zinc-500 transition-colors">
-          {open ? '−' : '+'}
-        </span>
-      </button>
-      {open && (
-        <div className="pb-4 text-sm text-zinc-600 leading-relaxed">
-          {a}
-        </div>
-      )}
     </div>
   )
 }
@@ -218,19 +131,25 @@ export default function Home() {
 
   useMeta(
     "Torqvia — Samsun'un Oto Servis Platformu",
-    "Samsun'da araç sahipleri ve servis ustalarını buluşturan platform. İlanını ver, usta bul, işi yaptır.",
+    "Samsun'da araç sahipleri ve servis ustalarını buluşturan platform.",
   )
 
-  const mechanics = tr
+  const features = tr
     ? [
-        { name: 'Ahmet Oto Tamiri', rating: 4.9, reviews: 127, distance: '3.2 km', specialties: ['Motor', 'Elektrik', 'Genel Bakım'], response: '≈15 dk', price: '₺450–800', status: 'ÇEVRİMİÇİ', city: 'Samsun / Atakum' },
-        { name: 'Mersin Kaporta & Boya', rating: 4.8, reviews: 89, distance: '5.1 km', specialties: ['Kaporta', 'Boya', 'Eksper'], response: '≈30 dk', price: '₺800–2.000', status: 'ÇEVRİMİÇİ', city: 'Samsun / İlkadım' },
-        { name: 'Tuğrul Lastik Merkezi', rating: 4.7, reviews: 234, distance: '1.8 km', specialties: ['Lastik', 'Jant', 'Balans'], response: '≈10 dk', price: '₺200–500', status: 'MEŞGUL', city: 'Samsun / Canik' },
+        { num: '01', title: 'Doğrulanmış Ustalar', desc: 'Her usta kimlik ve belge doğrulamasından geçiyor. Güvenli hizmet garantisi.' },
+        { num: '02', title: 'Şeffaf Fiyatlandırma', desc: 'Gizli ücret yok. İş başlamadan önce fiyatı bilirsin.' },
+        { num: '03', title: 'Gerçek Yorumlar', desc: 'Tüm yorumlar gerçek hizmet sonrası yazılıyor. Manipüle edilemez.' },
+        { num: '04', title: 'Hızlı Yanıt', desc: 'Ortalama 15 dakikada ilk teklifini al. Vakit kaybetme.' },
+        { num: '05', title: 'Konum Bazlı Eşleşme', desc: 'Bölgendeki en yakın ve en iyi ustalarla otomatik eşleşme.' },
+        { num: '06', title: 'Güvenli Ödeme', desc: 'Platform üzerinden şeffaf fiyat anlaşması. Sürpriz fatura yok.' },
       ]
     : [
-        { name: 'Ahmet Auto Repair', rating: 4.9, reviews: 127, distance: '3.2 km', specialties: ['Engine', 'Electric', 'General'], response: '≈15 min', price: '₺450–800', status: 'ONLINE', city: 'Samsun / Atakum' },
-        { name: 'Mersin Body & Paint', rating: 4.8, reviews: 89, distance: '5.1 km', specialties: ['Body', 'Paint', 'Expert'], response: '≈30 min', price: '₺800–2,000', status: 'ONLINE', city: 'Samsun / İlkadım' },
-        { name: 'Tuğrul Tire Center', rating: 4.7, reviews: 234, distance: '1.8 km', specialties: ['Tires', 'Rims', 'Balancing'], response: '≈10 min', price: '₺200–500', status: 'BUSY', city: 'Samsun / Canik' },
+        { num: '01', title: 'Verified Mechanics', desc: 'Every mechanic passes identity and certification verification.' },
+        { num: '02', title: 'Transparent Pricing', desc: 'No hidden fees. Know the price before the job starts.' },
+        { num: '03', title: 'Real Reviews', desc: 'All reviews are written after real services. Cannot be manipulated.' },
+        { num: '04', title: 'Fast Response', desc: 'Get your first quote in an average of 15 minutes.' },
+        { num: '05', title: 'Location Matching', desc: 'Automatically matched with the nearest and best mechanics in your area.' },
+        { num: '06', title: 'Secure Agreement', desc: 'Transparent price agreement through the platform. No surprise bills.' },
       ]
 
   const steps = tr
@@ -245,348 +164,302 @@ export default function Home() {
         { num: '03', title: 'Get It Fixed', desc: 'Book with one click. Track the job and confirm when done.' },
       ]
 
-  const features = tr
-    ? [
-        { icon: Shield, title: 'Doğrulanmış Ustalar', desc: 'Her usta kimlik ve belge doğrulamasından geçiyor. Güvenli hizmet garantisi.' },
-        { icon: CheckCircle, title: 'Şeffaf Fiyatlandırma', desc: 'Gizli ücret yok. İş başlamadan önce fiyatı bilirsin.' },
-        { icon: Star, title: 'Gerçek Yorumlar', desc: 'Tüm yorumlar gerçek hizmet sonrası yazılıyor. Manipüle edilemez.' },
-        { icon: Clock, title: 'Hızlı Yanıt', desc: 'Ortalama 15 dakikada ilk teklifini al. Vakit kaybetme.' },
-      ]
-    : [
-        { icon: Shield, title: 'Verified Mechanics', desc: 'Every mechanic passes identity and certification verification.' },
-        { icon: CheckCircle, title: 'Transparent Pricing', desc: 'No hidden fees. Know the price before the job starts.' },
-        { icon: Star, title: 'Real Reviews', desc: 'All reviews are written after real services. Cannot be manipulated.' },
-        { icon: Clock, title: 'Fast Response', desc: 'Get your first quote in an average of 15 minutes.' },
-      ]
-
   const plans = [
     {
+      key: 'free',
       name: tr ? 'Ücretsiz' : 'Free',
       price: '₺0',
       period: tr ? '/ ay' : '/ mo',
+      for: tr ? 'ARAÇ SAHİBİ & USTA' : 'OWNER & MECHANIC',
       features: tr
-        ? ['Profil oluştur', '5 randevu / ay', 'Temel özellikler']
-        : ['Create profile', '5 appointments / mo', 'Basic features'],
-      accent: 'border-zinc-800',
-      popular: false,
+        ? ['Profil oluştur', '5 randevu / ay', 'Temel özellikler', 'İlan görüntüleme']
+        : ['Create profile', '5 appointments / mo', 'Basic features', 'View listings'],
+      borderColor: '#1a1a1a',
+      featured: false,
       cta: tr ? 'Başla' : 'Get Started',
-      to: '/register',
     },
     {
-      name: 'Pro',
+      key: 'turbo',
+      name: 'Turbo',
       price: '₺80',
       period: tr ? '/ ay' : '/ mo',
+      for: tr ? 'USTA' : 'MECHANIC',
       features: tr
-        ? ["Ücretsiz'in her şeyi", 'Sınırsız randevu', 'Öncelikli listeleme', 'Analitik', 'Onaylı rozet']
-        : ['Everything in Free', 'Unlimited appointments', 'Priority listing', 'Analytics', 'Verified badge'],
-      accent: 'border-brand-500/50',
-      popular: true,
-      cta: tr ? "Pro'ya Geç" : 'Get Pro',
-      to: '/register',
+        ? ["Ücretsiz'in her şeyi", 'Sınırsız randevu', 'Öncelikli listeleme', 'Analitik & İstatistik', '⚡ Turbo rozeti']
+        : ["Everything in Free", 'Unlimited appointments', 'Priority listing', 'Analytics', '⚡ Turbo badge'],
+      borderColor: '#ff6b00',
+      featured: true,
+      cta: tr ? 'Turbo\'ya Geç' : 'Get Turbo',
     },
     {
-      name: 'Turbo',
+      key: 'elite',
+      name: 'Elite',
       price: '₺200',
       period: tr ? '/ ay' : '/ mo',
+      for: tr ? 'USTA' : 'MECHANIC',
       features: tr
-        ? ["Pro'nun her şeyi", 'Spotlight listeleme', 'Öncelikli destek', 'Özel rozet']
-        : ["Everything in Pro", 'Spotlight listing', 'Priority support', 'Custom badge'],
-      accent: 'border-orange-500/40',
-      popular: false,
-      cta: tr ? "Turbo'ya Geç" : 'Get Turbo',
-      to: '/register',
+        ? ["Turbo'nun her şeyi", 'Spotlight listeleme', 'Öncelikli destek', '✦ Elite rozeti', 'Özel profil tasarımı']
+        : ["Everything in Turbo", 'Spotlight listing', 'Priority support', '✦ Elite badge', 'Custom profile design'],
+      borderColor: '#8b5cf6',
+      featured: false,
+      cta: tr ? "Elite'e Geç" : 'Get Elite',
     },
   ]
 
-  const faqItems = tr
-    ? [
-        { q: 'Torqvia nasıl çalışır?', a: 'Araç sorununu ilan olarak paylaşırsın, bölgendeki doğrulanmış ustalar sana teklif gönderir. Teklifleri karşılaştırıp uygun olanı seçersin, usta işe gelir.' },
-        { q: 'Servis ücretleri nasıl belirleniyor?', a: 'Ücretler ustalar tarafından belirlenir. Platform üzerinden şeffaf teklifler alırsın. Gizli ücret veya platform komisyonu yoktur.' },
-        { q: 'Ustaları nasıl doğruluyorsunuz?', a: 'Her servis uzmanı kayıt sırasında kimlik ve belge doğrulamasından geçiyor. Ek olarak kullanıcı yorumları sürekli izleniyor.' },
-        { q: 'Sorun yaşarsam ne olur?', a: 'Bir anlaşmazlık durumunda destek ekibimiz 24 saat içinde devreye girer. Kullanıcı memnuniyeti her şeyden önce gelir.' },
-        { q: 'Torqvia hangi şehirlerde hizmet veriyor?', a: "Şu an Samsun'da aktif olarak hizmet veriyoruz. Yakında Türkiye'nin diğer şehirlerine de genişliyoruz." },
-      ]
-    : [
-        { q: 'How does Torqvia work?', a: 'You post your car problem as a listing, and verified mechanics in your area send you quotes. You compare offers and choose the best one.' },
-        { q: 'How are service fees determined?', a: 'Fees are set by the mechanics themselves. You receive transparent quotes through the platform. No hidden fees or commissions.' },
-        { q: 'How do you verify mechanics?', a: 'Every service professional goes through identity and certification verification at registration. User reviews are also continuously monitored.' },
-        { q: 'What happens if something goes wrong?', a: 'In case of a dispute, our support team steps in within 24 hours. User satisfaction is our priority.' },
-        { q: 'Which cities does Torqvia serve?', a: 'We are currently active in Samsun. We are expanding to other cities in Turkey soon.' },
-      ]
-
-  const stats = tr
-    ? [
-        { num: '2.847', label: 'AKTİF USTA' },
-        { num: '1.203', label: 'BUGÜNKÜ İŞ' },
-        { num: '4.7★', label: 'ORT. PUAN' },
-        { num: '%99.9', label: 'ÇALIŞMA SÜRESİ' },
-      ]
-    : [
-        { num: '2,847', label: 'ACTIVE MECHANICS' },
-        { num: '1,203', label: 'JOBS TODAY' },
-        { num: '4.7★', label: 'AVG RATING' },
-        { num: '99.9%', label: 'UPTIME' },
-      ]
-
-  const proFeatures = tr
-    ? [
-        'Aylık yüzlerce açık ilana ulaş',
-        'Profilini ve çalışmalarını sergile',
-        'Hedefli teklifler gönder',
-        "Turbo ile sınırsız teklif gönder",
-      ]
-    : [
-        'Access hundreds of open listings monthly',
-        'Showcase your profile and work samples',
-        'Send targeted offers',
-        'Upgrade to Turbo for unlimited offers',
-      ]
-
   return (
-    <div>
-      <HomeBackground />
-      {/* ── Ticker Bar ── */}
+    <div style={{ background: '#080808', minHeight: '100vh' }}>
+      {/* ── Ticker ── */}
       <TickerBar lang={lang} />
 
       {/* ── Hero ── */}
-      <section className="text-center py-10 sm:py-14">
-        <div className="max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 mb-5 px-3 py-1.5 rounded-full bg-zinc-900/80 border border-zinc-800 text-[11px] font-mono text-zinc-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            {tr ? "SAMSUN'DA #1 OTO SERVİS PLATFORMU" : '#1 AUTO SERVICE PLATFORM IN SAMSUN'}
-          </div>
+      <section className="-mx-3 sm:-mx-6 lg:-mx-8" style={{ padding: '64px 0 72px', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center' }}
+          className="flex-col-mobile">
+          {/* Left */}
+          <div>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 20,
+              padding: '6px 14px', borderRadius: 99,
+              background: 'rgba(255,107,0,0.08)', border: '1px solid rgba(255,107,0,0.2)',
+              fontFamily: 'monospace', fontSize: 11, color: '#888', letterSpacing: '0.12em',
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
+              {tr ? "SAMSUN'DA #1 OTO SERVİS PLATFORMU" : '#1 AUTO SERVICE PLATFORM IN SAMSUN'}
+            </div>
 
-          <h1 className="text-4xl sm:text-6xl font-black text-white mb-5 leading-[1.08] tracking-tight">
-            {tr ? (
-              <>Güvenilir bir<br /><span className="text-brand-400">usta bul</span></>
-            ) : (
-              <>Find a mechanic<br /><span className="text-brand-400">you can trust</span></>
-            )}
-          </h1>
+            <h1 style={{ fontSize: 'clamp(36px, 5vw, 64px)', fontWeight: 900, lineHeight: 1.07, letterSpacing: '-0.02em', color: '#f0f0f0', marginBottom: 20 }}>
+              {tr ? (
+                <>
+                  Aracın için<br />
+                  güvenilir usta<br />
+                  <span style={{ color: '#ff6b00', animation: 'glitch-text 7s ease-in-out infinite', display: 'inline-block' }}>anında bul</span>
+                </>
+              ) : (
+                <>
+                  Find a trusted<br />
+                  mechanic for<br />
+                  <span style={{ color: '#ff6b00', animation: 'glitch-text 7s ease-in-out infinite', display: 'inline-block' }}>your car now</span>
+                </>
+              )}
+            </h1>
 
-          <p className="text-zinc-400 text-base sm:text-lg mb-8 max-w-xl mx-auto leading-relaxed">
-            {tr
-              ? 'Araç sorununu anlat, bölgenizdeki doğrulanmış ustalarla eşleş, fiyatları karşılaştır ve rezervasyon yap — 2 dakikadan az sürede.'
-              : 'Describe your car problem, get matched with nearby verified mechanics, compare transparent prices, and book — all in under 2 minutes.'}
-          </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            {user ? (
-              <Link to="/feed" className="btn-primary flex items-center gap-2 text-base px-6 py-3">
-                {tr ? 'Akışa Git' : 'Go to Feed'}
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            ) : (
-              <>
-                <Link to="/register?role=owner" className="btn-primary flex items-center gap-2 text-base px-6 py-3">
-                  {tr ? 'Servis Talep Et' : 'Request Service'}
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-                <a href="#how-it-works" className="btn-secondary text-base px-6 py-3">
-                  {tr ? 'Nasıl Çalışır →' : 'See how it works →'}
-                </a>
-              </>
-            )}
-          </div>
-
-          {!user && (
-            <p className="mt-4 text-sm text-zinc-600">
-              {tr ? 'Hesabın var mı?' : 'Already have an account?'}{' '}
-              <Link to="/login" className="text-brand-400 hover:text-brand-300 transition-colors">
-                {tr ? 'Giriş yap' : 'Sign in'}
-              </Link>
+            <p style={{ color: '#888', fontSize: 16, lineHeight: 1.65, marginBottom: 32, maxWidth: 480 }}>
+              {tr
+                ? 'Araç sorununu anlat, doğrulanmış ustalarla eşleş, fiyatları karşılaştır ve rezervasyon yap — 2 dakikadan az sürede.'
+                : 'Describe your car problem, match with verified mechanics, compare prices and book — all in under 2 minutes.'}
             </p>
-          )}
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+              {user ? (
+                <Link to="/dashboard" style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 28px',
+                  borderRadius: 10, background: '#ff6b00', color: '#fff', fontWeight: 700, fontSize: 15,
+                  textDecoration: 'none', boxShadow: '0 4px 24px rgba(255,107,0,0.35)',
+                }}>
+                  {tr ? 'Dashboard\'a Git' : 'Go to Dashboard'} <ArrowRight size={16} />
+                </Link>
+              ) : (
+                <>
+                  <Link to="/register?role=owner" style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 28px',
+                    borderRadius: 10, background: '#ff6b00', color: '#fff', fontWeight: 700, fontSize: 15,
+                    textDecoration: 'none', boxShadow: '0 4px 24px rgba(255,107,0,0.35)',
+                  }}>
+                    {tr ? 'Ücretsiz Başla' : 'Start Free'} <ArrowRight size={16} />
+                  </Link>
+                  <a href="#how-it-works" style={{
+                    display: 'inline-flex', alignItems: 'center', padding: '13px 24px',
+                    borderRadius: 10, border: '1px solid #1a1a1a', color: '#888',
+                    fontWeight: 600, fontSize: 15, textDecoration: 'none',
+                    background: 'rgba(255,255,255,0.02)',
+                  }}>
+                    {tr ? 'Nasıl Çalışır →' : 'How it works →'}
+                  </a>
+                </>
+              )}
+            </div>
+
+            {!user && (
+              <p style={{ marginTop: 16, fontSize: 13, color: '#444' }}>
+                {tr ? 'Hesabın var mı?' : 'Already have an account?'}{' '}
+                <Link to="/login" style={{ color: '#ff6b00', textDecoration: 'none' }}>
+                  {tr ? 'Giriş yap' : 'Sign in'}
+                </Link>
+              </p>
+            )}
+          </div>
+
+          {/* Right — canvas + match card */}
+          <div style={{ position: 'relative', height: 420, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            className="hidden-on-mobile">
+            <div style={{ position: 'absolute', inset: 0, borderRadius: 20, overflow: 'hidden', border: '1px solid #141414' }}>
+              <div style={{ position: 'absolute', inset: 0, background: '#080808' }}>
+                <ParticleCanvas />
+              </div>
+              <div style={{
+                position: 'absolute', inset: 0,
+                background: 'radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(8,8,8,0.7) 100%)',
+              }} />
+            </div>
+            <div style={{ position: 'relative', zIndex: 2, padding: 24 }}>
+              <LiveMatchCard lang={lang} />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Features 3x2 grid ── */}
+      <section style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px' }} className="-mx-3 sm:mx-0">
+        <p style={{ fontFamily: 'monospace', fontSize: 11, color: '#444', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 10 }}>
+          {tr ? '// NEDEN TORQVIA' : '// WHY TORQVIA'}
+        </p>
+        <h2 style={{ fontSize: 28, fontWeight: 800, color: '#f0f0f0', marginBottom: 40 }}>
+          {tr ? 'Her şey düşünüldü' : 'Everything considered'}
+        </h2>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', border: '1px solid #141414', borderRadius: 16, overflow: 'hidden' }}
+          className="features-grid">
+          {features.map((f, i) => (
+            <div key={f.num} style={{
+              padding: '28px 24px',
+              borderRight: (i + 1) % 3 !== 0 ? '1px solid #141414' : 'none',
+              borderBottom: i < 3 ? '1px solid #141414' : 'none',
+              background: '#0b0b0b',
+            }}>
+              <div style={{ fontFamily: 'monospace', fontSize: 28, fontWeight: 900, color: '#1a1a1a', marginBottom: 12, lineHeight: 1 }}>
+                {f.num}
+              </div>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#f0f0f0', marginBottom: 8 }}>{f.title}</h3>
+              <p style={{ fontSize: 13, color: '#888', lineHeight: 1.6 }}>{f.desc}</p>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* ── How It Works ── */}
-      <section id="how-it-works" className="py-16 border-t border-zinc-900">
-        <SectionLabel text={tr ? '// NASIL ÇALIŞIR' : '// HOW IT WORKS'} />
-        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-12">
-          {tr ? 'Üç adımda çözüme kavuş' : 'Three steps to a fixed car'}
-        </h2>
-
-        <div className="grid sm:grid-cols-3 gap-8">
-          {steps.map((step, i) => (
-            <div key={step.num} className="relative">
-              <div className="text-7xl font-black text-zinc-900 leading-none mb-4 select-none tabular-nums">
-                {step.num}
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">{step.title}</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed">{step.desc}</p>
-              {i < steps.length - 1 && (
-                <div className="hidden sm:block absolute top-8 -right-4 text-zinc-800 text-xl font-light pointer-events-none">
-                  →
+      <section id="how-it-works" style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px' }}>
+        <div style={{ borderTop: '2px solid #ff6b00', paddingTop: 40 }}>
+          <p style={{ fontFamily: 'monospace', fontSize: 11, color: '#ff6b00', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 10 }}>
+            {tr ? '// NASIL ÇALIŞIR' : '// HOW IT WORKS'}
+          </p>
+          <h2 style={{ fontSize: 28, fontWeight: 800, color: '#f0f0f0', marginBottom: 48 }}>
+            {tr ? 'Üç adımda çözüme kavuş' : 'Three steps to a fixed car'}
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32 }} className="steps-grid">
+            {steps.map((step, i) => (
+              <div key={step.num} style={{ position: 'relative' }}>
+                <div style={{ fontSize: 64, fontWeight: 900, color: '#141414', lineHeight: 1, marginBottom: 16, fontFamily: 'monospace' }}>
+                  {step.num}
                 </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Live Mechanics ── */}
-      <section className="py-16 border-t border-zinc-900">
-        <div className="flex items-end justify-between mb-10">
-          <div>
-            <SectionLabel text={tr ? '// CANLI USTALAR' : '// LIVE MECHANICS'} />
-            <h2 className="text-2xl sm:text-3xl font-bold text-white">
-              {tr ? 'Bölgende aktif ustalar' : 'Active mechanics near you'}
-            </h2>
-          </div>
-          {!user && (
-            <Link
-              to="/register"
-              className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors hidden sm:flex items-center gap-1"
-            >
-              {tr ? 'Tümünü Gör →' : 'View All →'}
-            </Link>
-          )}
-        </div>
-
-        <div className="grid sm:grid-cols-3 gap-5">
-          {mechanics.map((m, i) => (
-            <MechanicCard key={i} {...m} lang={lang} />
-          ))}
-        </div>
-      </section>
-
-      {/* ── Trust & Transparency ── */}
-      <section className="py-16 border-t border-zinc-900">
-        <SectionLabel text={tr ? '// GÜVEN & ŞEFFAFLIK' : '// TRUST & TRANSPARENCY'} />
-        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-10">
-          {tr ? 'Neden Torqvia?' : 'Why Torqvia?'}
-        </h2>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {features.map(({ icon: Icon, title, desc }) => (
-            <div
-              key={title}
-              className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors"
-            >
-              <div className="w-10 h-10 rounded-lg bg-brand-500/10 flex items-center justify-center mb-4">
-                <Icon className="h-5 w-5 text-brand-400" />
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#f0f0f0', marginBottom: 10 }}>{step.title}</h3>
+                <p style={{ fontSize: 14, color: '#888', lineHeight: 1.65 }}>{step.desc}</p>
+                {i < 2 && (
+                  <div style={{
+                    display: 'none',
+                  }} className="step-arrow">→</div>
+                )}
               </div>
-              <h3 className="font-semibold text-white text-sm mb-2">{title}</h3>
-              <p className="text-zinc-500 text-xs leading-relaxed">{desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── For Service Professionals ── */}
-      <section className="py-16 border-t border-zinc-900">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div>
-            <SectionLabel text={tr ? '// SERVİS UZMANLARI İÇİN' : '// FOR SERVICE PROFESSIONALS'} />
-            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">
-              {tr ? 'Müşteri tabanını büyüt' : 'Grow your customer base'}
-            </h2>
-            <p className="text-zinc-400 text-sm leading-relaxed mb-6">
-              {tr
-                ? '10 dükkan aramaktan bıktın mı? Torqvia ile müşteriler seni bulur. Her gün yüzlerce araç sahibi usta arıyor.'
-                : 'Tired of hunting for customers? With Torqvia, customers find you. Hundreds of car owners search for mechanics every day.'}
-            </p>
-            <ul className="space-y-2.5 mb-8">
-              {proFeatures.map(item => (
-                <li key={item} className="flex items-center gap-2.5 text-sm text-zinc-300">
-                  <CheckCircle className="h-4 w-4 text-brand-400 shrink-0" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-            <Link to="/register?role=pro" className="btn-secondary inline-flex items-center gap-2">
-              <Wrench className="h-4 w-4" />
-              {tr ? 'Usta Olarak Başvur →' : 'Apply as a Professional →'}
-            </Link>
-          </div>
-
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-8">
-            <div className="grid grid-cols-2 gap-4">
-              {stats.map(({ num, label }) => (
-                <div key={label} className="text-center p-4 bg-zinc-900 border border-zinc-800 rounded-xl">
-                  <div className="text-2xl font-black text-white mb-1">{num}</div>
-                  <div className="text-[10px] text-zinc-600 font-mono tracking-wider">{label}</div>
-                </div>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ── Pricing ── */}
-      <section id="pricing" className="py-16 border-t border-zinc-900">
-        <div className="text-center mb-10">
-          <SectionLabel text={tr ? '// ÜYELİK PLANLARI' : '// MEMBERSHIP PLANS'} />
-          <h2 className="text-2xl sm:text-3xl font-bold text-white">
+      <section id="pricing" style={{ maxWidth: 1280, margin: '0 auto', padding: '64px 24px' }}>
+        <div style={{ textAlign: 'center', marginBottom: 48 }}>
+          <p style={{ fontFamily: 'monospace', fontSize: 11, color: '#444', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 10 }}>
+            {tr ? '// ÜYELİK PLANLARI' : '// MEMBERSHIP PLANS'}
+          </p>
+          <h2 style={{ fontSize: 28, fontWeight: 800, color: '#f0f0f0' }}>
             {tr ? 'Sana uygun planı seç' : 'Choose the plan that fits you'}
           </h2>
         </div>
 
-        <div className="grid sm:grid-cols-3 gap-5 max-w-4xl mx-auto">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, maxWidth: 900, margin: '0 auto' }} className="plans-grid">
           {plans.map(plan => (
-            <div
-              key={plan.name}
-              className={`relative bg-zinc-900 border ${plan.accent} rounded-2xl p-6 flex flex-col transition-colors ${
-                plan.popular ? 'scale-[1.03]' : ''
-              }`}
-            >
-              {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="text-[10px] font-bold bg-brand-500 text-white px-3 py-1 rounded-full whitespace-nowrap">
-                    {tr ? 'EN POPÜLER' : 'MOST POPULAR'}
-                  </span>
+            <div key={plan.key} style={{
+              position: 'relative',
+              background: '#0b0b0b',
+              border: `1px solid ${plan.borderColor}`,
+              borderRadius: 16,
+              padding: '28px 24px',
+              display: 'flex',
+              flexDirection: 'column',
+              transform: plan.featured ? 'scale(1.04)' : 'none',
+              boxShadow: plan.featured ? `0 0 40px rgba(255,107,0,0.12)` : 'none',
+            }}>
+              {plan.featured && (
+                <div style={{
+                  position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)',
+                  background: '#ff6b00', color: '#fff', fontSize: 10, fontWeight: 700,
+                  padding: '4px 14px', borderRadius: 99, letterSpacing: '0.1em', whiteSpace: 'nowrap',
+                }}>
+                  {tr ? '⚡ EN POPÜLER' : '⚡ MOST POPULAR'}
                 </div>
               )}
-              <h3 className="text-lg font-bold text-white mb-1">{plan.name}</h3>
-              <div className="flex items-end gap-1 mb-5">
-                <span className="text-3xl font-black text-white">{plan.price}</span>
-                <span className="text-zinc-500 text-sm mb-0.5">{plan.period}</span>
+
+              {/* For who */}
+              <div style={{ fontFamily: 'monospace', fontSize: 9, color: '#444', letterSpacing: '0.18em', marginBottom: 16 }}>
+                {plan.for}
               </div>
-              <ul className="space-y-2 flex-1 mb-6">
+
+              <h3 style={{ fontSize: 20, fontWeight: 800, color: '#f0f0f0', marginBottom: 4 }}>{plan.name}</h3>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, marginBottom: 20 }}>
+                <span style={{ fontSize: 36, fontWeight: 900, color: '#f0f0f0' }}>{plan.price}</span>
+                <span style={{ fontSize: 13, color: '#444', marginBottom: 4 }}>{plan.period}</span>
+              </div>
+
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', flex: 1 }}>
                 {plan.features.map(f => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-zinc-300">
-                    <CheckCircle className="h-3.5 w-3.5 text-brand-400 shrink-0" />
+                  <li key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#888', marginBottom: 8 }}>
+                    <CheckCircle size={13} style={{ color: plan.featured ? '#ff6b00' : plan.key === 'elite' ? '#8b5cf6' : '#444', flexShrink: 0 }} />
                     {f}
                   </li>
                 ))}
               </ul>
-              <Link
-                to={user ? '/pricing' : plan.to}
-                className={`text-center text-sm font-semibold py-2.5 rounded-xl transition-colors ${
-                  plan.popular
-                    ? 'bg-brand-500 text-white hover:bg-brand-600'
-                    : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 border border-zinc-700'
-                }`}
-              >
+
+              <Link to={user ? '/pricing' : '/register'} style={{
+                display: 'block', textAlign: 'center', padding: '11px 0', borderRadius: 10,
+                fontSize: 14, fontWeight: 700, textDecoration: 'none',
+                background: plan.featured ? '#ff6b00' : plan.key === 'elite' ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.04)',
+                color: plan.featured ? '#fff' : plan.key === 'elite' ? '#a78bfa' : '#888',
+                border: `1px solid ${plan.featured ? '#ff6b00' : plan.key === 'elite' ? 'rgba(139,92,246,0.4)' : '#1a1a1a'}`,
+              }}>
                 {plan.cta}
               </Link>
             </div>
           ))}
         </div>
 
-        <div className="text-center mt-6">
-          <Link to="/pricing" className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">
+        <div style={{ textAlign: 'center', marginTop: 24 }}>
+          <Link to="/pricing" style={{ fontSize: 13, color: '#444', textDecoration: 'none' }}>
             {tr ? 'Tüm plan detaylarını gör →' : 'See all plan details →'}
           </Link>
         </div>
       </section>
 
-      {/* ── FAQ ── */}
-      <section id="faq" className="py-16 border-t border-zinc-900 max-w-2xl">
-        <SectionLabel text={tr ? '// SSS' : '// FAQ'} />
-        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-8">
-          {tr ? 'Sık Sorulan Sorular' : 'Frequently Asked Questions'}
-        </h2>
+      {/* ── Footer minimal ── */}
+      <footer style={{ borderTop: '1px solid #141414', padding: '24px', textAlign: 'center', maxWidth: 1280, margin: '0 auto' }}>
+        <p style={{ fontSize: 12, color: '#333', fontFamily: 'monospace' }}>
+          © 2025 Torqvia · {tr ? 'Samsun\'un Oto Servis Platformu' : "Samsun's Auto Service Platform"} ·{' '}
+          <Link to="/terms" style={{ color: '#444', textDecoration: 'none' }}>{tr ? 'Şartlar' : 'Terms'}</Link>
+          {' · '}
+          <Link to="/privacy" style={{ color: '#444', textDecoration: 'none' }}>{tr ? 'Gizlilik' : 'Privacy'}</Link>
+        </p>
+      </footer>
 
-        <div className="border border-zinc-900 rounded-xl overflow-hidden">
-          {faqItems.map((item, i) => (
-            <div key={i} className="px-5">
-              <FAQItem {...item} />
-            </div>
-          ))}
-        </div>
-      </section>
+      <style>{`
+        @media (max-width: 768px) {
+          .flex-col-mobile { grid-template-columns: 1fr !important; }
+          .hidden-on-mobile { display: none !important; }
+          .features-grid { grid-template-columns: 1fr !important; }
+          .steps-grid { grid-template-columns: 1fr !important; }
+          .plans-grid { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 768px) {
+          .features-grid > div { border-right: none !important; }
+        }
+      `}</style>
     </div>
   )
 }

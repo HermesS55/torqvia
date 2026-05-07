@@ -64,6 +64,39 @@
   85%  { opacity: 0.6; }
   100% { transform: translateY(-50px) translateX(var(--px, 10px)); opacity: 0; }
 }
+@keyframes glitch-text {
+  0%, 85%, 100% { text-shadow: none; transform: none; }
+  87% { text-shadow: 2px 0 rgba(255,0,60,0.9), -2px 0 rgba(0,200,255,0.9); transform: translateX(-2px); }
+  89% { text-shadow: -3px 0 rgba(255,0,60,0.9), 3px 0 rgba(0,200,255,0.9); transform: translateX(3px); }
+  91% { text-shadow: 2px 0 rgba(255,0,60,0.6), -2px 0 rgba(0,200,255,0.6); transform: translateX(-1px); }
+  93% { text-shadow: none; transform: none; }
+  95% { text-shadow: 1px 0 rgba(255,107,0,0.6); transform: translateX(1px); }
+  97% { text-shadow: none; transform: none; }
+}
+@keyframes spin-ring-cw {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes spin-ring-ccw {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+}
+@keyframes pulse-outer-ring {
+  0%, 100% { transform: scale(1); opacity: 0.45; }
+  50%       { transform: scale(1.07); opacity: 1; }
+}
+@keyframes badge-turbo-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(255,107,0,0.45); }
+  50%       { box-shadow: 0 0 22px rgba(255,107,0,0.9), 0 0 44px rgba(255,107,0,0.3); }
+}
+@keyframes badge-elite-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(139,92,246,0.45); }
+  50%       { box-shadow: 0 0 22px rgba(139,92,246,0.9), 0 0 44px rgba(196,160,0,0.3); }
+}
+@keyframes shimmer-sweep {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
 
 /* ── Leaflet dark theme ─────────────────────────────────── */
 .leaflet-container {

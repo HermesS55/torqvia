@@ -1,48 +1,114 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import {
-  Car, Send, Clock, CheckCircle2, PlusCircle, Eye,
-  CalendarCheck, Wrench, TrendingUp, XCircle,
+  LayoutDashboard, Calendar, MessageCircle, TrendingUp,
+  User, Settings, Zap, Bell, Plus, Car, Search,
+  CheckCircle2, Clock, Send, Wrench, MapPin,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import Spinner from '../components/ui/Spinner'
-import EmptyState from '../components/ui/EmptyState'
+import UserAvatar from '../components/ui/UserAvatar'
 import { useMeta } from '../hooks/useMeta'
 
 const STATUS_LABELS = {
-  pending:   { label: 'Beklemede',    cls: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
-  accepted:  { label: 'Kabul Edildi', cls: 'text-green-400 bg-green-500/10 border-green-500/30' },
-  rejected:  { label: 'Reddedildi',  cls: 'text-red-400 bg-red-500/10 border-red-500/30' },
-  completed: { label: 'Tamamlandı',  cls: 'text-blue-400 bg-blue-500/10 border-blue-500/30' },
+  pending:   { label: 'Beklemede',    color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.25)' },
+  accepted:  { label: 'Kabul Edildi', color: '#22c55e', bg: 'rgba(34,197,94,0.1)',  border: 'rgba(34,197,94,0.25)' },
+  rejected:  { label: 'Reddedildi',  color: '#ef4444', bg: 'rgba(239,68,68,0.1)',   border: 'rgba(239,68,68,0.25)' },
+  completed: { label: 'Tamamlandı',  color: '#3b82f6', bg: 'rgba(59,130,246,0.1)', border: 'rgba(59,130,246,0.25)' },
+  in_progress: { label: 'Devam Ediyor', color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)', border: 'rgba(139,92,246,0.25)' },
 }
 
-function StatCard({ icon: Icon, label, value, color }) {
+const MONTH_LABELS = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara']
+
+function StatusBadge({ status }) {
+  const s = STATUS_LABELS[status] || STATUS_LABELS.pending
   return (
-    <div className="card flex items-center gap-4">
-      <div className={`p-3 rounded-xl ${color}`}>
-        <Icon className="h-5 w-5" />
+    <span style={{
+      fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 99,
+      color: s.color, background: s.bg, border: `1px solid ${s.border}`,
+    }}>
+      {s.label}
+    </span>
+  )
+}
+
+function MetricCard({ label, value, sub, accent = '#ff6b00' }) {
+  return (
+    <div style={{
+      background: '#0b0b0b', border: '1px solid #141414', borderRadius: 12,
+      padding: '20px 20px 16px',
+    }}>
+      <p style={{ fontFamily: 'monospace', fontSize: 9, color: '#444', textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: 12 }}>
+        {label}
+      </p>
+      <div style={{ fontSize: 28, fontWeight: 900, color: '#f0f0f0', lineHeight: 1 }}>{value}</div>
+      {sub && <div style={{ fontSize: 12, color: '#555', marginTop: 6 }}>{sub}</div>}
+    </div>
+  )
+}
+
+function RevenueChart({ offers }) {
+  const now = new Date()
+  const data = MONTH_LABELS.map((m, i) => {
+    const monthOffers = offers.filter(o => {
+      if (o.status !== 'completed') return false
+      const d = new Date(o.appointment_date || o.created_at)
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === i
+    })
+    const total = monthOffers.reduce((s, o) => s + Number(o.price || 0), 0)
+    return { month: m, value: total }
+  })
+  const max = Math.max(...data.map(d => d.value), 1)
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 80 }}>
+        {data.map((d, i) => (
+          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, height: '100%', justifyContent: 'flex-end' }}>
+            <div style={{
+              width: '100%',
+              height: `${Math.max((d.value / max) * 100, 4)}%`,
+              background: 'linear-gradient(to top, #ff6b00, #ff8c33)',
+              borderRadius: '2px 2px 0 0',
+              transition: 'height 0.5s ease',
+              minHeight: 4,
+            }} />
+          </div>
+        ))}
       </div>
-      <div>
-        <div className="text-2xl font-bold text-white">{value}</div>
-        <div className="text-xs text-zinc-500">{label}</div>
+      <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+        {data.map((d, i) => (
+          <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: 8, color: '#333', fontFamily: 'monospace' }}>
+            {d.month}
+          </div>
+        ))}
       </div>
     </div>
   )
 }
 
-function StatusBadge({ status }) {
-  const s = STATUS_LABELS[status] || STATUS_LABELS.pending
+function SidebarItem({ icon: Icon, label, to, active }) {
   return (
-    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${s.cls}`}>
-      {s.label}
-    </span>
+    <Link to={to} style={{
+      display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px',
+      borderLeft: `2px solid ${active ? '#ff6b00' : 'transparent'}`,
+      background: active ? 'rgba(255,107,0,0.07)' : 'transparent',
+      color: active ? '#ff6b00' : '#555',
+      textDecoration: 'none', borderRadius: '0 8px 8px 0',
+      transition: 'all 0.15s', fontSize: 14, fontWeight: active ? 600 : 400,
+    }}
+      onMouseOver={e => { if (!active) { e.currentTarget.style.color = '#888'; e.currentTarget.style.background = 'rgba(255,255,255,0.02)' } }}
+      onMouseOut={e => { if (!active) { e.currentTarget.style.color = '#555'; e.currentTarget.style.background = 'transparent' } }}>
+      <Icon size={16} style={{ flexShrink: 0 }} />
+      <span>{label}</span>
+    </Link>
   )
 }
 
 export default function Dashboard() {
   useMeta('Dashboard')
   const { user, profile, loading: authLoading } = useAuth()
+  const { pathname } = useLocation()
   const [listings, setListings] = useState([])
   const [offers, setOffers] = useState([])
   const [dataLoading, setDataLoading] = useState(false)
@@ -63,7 +129,6 @@ export default function Dashboard() {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
     setListings(myListings || [])
-
     const listingIds = (myListings || []).map(l => l.id)
     if (listingIds.length > 0) {
       const { data: incomingOffers } = await supabase
@@ -105,7 +170,6 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
   const pendingOffers   = offers.filter(o => o.status === 'pending')
   const acceptedOffers  = offers.filter(o => o.status === 'accepted')
   const completedOffers = offers.filter(o => o.status === 'completed')
-
   const upcomingAppointments = offers.filter(o =>
     o.appointment_date && new Date(o.appointment_date) > new Date()
   ).sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date))
@@ -114,235 +178,370 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
     day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
   })
 
+  const totalRevenue = completedOffers.reduce((s, o) => s + Number(o.price || 0), 0)
+
+  const proSidebarLinks = [
+    { icon: LayoutDashboard, label: 'Dashboard', to: '/dashboard' },
+    { icon: Calendar, label: 'Randevular', to: '/listings' },
+    { icon: MessageCircle, label: 'Mesajlar', to: '/messages' },
+    { icon: TrendingUp, label: 'Gelir & Analitik', to: '#' },
+    { icon: User, label: 'Profilim', to: `/profile/${user?.id}` },
+    { icon: Settings, label: 'Ayarlar', to: '/settings' },
+    { icon: Zap, label: 'Üyelik', to: '/pricing' },
+  ]
+
+  const ownerSidebarLinks = [
+    { icon: LayoutDashboard, label: 'Dashboard', to: '/dashboard' },
+    { icon: Search, label: 'Usta Ara', to: '/listings' },
+    { icon: Calendar, label: 'Randevularım', to: '#' },
+    { icon: MessageCircle, label: 'Mesajlar', to: '/messages' },
+    { icon: Car, label: 'Araçlarım', to: '/garage' },
+    { icon: User, label: 'Profilim', to: `/profile/${user?.id}` },
+    { icon: Settings, label: 'Ayarlar', to: '/settings' },
+  ]
+
+  const sidebarLinks = isOwner ? ownerSidebarLinks : proSidebarLinks
+
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <p className="text-zinc-500 text-sm mt-0.5">
-          {isOwner ? '🚗 Araç Sahibi' : '⚙️ Servis Uzmanı'} hesabı
-        </p>
+    <div className="-mx-3 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-8 -mb-20 md:-mb-8 flex"
+      style={{ minHeight: 'calc(100dvh - 64px)', background: '#080808' }}>
+
+      {/* ── Sidebar ── */}
+      <aside style={{
+        width: 240, flexShrink: 0,
+        background: '#0a0a0a', borderRight: '1px solid #141414',
+        display: 'flex', flexDirection: 'column',
+      }} className="hidden md:flex">
+        {/* Logo */}
+        <div style={{ padding: '20px 18px 16px', borderBottom: '1px solid #141414' }}>
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: '50%',
+              background: 'linear-gradient(135deg, #ff6b00, #c2410c)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 14, fontWeight: 900, color: '#fff',
+            }}>T</div>
+            <span style={{ fontSize: 16, fontWeight: 700, color: '#f0f0f0' }}>Torqvia</span>
+          </Link>
+        </div>
+
+        {/* Menu */}
+        <nav style={{ flex: 1, padding: '12px 0', overflowY: 'auto' }}>
+          {sidebarLinks.map(link => (
+            <SidebarItem
+              key={link.to}
+              icon={link.icon}
+              label={link.label}
+              to={link.to}
+              active={link.to === '/dashboard' && pathname === '/dashboard'}
+            />
+          ))}
+        </nav>
+
+        {/* User at bottom */}
+        <div style={{ padding: '14px 16px', borderTop: '1px solid #141414', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <UserAvatar profile={profile} size="sm" />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#f0f0f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {profile.full_name || 'Kullanıcı'}
+            </div>
+            <div style={{ fontSize: 11, color: '#444', marginTop: 1 }}>
+              {isOwner ? 'Araç Sahibi' : 'Servis Uzmanı'}
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* ── Main Content ── */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflowY: 'auto' }}>
+
+        {/* Topbar */}
+        <header style={{
+          padding: '16px 24px', borderBottom: '1px solid #141414',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: '#0a0a0a', position: 'sticky', top: 0, zIndex: 10,
+        }}>
+          <div>
+            <span style={{ fontFamily: 'monospace', fontSize: 10, color: '#444', letterSpacing: '0.18em', textTransform: 'uppercase' }}>
+              {isOwner ? `// HOŞ GELDİN, ${(profile.full_name || '').split(' ')[0].toUpperCase()}` : '// DASHBOARD'}
+            </span>
+            <h1 style={{ fontSize: 18, fontWeight: 800, color: '#f0f0f0', marginTop: 2 }}>
+              {isOwner ? 'Kontrol Paneli' : 'Servis Uzmanı Paneli'}
+            </h1>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button style={{
+              width: 36, height: 36, borderRadius: 8, border: '1px solid #1a1a1a',
+              background: '#0e0e0e', color: '#555', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Bell size={15} />
+            </button>
+            <Link to={isOwner ? '/listings/new' : '/listings'} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 16px',
+              borderRadius: 8, background: '#ff6b00', color: '#fff', fontWeight: 700,
+              fontSize: 13, textDecoration: 'none', letterSpacing: '0.02em',
+            }}>
+              <Plus size={14} />
+              {isOwner ? 'YENİ İLAN' : 'YENİ RANDEVU'}
+            </Link>
+          </div>
+        </header>
+
+        <div style={{ padding: '24px', flex: 1 }}>
+
+          {/* Owner search bar */}
+          {isOwner && (
+            <div style={{ display: 'flex', gap: 10, marginBottom: 28 }}>
+              <input
+                placeholder="Usta ara, hizmet ara..."
+                style={{
+                  flex: 1, background: '#0b0b0b', border: '1px solid #1a1a1a', borderRadius: 10,
+                  color: '#f0f0f0', fontSize: 14, padding: '12px 16px', outline: 'none',
+                }}
+                onFocus={e => { e.target.style.borderColor = '#ff6b00' }}
+                onBlur={e => { e.target.style.borderColor = '#1a1a1a' }}
+              />
+              <Link to="/listings" style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 20px',
+                borderRadius: 10, background: '#ff6b00', color: '#fff', fontWeight: 700,
+                fontSize: 14, textDecoration: 'none',
+              }}>
+                <Search size={14} /> ARA
+              </Link>
+            </div>
+          )}
+
+          {/* ── Metric cards ── */}
+          {isOwner ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 28 }} className="metrics-grid">
+              <MetricCard label="İlanlarım" value={listings.length} sub="Toplam ilan" />
+              <MetricCard label="Bekleyen Teklif" value={pendingOffers.length} sub="Onay bekliyor" />
+              <MetricCard label="Kabul Edilen" value={acceptedOffers.length} sub="Aktif" />
+              <MetricCard label="Tamamlanan" value={completedOffers.length} sub="Başarılı iş" />
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 28 }} className="metrics-grid">
+              <MetricCard label="Bu Ay Gelir" value={`₺${totalRevenue.toLocaleString('tr-TR')}`} sub="Tamamlanan işler" />
+              <MetricCard label="Randevular" value={offers.length} sub="Toplam teklif" />
+              <MetricCard label="Tamamlanan" value={completedOffers.length} sub="Başarılı iş" />
+              <MetricCard label="Kabul Bekliyor" value={pendingOffers.length} sub="Cevap bekleniyor" />
+            </div>
+          )}
+
+          {/* ── Main grid ── */}
+          {isOwner ? (
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 20 }} className="main-grid">
+              {/* Left: listings + appointments */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                  <p style={{ fontFamily: 'monospace', fontSize: 10, color: '#444', textTransform: 'uppercase', letterSpacing: '0.16em' }}>// ARAÇLARIM & İLANLAR</p>
+                  <Link to="/listings/new" style={{ fontSize: 12, color: '#ff6b00', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Plus size={12} /> Yeni
+                  </Link>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {listings.length === 0 ? (
+                    <div style={{ background: '#0b0b0b', border: '1px solid #141414', borderRadius: 10, padding: '24px', textAlign: 'center', color: '#444', fontSize: 13 }}>
+                      Henüz ilan yok.{' '}
+                      <Link to="/listings/new" style={{ color: '#ff6b00', textDecoration: 'none' }}>İlan oluştur →</Link>
+                    </div>
+                  ) : listings.slice(0, 5).map(l => (
+                    <Link key={l.id} to={`/listings/${l.id}`} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      background: '#0b0b0b', border: '1px solid #141414', borderRadius: 10,
+                      padding: '12px 16px', textDecoration: 'none',
+                    }}
+                      onMouseOver={e => { e.currentTarget.style.borderColor = '#1a1a1a' }}
+                      onMouseOut={e => { e.currentTarget.style.borderColor = '#141414' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(255,107,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Car size={16} style={{ color: '#ff6b00' }} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: '#f0f0f0' }}>{l.brand} {l.model}</div>
+                          <div style={{ fontSize: 11, color: '#444', marginTop: 2 }}>{l.offers?.[0]?.count || 0} teklif</div>
+                        </div>
+                      </div>
+                      <StatusBadge status={l.status || 'pending'} />
+                    </Link>
+                  ))}
+                </div>
+
+                {/* Upcoming appointments */}
+                {upcomingAppointments.length > 0 && (
+                  <div style={{ marginTop: 20 }}>
+                    <p style={{ fontFamily: 'monospace', fontSize: 10, color: '#444', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 12 }}>// YAKLAŞAN RANDEVULAR</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {upcomingAppointments.slice(0, 3).map(o => (
+                        <Link key={o.id} to={`/listings/${o.listing_id}`} style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          background: '#0b0b0b', border: '1px solid #141414', borderRadius: 10,
+                          padding: '12px 16px', textDecoration: 'none',
+                        }}>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: '#f0f0f0' }}>{o.listings?.brand} {o.listings?.model}</div>
+                            <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{o.profiles?.full_name}</div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#22c55e' }}>{fmtDate(o.appointment_date)}</div>
+                            <div style={{ fontSize: 11, color: '#ff6b00', marginTop: 2 }}>₺{Number(o.price).toLocaleString('tr-TR')}</div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Right: nearby mechanics + messages */}
+              <div>
+                <p style={{ fontFamily: 'monospace', fontSize: 10, color: '#444', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 14 }}>// YAKIN USTALAR</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+                  {[
+                    { name: 'Ahmet Oto Tamiri', city: 'Atakum', spec: 'Motor · Elektrik', rating: 4.9, online: true },
+                    { name: 'Tuğrul Lastik', city: 'Canik', spec: 'Lastik · Jant', rating: 4.7, online: true },
+                    { name: 'Mersin Kaporta', city: 'İlkadım', spec: 'Kaporta · Boya', rating: 4.8, online: false },
+                  ].map((m, i) => (
+                    <div key={i} style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      background: '#0b0b0b', border: '1px solid #141414', borderRadius: 10, padding: '12px 14px',
+                    }}>
+                      <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(255,107,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Wrench size={16} style={{ color: '#ff6b00' }} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#f0f0f0' }}>{m.name}</div>
+                        <div style={{ fontSize: 11, color: '#555', marginTop: 1 }}>{m.spec}</div>
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <div style={{ fontSize: 11, color: '#f59e0b', fontWeight: 700 }}>★{m.rating}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end', marginTop: 2 }}>
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: m.online ? '#22c55e' : '#555', display: 'inline-block' }} />
+                          <span style={{ fontSize: 10, color: '#444' }}>{m.city}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <p style={{ fontFamily: 'monospace', fontSize: 10, color: '#444', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 12 }}>// MESAJLAR</p>
+                <div style={{ background: '#0b0b0b', border: '1px solid #141414', borderRadius: 10, padding: '20px', textAlign: 'center', color: '#333', fontSize: 13 }}>
+                  <MessageCircle size={24} style={{ color: '#222', margin: '0 auto 8px' }} />
+                  <Link to="/messages" style={{ color: '#ff6b00', textDecoration: 'none', fontSize: 13 }}>Mesajlara git →</Link>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* PRO view */
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20 }} className="main-grid">
+              {/* Left: upcoming appointments */}
+              <div>
+                <p style={{ fontFamily: 'monospace', fontSize: 10, color: '#444', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 14 }}>// YAKLAŞAN RANDEVULAR</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {upcomingAppointments.length === 0 ? (
+                    <div style={{ background: '#0b0b0b', border: '1px solid #141414', borderRadius: 10, padding: '24px', textAlign: 'center', color: '#444', fontSize: 13 }}>
+                      Yaklaşan randevu yok.{' '}
+                      <Link to="/listings" style={{ color: '#ff6b00', textDecoration: 'none' }}>İlanlara göz at →</Link>
+                    </div>
+                  ) : upcomingAppointments.slice(0, 5).map(o => (
+                    <Link key={o.id} to={`/listings/${o.listing_id}`} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      background: '#0b0b0b', border: '1px solid #141414', borderRadius: 10,
+                      padding: '14px 16px', textDecoration: 'none',
+                    }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: '#f0f0f0' }}>{o.listings?.brand} {o.listings?.model}</div>
+                        <div style={{ fontSize: 12, color: '#ff6b00', fontWeight: 700, marginTop: 2 }}>₺{Number(o.price).toLocaleString('tr-TR')}</div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: '#22c55e' }}>{fmtDate(o.appointment_date)}</div>
+                        <StatusBadge status={o.status} />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+
+                {/* All offers */}
+                {offers.length > 0 && (
+                  <div style={{ marginTop: 20 }}>
+                    <p style={{ fontFamily: 'monospace', fontSize: 10, color: '#444', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 12 }}>// GÖNDERDİĞİM TEKLİFLER</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {offers.slice(0, 6).map(o => (
+                        <Link key={o.id} to={`/listings/${o.listing_id}`} style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          background: '#0b0b0b', border: '1px solid #141414', borderRadius: 10,
+                          padding: '12px 16px', textDecoration: 'none',
+                        }}>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: '#f0f0f0' }}>{o.listings?.brand} {o.listings?.model}</div>
+                            <div style={{ fontSize: 12, color: '#ff6b00', fontWeight: 700 }}>₺{Number(o.price).toLocaleString('tr-TR')}</div>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                            <StatusBadge status={o.status} />
+                            <span style={{ fontSize: 10, color: '#333' }}>{new Date(o.created_at).toLocaleDateString('tr-TR')}</span>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Right: messages + profile summary */}
+              <div>
+                <p style={{ fontFamily: 'monospace', fontSize: 10, color: '#444', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 12 }}>// MESAJLAR</p>
+                <div style={{ background: '#0b0b0b', border: '1px solid #141414', borderRadius: 10, padding: '20px', textAlign: 'center', color: '#333', marginBottom: 20 }}>
+                  <MessageCircle size={24} style={{ color: '#222', margin: '0 auto 8px' }} />
+                  <Link to="/messages" style={{ color: '#ff6b00', textDecoration: 'none', fontSize: 13 }}>Mesajlara git →</Link>
+                </div>
+
+                <p style={{ fontFamily: 'monospace', fontSize: 10, color: '#444', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 12 }}>// PROFİL ÖZETİ</p>
+                <div style={{ background: '#0b0b0b', border: '1px solid #141414', borderRadius: 10, padding: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+                    <UserAvatar profile={profile} size="md" />
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#f0f0f0' }}>{profile.full_name || 'Kullanıcı'}</div>
+                      <div style={{ fontSize: 11, color: '#555' }}>{profile.city || 'Konum belirtilmemiş'}</div>
+                    </div>
+                  </div>
+                  {profile.specialties?.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {profile.specialties.slice(0, 3).map(s => (
+                        <span key={s} style={{ fontSize: 10, padding: '3px 8px', borderRadius: 99, border: '1px solid #1a1a1a', color: '#555', background: '#0e0e0e' }}>{s}</span>
+                      ))}
+                    </div>
+                  )}
+                  <Link to={`/profile/${user?.id}`} style={{ display: 'block', marginTop: 12, textAlign: 'center', fontSize: 12, color: '#ff6b00', textDecoration: 'none' }}>
+                    Profili Düzenle →
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Pro: Revenue Chart */}
+          {!isOwner && (
+            <div style={{ marginTop: 28, background: '#0b0b0b', border: '1px solid #141414', borderRadius: 12, padding: '20px 24px' }}>
+              <p style={{ fontFamily: 'monospace', fontSize: 10, color: '#444', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 6 }}>// AYLIK GELİR</p>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 20 }}>
+                <span style={{ fontSize: 22, fontWeight: 900, color: '#f0f0f0' }}>₺{totalRevenue.toLocaleString('tr-TR')}</span>
+                <span style={{ fontSize: 12, color: '#444' }}>Bu yıl toplam</span>
+              </div>
+              <RevenueChart offers={offers} />
+            </div>
+          )}
+        </div>
       </div>
 
-      {isOwner ? (
-        <>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-            <StatCard icon={Car}         label="İlanlarım"       value={listings.length}       color="bg-brand-500/10 text-brand-400" />
-            <StatCard icon={Clock}       label="Bekleyen Teklif" value={pendingOffers.length}  color="bg-yellow-500/10 text-yellow-400" />
-            <StatCard icon={CheckCircle2}label="Kabul Edilen"    value={acceptedOffers.length} color="bg-green-500/10 text-green-400" />
-            <StatCard icon={TrendingUp}  label="Tamamlanan"      value={completedOffers.length}color="bg-blue-500/10 text-blue-400" />
-          </div>
-
-          {/* Yaklaşan randevular */}
-          {upcomingAppointments.length > 0 && (
-            <div className="mb-8">
-              <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
-                <CalendarCheck className="h-4 w-4 text-green-400" /> Yaklaşan Randevular
-              </h2>
-              <div className="space-y-3">
-                {upcomingAppointments.slice(0, 5).map(o => (
-                  <Link key={o.id} to={`/listings/${o.listing_id}`}
-                    className="card flex items-center justify-between hover:border-zinc-700 transition-colors py-3">
-                    <div>
-                      <p className="font-medium text-white text-sm">{o.listings?.brand} {o.listings?.model}</p>
-                      <p className="text-xs text-zinc-500 mt-0.5">
-                        {o.profiles?.full_name || 'Uzman'} · ₺{Number(o.price).toLocaleString('tr-TR')}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs font-semibold text-green-400">{fmtDate(o.appointment_date)}</p>
-                      {o.appointment_note && (
-                        <p className="text-[10px] text-zinc-600 mt-0.5 max-w-[140px] truncate">{o.appointment_note}</p>
-                      )}
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="grid lg:grid-cols-2 gap-6">
-            {/* İlanlarım */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold text-white">İlanlarım</h2>
-                <Link to="/listings/new" className="btn-primary text-sm flex items-center gap-1.5">
-                  <PlusCircle className="h-3.5 w-3.5" /> Yeni İlan
-                </Link>
-              </div>
-              {listings.length === 0 ? (
-                <EmptyState icon={Car} title="Henüz ilan yok"
-                  description="İlk ilanını oluşturarak servis teklifleri al"
-                  action={<Link to="/listings/new" className="btn-primary">İlan Oluştur</Link>} />
-              ) : (
-                <div className="space-y-3">
-                  {listings.slice(0, 6).map(l => (
-                    <Link key={l.id} to={`/listings/${l.id}`}
-                      className="card flex items-center justify-between hover:border-zinc-700 transition-colors">
-                      <div>
-                        <div className="font-medium text-white text-sm">{l.brand} {l.model}</div>
-                        <div className="text-xs text-zinc-500 mt-0.5">
-                          {l.offers?.[0]?.count || 0} teklif
-                        </div>
-                      </div>
-                      <Eye className="h-4 w-4 text-zinc-600" />
-                    </Link>
-                  ))}
-                  {listings.length > 6 && (
-                    <Link to="/listings?tab=mine" className="text-xs text-brand-400 hover:text-brand-300 pl-1 block">
-                      +{listings.length - 6} ilan daha →
-                    </Link>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Gelen teklifler */}
-            <div>
-              <h2 className="font-semibold text-white mb-4">Gelen Teklifler</h2>
-              {offers.length === 0 ? (
-                <EmptyState icon={Send} title="Henüz teklif yok" description="İlanlarına gelen teklifler burada görünecek" />
-              ) : (
-                <div className="space-y-3">
-                  {offers.slice(0, 6).map(o => (
-                    <Link key={o.id} to={`/listings/${o.listing_id}`}
-                      className="card flex items-center justify-between hover:border-zinc-700 transition-colors">
-                      <div>
-                        <div className="font-medium text-white text-sm">
-                          ₺{Number(o.price).toLocaleString('tr-TR')}
-                        </div>
-                        <div className="text-xs text-zinc-500">{o.listings?.brand} {o.listings?.model}</div>
-                      </div>
-                      <StatusBadge status={o.status} />
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Tamamlanan işler */}
-          {completedOffers.length > 0 && (
-            <div className="mt-8">
-              <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-blue-400" /> Tamamlanan İşler
-              </h2>
-              <div className="space-y-3">
-                {completedOffers.map(o => (
-                  <Link key={o.id} to={`/listings/${o.listing_id}`}
-                    className="card flex items-center justify-between hover:border-zinc-700 transition-colors border-blue-500/10">
-                    <div>
-                      <p className="font-medium text-white text-sm">{o.listings?.brand} {o.listings?.model}</p>
-                      <p className="text-xs text-zinc-500 mt-0.5">
-                        {o.profiles?.full_name} · ₺{Number(o.price).toLocaleString('tr-TR')}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <StatusBadge status="completed" />
-                      {o.appointment_date && (
-                        <p className="text-[10px] text-zinc-600 mt-1">{fmtDate(o.appointment_date)}</p>
-                      )}
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-        </>
-      ) : (
-        /* PRO view */
-        <>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-            <StatCard icon={Send}        label="Gönderilen"    value={offers.length}         color="bg-brand-500/10 text-brand-400" />
-            <StatCard icon={Clock}       label="Beklemede"     value={pendingOffers.length}  color="bg-yellow-500/10 text-yellow-400" />
-            <StatCard icon={CheckCircle2}label="Kabul Edilen"  value={acceptedOffers.length} color="bg-green-500/10 text-green-400" />
-            <StatCard icon={TrendingUp}  label="Tamamlanan"    value={completedOffers.length}color="bg-blue-500/10 text-blue-400" />
-          </div>
-
-          {/* Pro yaklaşan randevular */}
-          {upcomingAppointments.length > 0 && (
-            <div className="mb-6">
-              <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
-                <CalendarCheck className="h-4 w-4 text-green-400" /> Yaklaşan Randevular
-              </h2>
-              <div className="space-y-3">
-                {upcomingAppointments.slice(0, 3).map(o => (
-                  <Link key={o.id} to={`/listings/${o.listing_id}`}
-                    className="card flex items-center justify-between hover:border-zinc-700 transition-colors py-3">
-                    <div>
-                      <p className="font-medium text-white text-sm">{o.listings?.brand} {o.listings?.model}</p>
-                      <p className="text-xs text-brand-400 font-semibold">₺{Number(o.price).toLocaleString('tr-TR')}</p>
-                    </div>
-                    <p className="text-xs font-semibold text-green-400">{fmtDate(o.appointment_date)}</p>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-white">Gönderdiğim Teklifler</h2>
-            <Link to="/listings" className="btn-secondary text-sm">İlanlara Göz At</Link>
-          </div>
-
-          {offers.length === 0 ? (
-            <EmptyState icon={Send} title="Henüz teklif göndermediniz"
-              description="Araç ilanlarına göz at ve ilk teklifini gönder"
-              action={<Link to="/listings" className="btn-primary">İlanları Gör</Link>} />
-          ) : (
-            <div className="space-y-3">
-              {offers.map(o => (
-                <Link key={o.id} to={`/listings/${o.listing_id}`}
-                  className="card flex items-center justify-between hover:border-zinc-700 transition-colors">
-                  <div>
-                    <div className="font-medium text-white text-sm">
-                      {o.listings?.brand} {o.listings?.model}
-                    </div>
-                    <div className="text-sm text-brand-400 font-semibold">
-                      ₺{Number(o.price).toLocaleString('tr-TR')}
-                    </div>
-                    {o.appointment_date && new Date(o.appointment_date) > new Date() && (
-                      <div className="text-xs text-green-400 mt-0.5 flex items-center gap-1">
-                        <CalendarCheck className="h-3 w-3" /> {fmtDate(o.appointment_date)}
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <StatusBadge status={o.status} />
-                    <div className="text-xs text-zinc-600 mt-1">
-                      {new Date(o.created_at).toLocaleDateString('tr-TR')}
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-
-          {/* Tamamlanan işler (pro) */}
-          {completedOffers.length > 0 && (
-            <div className="mt-8">
-              <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-blue-400" /> Tamamlanan İşler
-              </h2>
-              <div className="grid sm:grid-cols-2 gap-3">
-                {completedOffers.map(o => (
-                  <div key={o.id} className="card border-blue-500/10">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-white text-sm">{o.listings?.brand} {o.listings?.model}</p>
-                        <p className="text-sm text-brand-400 font-semibold">₺{Number(o.price).toLocaleString('tr-TR')}</p>
-                      </div>
-                      <Wrench className="h-4 w-4 text-blue-400" />
-                    </div>
-                    {o.appointment_date && (
-                      <p className="text-xs text-zinc-600 mt-2">{fmtDate(o.appointment_date)}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </>
-      )}
+      <style>{`
+        @media (max-width: 768px) {
+          .metrics-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .main-grid { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 480px) {
+          .metrics-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   )
 }
