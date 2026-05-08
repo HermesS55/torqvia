@@ -153,25 +153,25 @@ function ProCard({ pro, compact = false }) {
 
         {/* City */}
         {pro.city && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#555', marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#555', marginBottom: 10 }}>
             <MapPin size={12} style={{ flexShrink: 0 }} /> {pro.city}
-          </div>
-        )}
-
-        {/* Specialties */}
-        {(pro.specialties?.length > 0 || pro.specialty) && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 14 }}>
-            {(pro.specialties?.length > 0 ? pro.specialties.slice(0, 3) : [pro.specialty]).map(s => (
-              <span key={s} style={{ fontSize: 10, padding: '3px 9px', borderRadius: 99, background: '#111', border: '1px solid #1e1e1e', color: '#666' }}>{s}</span>
-            ))}
           </div>
         )}
 
         {/* Bio */}
         {pro.bio && (
-          <p style={{ fontSize: 12, color: '#555', lineHeight: 1.6, marginBottom: 14, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+          <p style={{ fontSize: 12, color: '#555', lineHeight: 1.6, marginBottom: 12, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
             {pro.bio}
           </p>
+        )}
+
+        {/* Specialties — bottom */}
+        {(pro.specialties?.length > 0 || pro.specialty) && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 14, marginTop: 'auto', paddingTop: pro.bio ? 0 : 4 }}>
+            {(pro.specialties?.length > 0 ? pro.specialties.slice(0, 4) : [pro.specialty]).map(s => (
+              <span key={s} style={{ fontSize: 10, padding: '3px 10px', borderRadius: 99, background: 'rgba(255,107,0,0.06)', border: '1px solid rgba(255,107,0,0.12)', color: '#ff8c33' }}>{s}</span>
+            ))}
+          </div>
         )}
 
         {/* CTAs */}
@@ -288,7 +288,7 @@ export default function Ustalar() {
   const [searchQ, setSearchQ] = useState(searchParams.get('q') || '')
   const [cityFilter, setCityFilter] = useState('')
   const [specFilter, setSpecFilter] = useState('')
-  const [sortBy, setSortBy] = useState('trend') // trend | rating | reviews
+  const [sortBy, setSortBy] = useState('rating') // rating | trend | reviews
 
   useMeta('Usta Bul — Torqvia')
 

@@ -202,16 +202,6 @@ export default function PublicProProfile() {
     ? profile.specialties
     : profile.specialty ? [profile.specialty] : []
 
-  const weekDays = [
-    { label: 'Pazartesi', short: 'Pzt', hours: '09:00 – 18:00', open: true },
-    { label: 'Salı', short: 'Sal', hours: '09:00 – 18:00', open: true },
-    { label: 'Çarşamba', short: 'Çar', hours: '09:00 – 18:00', open: true },
-    { label: 'Perşembe', short: 'Per', hours: '09:00 – 18:00', open: true },
-    { label: 'Cuma', short: 'Cum', hours: '09:00 – 18:00', open: true },
-    { label: 'Cumartesi', short: 'Cmt', hours: '09:00 – 14:00', open: true },
-    { label: 'Pazar', short: 'Paz', hours: 'KAPALI', open: false },
-  ]
-
   /* Panel helper */
   const Panel = ({ label, accent, children, style = {} }) => (
     <div style={{
@@ -712,55 +702,15 @@ export default function PublicProProfile() {
               </div>
             </Panel>
 
-            {/* Çalışma Saatleri */}
-            <Panel label="// ÇALIŞMA SAATLERİ">
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {weekDays.map((d, i) => {
-                  const todayIdx = new Date().getDay()
-                  const isToday = todayIdx === (i === 6 ? 0 : i + 1)
-                  return (
-                    <div key={d.short} style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '9px 0',
-                      borderBottom: i < weekDays.length - 1 ? '1px solid #141414' : 'none',
-                      background: isToday ? 'rgba(255,107,0,0.04)' : 'transparent',
-                      marginLeft: isToday ? -8 : 0,
-                      marginRight: isToday ? -8 : 0,
-                      paddingLeft: isToday ? 8 : 0,
-                      paddingRight: isToday ? 8 : 0,
-                      borderRadius: isToday ? 6 : 0,
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        {isToday && (
-                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#ff6b00', flexShrink: 0, display: 'inline-block', boxShadow: '0 0 6px rgba(255,107,0,0.8)' }} />
-                        )}
-                        <span style={{
-                          fontSize: 12, fontWeight: isToday ? 700 : 400,
-                          color: isToday ? '#e0e0e0' : '#484848',
-                          marginLeft: isToday ? 0 : 13,
-                        }}>
-                          {d.label}
-                        </span>
-                      </div>
-                      <span style={{
-                        fontSize: 12, fontWeight: isToday ? 600 : 400,
-                        color: d.open ? (isToday ? '#d0d0d0' : '#666') : '#2e2e2e',
-                        fontFamily: d.open ? 'inherit' : 'monospace',
-                        letterSpacing: d.open ? 0 : '0.05em',
-                      }}>
-                        {d.hours}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-              {profile.service_hours && (
-                <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid #141414', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Clock size={12} style={{ color: '#333', flexShrink: 0 }} />
-                  <span style={{ fontSize: 12, color: '#444' }}>{profile.service_hours}</span>
+            {/* Çalışma Saatleri — sadece usta girimişse göster */}
+            {profile.service_hours && (
+              <Panel label="// ÇALIŞMA SAATLERİ">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Clock size={14} style={{ color: '#ff6b00', flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, color: '#666', lineHeight: 1.6 }}>{profile.service_hours}</span>
                 </div>
-              )}
-            </Panel>
+              </Panel>
+            )}
 
             {/* Quick contact */}
             <Panel>

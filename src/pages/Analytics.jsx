@@ -415,24 +415,15 @@ export default function Analytics() {
                 <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, #1a1a1a, transparent)', display: 'inline-block' }} />
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {profile.specialties.map((s, i) => {
-                  const count = completedOffers.length > 0 ? Math.max(1, Math.floor(Math.random() * completedOffers.length * 0.6 + 1)) : 0
-                  return (
-                    <div key={s} style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '8px 14px', borderRadius: 10,
-                      background: i === 0 ? 'rgba(255,107,0,0.08)' : '#111',
-                      border: i === 0 ? '1px solid rgba(255,107,0,0.2)' : '1px solid #1e1e1e',
-                    }}>
-                      <span style={{ fontSize: 13, color: i === 0 ? '#ff8c33' : '#666' }}>{s}</span>
-                      {completedOffers.length > 0 && (
-                        <span style={{ fontSize: 10, color: i === 0 ? 'rgba(255,107,0,0.6)' : '#333', fontFamily: 'monospace' }}>
-                          {count} iş
-                        </span>
-                      )}
-                    </div>
-                  )
-                })}
+                {profile.specialties.map((s, i) => (
+                  <div key={s} style={{
+                    padding: '8px 14px', borderRadius: 10,
+                    background: i === 0 ? 'rgba(255,107,0,0.08)' : '#111',
+                    border: i === 0 ? '1px solid rgba(255,107,0,0.2)' : '1px solid #1e1e1e',
+                  }}>
+                    <span style={{ fontSize: 13, color: i === 0 ? '#ff8c33' : '#666' }}>{s}</span>
+                  </div>
+                ))}
               </div>
             </div>
           )}

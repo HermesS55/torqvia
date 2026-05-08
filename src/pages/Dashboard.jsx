@@ -112,15 +112,33 @@ export default function Dashboard() {
   const [listings, setListings] = useState([])
   const [offers, setOffers] = useState([])
   const [dataLoading, setDataLoading] = useState(false)
+  const [topPros, setTopPros] = useState([])
 
   const isOwner = profile?.role === 'owner'
 
   useEffect(() => {
     if (!profile || !user) return
     setDataLoading(true)
-    if (isOwner) fetchOwnerData()
+    if (isOwner) { fetchOwnerData(); fetchTopPros() }
     else fetchProData()
   }, [profile?.id])
+
+  async function fetchTopPros() {
+    const [{ data: prosData }, { data: ratingData }] = await Promise.all([
+      supabase.from('profiles')
+        .select('id, full_name, avatar_url, city, shop_name, specialties, plan')
+        .eq('role', 'pro').neq('banned', true).not('full_name', 'is', null),
+      supabase.from('pro_ratings').select('pro_id, rating'),
+    ])
+    const ratings = ratingData || []
+    const scored = (prosData || []).map(p => {
+      const pr = ratings.filter(r => r.pro_id === p.id)
+      const avgRating = pr.length > 0 ? pr.reduce((s, r) => s + r.rating, 0) / pr.length : 0
+      const score = (p.plan === 'turbo' || p.plan === 'elite' ? 15 : 0) + avgRating * 3 + Math.sqrt(pr.length) * 2
+      return { ...p, avgRating: Math.round(avgRating * 10) / 10, reviewCount: pr.length, score }
+    }).sort((a, b) => b.score - a.score).slice(0, 3)
+    setTopPros(scored)
+  }
 
   async function fetchOwnerData() {
     const { data: myListings } = await supabase
@@ -394,34 +412,52 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
                 )}
               </div>
 
-              {/* Right: nearby mechanics + messages */}
+              {/* Right: top pros + messages */}
               <div>
-                <p style={{ fontFamily: 'monospace', fontSize: 10, color: '#444', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 14 }}>// YAKIN USTALAR</p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                  <p style={{ fontFamily: 'monospace', fontSize: 10, color: '#444', textTransform: 'uppercase', letterSpacing: '0.16em' }}>// EN İYİ USTALAR</p>
+                  <Link to="/ustalar" style={{ fontSize: 11, color: '#ff6b00', textDecoration: 'none' }}>Tümünü gör →</Link>
+                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
-                  {[
-                    { name: 'Ahmet Oto Tamiri', city: 'Atakum', spec: 'Motor · Elektrik', rating: 4.9, online: true },
-                    { name: 'Tuğrul Lastik', city: 'Canik', spec: 'Lastik · Jant', rating: 4.7, online: true },
-                    { name: 'Mersin Kaporta', city: 'İlkadım', spec: 'Kaporta · Boya', rating: 4.8, online: false },
-                  ].map((m, i) => (
-                    <div key={i} style={{
-                      display: 'flex', alignItems: 'center', gap: 12,
-                      background: '#0b0b0b', border: '1px solid #141414', borderRadius: 10, padding: '12px 14px',
+                  {topPros.length === 0 ? (
+                    <Link to="/ustalar" style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                      background: '#0b0b0b', border: '1px dashed #1a1a1a', borderRadius: 10,
+                      padding: '18px', textDecoration: 'none', color: '#ff6b00', fontSize: 13,
                     }}>
-                      <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(255,107,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <Wrench size={16} style={{ color: '#ff6b00' }} />
+                      <Search size={14} /> Usta Ara →
+                    </Link>
+                  ) : topPros.map((pro, i) => (
+                    <Link key={pro.id} to={`/usta/${pro.id}`} style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      background: '#0b0b0b', border: '1px solid #141414', borderRadius: 10,
+                      padding: '12px 14px', textDecoration: 'none',
+                      transition: 'border-color 0.15s',
+                    }}
+                      onMouseOver={e => { e.currentTarget.style.borderColor = '#222' }}
+                      onMouseOut={e => { e.currentTarget.style.borderColor = '#141414' }}
+                    >
+                      <div style={{ position: 'relative', flexShrink: 0 }}>
+                        <UserAvatar profile={pro} size="sm" />
+                        <span style={{ position: 'absolute', top: -4, right: -4, width: 14, height: 14, borderRadius: '50%', background: ['#ffd700','#c0c0c0','#cd7f32'][i] || '#333', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 7, fontWeight: 900, color: '#000' }}>{i + 1}</span>
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#f0f0f0' }}>{m.name}</div>
-                        <div style={{ fontSize: 11, color: '#555', marginTop: 1 }}>{m.spec}</div>
-                      </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ fontSize: 11, color: '#f59e0b', fontWeight: 700 }}>★{m.rating}</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end', marginTop: 2 }}>
-                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: m.online ? '#22c55e' : '#555', display: 'inline-block' }} />
-                          <span style={{ fontSize: 10, color: '#444' }}>{m.city}</span>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#f0f0f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {pro.full_name}
+                        </div>
+                        <div style={{ fontSize: 11, color: '#555', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {pro.shop_name || (pro.specialties?.[0] || 'Servis Uzmanı')}
                         </div>
                       </div>
-                    </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        {pro.avgRating > 0 ? (
+                          <div style={{ fontSize: 11, color: '#f59e0b', fontWeight: 700 }}>★ {pro.avgRating.toFixed(1)}</div>
+                        ) : (
+                          <div style={{ fontSize: 10, color: '#333' }}>Yeni</div>
+                        )}
+                        {pro.city && <div style={{ fontSize: 10, color: '#444', marginTop: 2 }}>{pro.city}</div>}
+                      </div>
+                    </Link>
                   ))}
                 </div>
 
