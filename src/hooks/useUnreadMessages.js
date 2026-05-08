@@ -32,7 +32,14 @@ export function useUnreadMessages() {
     setUnread(count || 0)
   }
 
-  function markRead() { setUnread(0) }
+  async function markRead() {
+    setUnread(0)
+    if (!user?.id) return
+    await supabase.from('messages')
+      .update({ read_at: new Date().toISOString() })
+      .eq('receiver_id', user.id)
+      .is('read_at', null)
+  }
 
   return { unread, markRead }
 }

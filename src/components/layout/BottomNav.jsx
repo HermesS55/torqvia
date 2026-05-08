@@ -1,25 +1,41 @@
 import { NavLink } from 'react-router-dom'
-import { Gauge, Tag, Hash, Users, MessageCircle } from 'lucide-react'
+import {
+  LayoutDashboard, List, Calendar, MessageCircle,
+  TrendingUp, Car, Search,
+} from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useUnreadCount } from '../../contexts/UnreadMessagesContext'
 
-const ITEMS = [
-  { to: '/feed',        icon: Gauge,         label: 'Akış' },
-  { to: '/sales',       icon: Tag,           label: 'Satılık' },
-  { to: '/communities', icon: Hash,          label: 'Topluluk' },
-  { to: '/people',      icon: Users,         label: 'Kişiler' },
-  { to: '/messages',    icon: MessageCircle, label: 'Mesaj', msg: true },
-]
-
 export default function BottomNav() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const { unread, markRead } = useUnreadCount()
   if (!user) return null
+
+  const isPro   = profile?.role === 'pro'
+  const isOwner = profile?.role === 'owner'
+
+  const items = isPro ? [
+    { to: '/dashboard',  icon: LayoutDashboard, label: 'Panel' },
+    { to: '/listings',   icon: List,            label: 'İlanlar' },
+    { to: '/randevular', icon: Calendar,        label: 'Randevu' },
+    { to: '/messages',   icon: MessageCircle,   label: 'Mesaj', msg: true },
+    { to: '/analytics',  icon: TrendingUp,      label: 'Analitik' },
+  ] : isOwner ? [
+    { to: '/dashboard',  icon: LayoutDashboard, label: 'Panel' },
+    { to: '/ustalar',    icon: Search,          label: 'Usta Bul' },
+    { to: '/randevular', icon: Calendar,        label: 'Randevu' },
+    { to: '/messages',   icon: MessageCircle,   label: 'Mesaj', msg: true },
+    { to: '/garage',     icon: Car,             label: 'Garaj' },
+  ] : [
+    { to: '/listings',   icon: List,            label: 'İlanlar' },
+    { to: '/ustalar',    icon: Search,          label: 'Ustalar' },
+    { to: '/messages',   icon: MessageCircle,   label: 'Mesaj', msg: true },
+  ]
 
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-zinc-950/95 backdrop-blur border-t border-zinc-800 pb-safe">
       <div className="flex items-stretch">
-        {ITEMS.map(({ to, icon: Icon, label, msg }) => (
+        {items.map(({ to, icon: Icon, label, msg }) => (
           <NavLink
             key={to}
             to={to}

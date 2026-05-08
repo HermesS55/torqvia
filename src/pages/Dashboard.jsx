@@ -182,9 +182,9 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
 
   const proSidebarLinks = [
     { icon: LayoutDashboard, label: 'Dashboard', to: '/dashboard' },
-    { icon: Calendar, label: 'Randevular', to: '/listings' },
+    { icon: Calendar, label: 'Randevular', to: '/randevular' },
     { icon: MessageCircle, label: 'Mesajlar', to: '/messages' },
-    { icon: TrendingUp, label: 'Gelir & Analitik', to: '#' },
+    { icon: TrendingUp, label: 'Gelir & Analitik', to: '/analytics' },
     { icon: User, label: 'Profilim', to: `/profile/${user?.id}` },
     { icon: Settings, label: 'Ayarlar', to: '/settings' },
     { icon: Zap, label: 'Üyelik', to: '/pricing' },
@@ -193,7 +193,7 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
   const ownerSidebarLinks = [
     { icon: LayoutDashboard, label: 'Dashboard', to: '/dashboard' },
     { icon: Search, label: 'Usta Ara', to: '/listings' },
-    { icon: Calendar, label: 'Randevularım', to: '#' },
+    { icon: Calendar, label: 'Randevularım', to: '/randevular' },
     { icon: MessageCircle, label: 'Mesajlar', to: '/messages' },
     { icon: Car, label: 'Araçlarım', to: '/garage' },
     { icon: User, label: 'Profilim', to: `/profile/${user?.id}` },
@@ -256,7 +256,7 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflowY: 'auto' }}>
 
         {/* Topbar */}
-        <header style={{
+        <header className="dash-header" style={{
           padding: '16px 24px', borderBottom: '1px solid #141414',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           background: '#0a0a0a', position: 'sticky', top: 0, zIndex: 10,
@@ -287,26 +287,27 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
           </div>
         </header>
 
-        <div style={{ padding: '24px', flex: 1 }}>
+        <div className="dash-main" style={{ padding: '24px', flex: 1 }}>
 
           {/* Owner search bar */}
           {isOwner && (
-            <div style={{ display: 'flex', gap: 10, marginBottom: 28 }}>
+            <div className="dash-search-row" style={{ display: 'flex', gap: 10, marginBottom: 28 }}>
               <input
-                placeholder="Usta ara, hizmet ara..."
+                placeholder="Usta ara, şehir, uzmanlık..."
                 style={{
                   flex: 1, background: '#0b0b0b', border: '1px solid #1a1a1a', borderRadius: 10,
                   color: '#f0f0f0', fontSize: 14, padding: '12px 16px', outline: 'none',
                 }}
                 onFocus={e => { e.target.style.borderColor = '#ff6b00' }}
                 onBlur={e => { e.target.style.borderColor = '#1a1a1a' }}
+                onKeyDown={e => { if (e.key === 'Enter') window.location.href = '/ustalar' }}
               />
-              <Link to="/listings" style={{
+              <Link to="/ustalar" style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 20px',
                 borderRadius: 10, background: '#ff6b00', color: '#fff', fontWeight: 700,
                 fontSize: 14, textDecoration: 'none',
               }}>
-                <Search size={14} /> ARA
+                <Search size={14} /> USTA BUL
               </Link>
             </div>
           )}
@@ -536,10 +537,13 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
       <style>{`
         @media (max-width: 768px) {
           .metrics-grid { grid-template-columns: repeat(2, 1fr) !important; }
-          .main-grid { grid-template-columns: 1fr !important; }
+          .main-grid    { grid-template-columns: 1fr !important; }
+          .dash-header  { padding: 12px 16px !important; }
+          .dash-main    { padding: 16px !important; }
         }
         @media (max-width: 480px) {
-          .metrics-grid { grid-template-columns: 1fr !important; }
+          .metrics-grid     { grid-template-columns: 1fr !important; }
+          .dash-search-row  { flex-direction: column !important; }
         }
       `}</style>
     </div>

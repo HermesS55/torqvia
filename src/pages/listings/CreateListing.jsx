@@ -115,6 +115,7 @@ export default function CreateListing() {
         show_phone: form.show_phone,
         cover_image,
         extra_images,
+        status: 'in_progress',
       }
 
       const { data, error: err } = await supabase.from('listings').insert(payload).select().single()

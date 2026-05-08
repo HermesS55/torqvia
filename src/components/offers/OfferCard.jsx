@@ -1,5 +1,7 @@
-import { Wrench, MessageSquare, Check, X, Clock, Calendar, CalendarCheck, CheckCircle2 } from 'lucide-react'
+import { Wrench, MessageSquare, Check, X, Clock, Calendar, CalendarCheck, CheckCircle2, MapPin, ChevronRight, Zap } from 'lucide-react'
 import Spinner from '../ui/Spinner'
+import UserAvatar from '../ui/UserAvatar'
+import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
@@ -78,6 +80,55 @@ export default function OfferCard({ offer: initialOffer, isOwner, onUpdateStatus
 
   return (
     <div className={`card transition-all ${offer.status === 'accepted' ? 'border-green-500/20' : offer.status === 'rejected' ? 'opacity-60' : offer.status === 'completed' ? 'border-blue-500/20' : ''}`}>
+
+      {/* Pro profile header */}
+      {offer.profiles?.id && (
+        <Link
+          to={`/usta/${offer.profiles.id}`}
+          className="flex items-center gap-3 mb-4 pb-3 border-b border-zinc-800 group no-underline"
+          style={{ textDecoration: 'none' }}
+        >
+          <div className="relative shrink-0">
+            <UserAvatar profile={offer.profiles} size="md" />
+            {(offer.profiles.plan === 'turbo' || offer.profiles.plan === 'elite') && (
+              <span className="absolute -bottom-0.5 -right-0.5 flex items-center gap-0.5 text-[8px] font-black px-1 py-0.5 rounded-full bg-orange-500 text-white leading-none">
+                <Zap className="h-2 w-2" fill="white" />
+              </span>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-white group-hover:text-brand-400 transition-colors truncate">
+                {offer.profiles.full_name}
+              </span>
+              {(offer.profiles.plan === 'turbo' || offer.profiles.plan === 'elite') && (
+                <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                  TURBO
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-3 mt-0.5">
+              {offer.profiles.shop_name && (
+                <span className="text-[11px] text-zinc-500 truncate">{offer.profiles.shop_name}</span>
+              )}
+              {offer.profiles.city && (
+                <span className="flex items-center gap-0.5 text-[11px] text-zinc-600 shrink-0">
+                  <MapPin className="h-2.5 w-2.5" /> {offer.profiles.city}
+                </span>
+              )}
+            </div>
+            {offer.profiles.specialties?.length > 0 && (
+              <div className="flex gap-1 mt-1.5 flex-wrap">
+                {offer.profiles.specialties.slice(0, 3).map(s => (
+                  <span key={s} className="text-[9px] px-1.5 py-0.5 rounded-full bg-zinc-800 text-zinc-500 border border-zinc-700">{s}</span>
+                ))}
+              </div>
+            )}
+          </div>
+          <ChevronRight className="h-4 w-4 text-zinc-700 group-hover:text-zinc-500 shrink-0 transition-colors" />
+        </Link>
+      )}
+
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className={`p-2 rounded-xl ${offer.status === 'accepted' || offer.status === 'completed' ? 'bg-green-500/10' : 'bg-brand-500/10'}`}>
@@ -97,14 +148,9 @@ export default function OfferCard({ offer: initialOffer, isOwner, onUpdateStatus
             </div>
           </div>
         </div>
-        <div className="text-right shrink-0">
-          {offer.profiles?.full_name && (
-            <p className="text-xs text-zinc-400 font-medium">{offer.profiles.full_name}</p>
-          )}
-          <p className="text-[10px] text-zinc-600 mt-0.5">
-            {new Date(offer.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })}
-          </p>
-        </div>
+        <p className="text-[10px] text-zinc-600 mt-1 shrink-0">
+          {new Date(offer.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })}
+        </p>
       </div>
 
       {offer.message && (

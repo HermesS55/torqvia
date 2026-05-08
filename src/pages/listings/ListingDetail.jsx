@@ -73,7 +73,7 @@ export default function ListingDetail() {
   async function fetchAll() {
     const [{ data: listingData }, { data: offersData }] = await Promise.all([
       supabase.from('listings').select('*, profiles(id, role, phone, full_name, avatar_url, bio, specialty)').eq('id', id).single(),
-      supabase.from('offers').select('*, profiles(role, phone, full_name)').eq('listing_id', id).order('created_at', { ascending: false }),
+      supabase.from('offers').select('*, profiles(id, role, phone, full_name, avatar_url, city, shop_name, specialties, plan)').eq('listing_id', id).order('created_at', { ascending: false }),
     ])
     setListing(listingData)
     setOffers(offersData || [])

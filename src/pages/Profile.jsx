@@ -212,6 +212,8 @@ export default function Profile() {
   const [followRequests, setFollowRequests] = useState([])
   const [ratings, setRatings] = useState([])
   const fileRef = useRef()
+  const shopPhotoRef = useRef()
+  const [shopPhotoUploading, setShopPhotoUploading] = useState(false)
 
   const isOwn = id === user?.id
   const isOwner = profile?.role === 'owner'
@@ -391,6 +393,25 @@ export default function Profile() {
       if (error && error.code !== '23505') toast.error('Engellenemedi')
       else { setIsBlocked(true); toast.success('Kullanıcı engellendi') }
     }
+  }
+
+  async function handleShopPhotoUpload(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    try { await validateImageFile(file, 5 * 1024 * 1024) }
+    catch (err) { toast.error(err.message); e.target.value = ''; return }
+    setShopPhotoUploading(true)
+    try {
+      const ext = file.name.split('.').pop()
+      const path = `shop-photos/${user.id}/${Date.now()}.${ext}`
+      const { error: upErr } = await supabase.storage.from('post-images').upload(path, file, { upsert: true })
+      if (upErr) throw upErr
+      const { data: { publicUrl } } = supabase.storage.from('post-images').getPublicUrl(path)
+      await supabase.from('profiles').update({ shop_photo: publicUrl }).eq('id', user.id)
+      setProfile(p => ({ ...p, shop_photo: publicUrl }))
+      toast.success('Dükkan fotoğrafı güncellendi!')
+    } catch { toast.error('Yüklenemedi') }
+    finally { setShopPhotoUploading(false); e.target.value = '' }
   }
 
   async function handlePortfolioUpload(e) {
@@ -829,6 +850,27 @@ export default function Profile() {
               </div>
               {isPro && (
                 <>
+                  {/* Dükkan fotoğrafı */}
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-300 mb-2">Dükkan Fotoğrafı</label>
+                    <div className="flex items-center gap-3">
+                      {profile?.shop_photo ? (
+                        <img src={profile.shop_photo} alt="Dükkan" className="w-20 h-14 rounded-lg object-cover border border-zinc-700" />
+                      ) : (
+                        <div className="w-20 h-14 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-600 text-xs">Yok</div>
+                      )}
+                      <div>
+                        <button type="button" onClick={() => shopPhotoRef.current?.click()}
+                          disabled={shopPhotoUploading}
+                          className="btn-secondary text-sm flex items-center gap-1.5">
+                          {shopPhotoUploading ? <Spinner size="sm" /> : <Camera className="h-3.5 w-3.5" />}
+                          {profile?.shop_photo ? 'Değiştir' : 'Yükle'}
+                        </button>
+                        <p className="text-[10px] text-zinc-600 mt-1">Maks. 5MB · JPG/PNG/WEBP</p>
+                      </div>
+                      <input ref={shopPhotoRef} type="file" accept="image/*" className="hidden" onChange={handleShopPhotoUpload} />
+                    </div>
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-zinc-300 mb-1.5">Dükkan Adı</label>
                     <input value={editForm.shop_name} onChange={e => setEditForm(f => ({ ...f, shop_name: e.target.value }))}

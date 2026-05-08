@@ -185,7 +185,11 @@ export default function NotificationBell() {
   return (
     <div className="relative" ref={ref}>
       <button
-        onClick={() => { setOpen(o => !o); if (!open) fetchNotifications() }}
+        onClick={() => {
+          const opening = !open
+          setOpen(opening)
+          if (opening) { fetchNotifications(); markAllRead() }
+        }}
         className="relative p-2 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
         title="Bildirimler"
       >

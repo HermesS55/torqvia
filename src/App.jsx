@@ -38,6 +38,9 @@ import Events from './pages/Events'
 import EventDetail from './pages/EventDetail'
 import PaymentCallback from './pages/payment/PaymentCallback'
 import PublicProProfile from './pages/PublicProProfile'
+import Analytics from './pages/Analytics'
+import Appointments from './pages/Appointments'
+import Ustalar from './pages/Ustalar'
 
 function NotFound() {
   return (
@@ -80,9 +83,7 @@ export default function App() {
             <Route path="/feed"        element={<ProtectedRoute><ComingSoon /></ProtectedRoute>} />
             {/* <Route path="/feed"        element={<ProtectedRoute><Feed /></ProtectedRoute>} /> */}
             <Route path="/profile/:id" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            {/* HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak */}
-            <Route path="/messages"    element={<ProtectedRoute><ComingSoon /></ProtectedRoute>} />
-            {/* <Route path="/messages"    element={<ProtectedRoute><Messages /></ProtectedRoute>} /> */}
+            <Route path="/messages"    element={<ProtectedRoute><Messages /></ProtectedRoute>} />
             {/* HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak */}
             <Route path="/people"      element={<ProtectedRoute><ComingSoon /></ProtectedRoute>} />
             {/* <Route path="/people"      element={<ProtectedRoute><People /></ProtectedRoute>} /> */}
@@ -113,6 +114,9 @@ export default function App() {
             <Route path="/events"          element={<Events />} />
             <Route path="/events/:id"     element={<EventDetail />} />
             <Route path="/usta/:id"       element={<PublicProProfile />} />
+            <Route path="/randevular"     element={<ProtectedRoute><Appointments /></ProtectedRoute>} />
+            <Route path="/analytics"      element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+            <Route path="/ustalar"        element={<Ustalar />} />
             <Route path="/payment/success" element={<PaymentCallback />} />
             <Route path="/payment/failed"  element={<PaymentCallback />} />
 

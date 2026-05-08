@@ -22,12 +22,12 @@ export default function Navbar({ onOpenSearch }) {
   const isPro = profile?.role === 'pro'
 
   const navLinks = user ? [
+    { to: '/messages', icon: MessageCircle, label: t('nav.messages'), badge: unreadMessages, onClick: markRead },
     // HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak
     // { to: '/feed',        icon: Gauge,         label: t('nav.feed') },
     // { to: '/communities', icon: Hash,          label: 'Topluluklar' },
     // { to: '/events',      icon: Calendar,      label: 'Etkinlikler' },
     // { to: '/people',      icon: Users,         label: t('nav.people') },
-    // { to: '/messages',    icon: MessageCircle, label: t('nav.messages'), badge: unreadMessages, onClick: markRead },
     ...(isOwner ? [{ to: '/garage', icon: Car, label: 'Garaj' }] : []),
     ...(isAdmin ? [{ to: '/admin', icon: Shield, label: 'Admin' }] : []),
   ] : []
@@ -53,7 +53,7 @@ export default function Navbar({ onOpenSearch }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
 
-          <Link to={user ? '/feed' : '/'} className="flex items-center gap-2 text-white font-bold text-xl shrink-0 hover:opacity-90 transition-opacity">
+          <Link to={user ? (profile?.role === 'pro' ? '/listings' : '/dashboard') : '/'} className="flex items-center gap-2 text-white font-bold text-xl shrink-0 hover:opacity-90 transition-opacity">
             <TorqviaLogo />
             <span className="hidden sm:inline">Torqvia</span>
           </Link>
