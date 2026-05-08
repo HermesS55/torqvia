@@ -61,11 +61,11 @@ function UserCard({ profile }) {
 
       {/* Avatar + info */}
       <div className="flex gap-3">
-        <Link to={`/profile/${profile.id}`} className="shrink-0">
+        <Link to={isPro ? `/usta/${profile.id}` : `/profile/${profile.id}`} className="shrink-0">
           <UserAvatar profile={profile} size="md" />
         </Link>
         <div className="flex-1 min-w-0">
-          <Link to={`/profile/${profile.id}`}>
+          <Link to={isPro ? `/usta/${profile.id}` : `/profile/${profile.id}`}>
             <p className="font-semibold text-white hover:text-brand-400 transition-colors text-sm leading-tight truncate">
               {profile.full_name || 'İsimsiz Kullanıcı'}
             </p>

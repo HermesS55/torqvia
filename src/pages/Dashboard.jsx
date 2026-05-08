@@ -221,7 +221,7 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
   const sidebarLinks = isOwner ? ownerSidebarLinks : proSidebarLinks
 
   return (
-    <div className="-mx-3 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-8 -mb-20 md:-mb-8 flex"
+    <div className="dash-outer -mx-3 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-8 -mb-20 md:-mb-8 flex"
       style={{ minHeight: 'calc(100dvh - 64px)', background: '#080808' }}>
 
       {/* ── Sidebar ── */}
@@ -271,7 +271,7 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
       </aside>
 
       {/* ── Main Content ── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflowY: 'auto' }}>
+      <div className="dash-scroll-area" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflowY: 'auto' }}>
 
         {/* Topbar */}
         <header className="dash-header" style={{
@@ -572,6 +572,8 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
 
       <style>{`
         @media (max-width: 768px) {
+          .dash-outer       { margin-bottom: 0 !important; min-height: calc(100dvh - 144px) !important; }
+          .dash-scroll-area { overflow-y: visible !important; }
           .metrics-grid { grid-template-columns: repeat(2, 1fr) !important; }
           .main-grid    { grid-template-columns: 1fr !important; }
           .dash-header  { padding: 12px 16px !important; }

@@ -57,29 +57,29 @@ function ParticleCanvas() {
 }
 
 /* ─── Avatar with spinning rings ─── */
-function TurboAvatar({ profile: p }) {
+function TurboAvatar({ profile: p, accent = '#ff6b00', accentMid = '#ff7d1a', accentLight = '#ff8c33', rgb = '255,107,0', label = 'TURBO' }) {
   return (
     <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
       <div className="pp-pulse-ring" style={{
         position: 'absolute', width: 124, height: 124, borderRadius: '50%',
-        border: '1.5px solid rgba(255,107,0,0.2)',
+        border: `1.5px solid rgba(${rgb},0.2)`,
       }} />
       <div className="pp-spin-ccw" style={{
         position: 'absolute', width: 110, height: 110, borderRadius: '50%',
-        background: 'conic-gradient(from 0deg, rgba(255,107,0,0.6), transparent 35%, rgba(255,140,51,0.45), transparent 70%, rgba(255,107,0,0.6))',
+        background: `conic-gradient(from 0deg, rgba(${rgb},0.6), transparent 35%, rgba(${rgb},0.45), transparent 70%, rgba(${rgb},0.6))`,
         maskImage: 'radial-gradient(farthest-side at 50% 50%, transparent calc(100% - 2.5px), black 100%)',
         WebkitMaskImage: 'radial-gradient(farthest-side at 50% 50%, transparent calc(100% - 2.5px), black 100%)',
       }} />
       <div className="pp-spin-cw" style={{
         position: 'absolute', width: 98, height: 98, borderRadius: '50%',
-        background: 'conic-gradient(from 60deg, #ff6b00, rgba(255,107,0,0.07), #ff8c33, rgba(255,107,0,0.09), #ff6b00)',
+        background: `conic-gradient(from 60deg, ${accent}, rgba(${rgb},0.07), ${accentLight}, rgba(${rgb},0.09), ${accent})`,
         maskImage: 'radial-gradient(farthest-side at 50% 50%, transparent calc(100% - 2.5px), black 100%)',
         WebkitMaskImage: 'radial-gradient(farthest-side at 50% 50%, transparent calc(100% - 2.5px), black 100%)',
       }} />
       <div style={{
         position: 'relative', width: 88, height: 88, borderRadius: '50%',
         overflow: 'hidden', border: '2.5px solid #080808', zIndex: 2,
-        boxShadow: '0 0 0 1px rgba(255,107,0,0.15)',
+        boxShadow: `0 0 0 1px rgba(${rgb},0.15)`,
       }}>
         <UserAvatar profile={p} size="xl" />
       </div>
@@ -87,12 +87,12 @@ function TurboAvatar({ profile: p }) {
         position: 'absolute', bottom: -16, left: '50%', transform: 'translateX(-50%)',
         display: 'inline-flex', alignItems: 'center', gap: 4,
         padding: '3px 11px', borderRadius: 99,
-        background: 'linear-gradient(135deg, #ff6b00, #ff8c33)',
+        background: `linear-gradient(135deg, ${accent}, ${accentLight})`,
         color: '#fff', fontSize: 10, fontWeight: 900, letterSpacing: '0.12em',
         whiteSpace: 'nowrap', zIndex: 3,
-        boxShadow: '0 0 14px rgba(255,107,0,0.75), 0 0 32px rgba(255,107,0,0.3)',
+        boxShadow: `0 0 14px rgba(${rgb},0.75), 0 0 32px rgba(${rgb},0.3)`,
       }}>
-        <Zap size={9} fill="#fff" /> TURBO
+        <Zap size={9} fill="#fff" /> {label}
       </div>
     </div>
   )
@@ -191,6 +191,11 @@ export default function PublicProProfile() {
   const isTurbo = profile.plan === 'turbo'
   const isElite = profile.plan === 'elite'
   const hasPlan = isTurbo || isElite
+  const planAccent      = isElite ? '#7c3aed' : '#ff6b00'
+  const planAccentMid   = isElite ? '#9333ea' : '#ff7d1a'
+  const planAccentLight = isElite ? '#a855f7' : '#ff8c33'
+  const planRgb         = isElite ? '124,58,237' : '255,107,0'
+  const planLabel       = isElite ? 'ELİTE ÜYE' : 'TURBO ÜYE'
   const avgRating = ratings.length > 0
     ? Math.round(ratings.reduce((s, r) => s + r.rating, 0) / ratings.length * 10) / 10
     : null
@@ -285,8 +290,8 @@ export default function PublicProProfile() {
         <div style={{
           position: 'relative', borderRadius: 22, overflow: 'hidden',
           marginTop: 22, marginBottom: 14,
-          border: `1px solid ${hasPlan ? 'rgba(255,107,0,0.2)' : '#141414'}`,
-          boxShadow: hasPlan ? '0 0 100px rgba(255,107,0,0.07), 0 4px 40px rgba(0,0,0,0.6)' : '0 4px 40px rgba(0,0,0,0.5)',
+          border: `1px solid ${hasPlan ? `rgba(${planRgb},0.2)` : '#141414'}`,
+          boxShadow: hasPlan ? `0 0 100px rgba(${planRgb},0.07), 0 4px 40px rgba(0,0,0,0.6)` : '0 4px 40px rgba(0,0,0,0.5)',
         }}>
 
           {/* Background layers */}
@@ -307,11 +312,11 @@ export default function PublicProProfile() {
             background: 'linear-gradient(to bottom, rgba(8,8,8,0) 0%, rgba(8,8,8,0.45) 55%, rgba(8,8,8,0.92) 100%)',
           }} />
 
-          {/* Turbo top border shimmer */}
+          {/* Plan top border shimmer */}
           {hasPlan && (
             <div className="pp-shimmer" style={{
               position: 'absolute', top: 0, left: 0, right: 0, height: 2, pointerEvents: 'none',
-              background: 'linear-gradient(90deg, transparent 0%, #ff6b00 38%, #ffb347 62%, transparent 100%)',
+              background: `linear-gradient(90deg, transparent 0%, ${planAccent} 38%, ${planAccentLight} 62%, transparent 100%)`,
               backgroundSize: '220% auto',
             }} />
           )}
@@ -322,7 +327,7 @@ export default function PublicProProfile() {
 
               {/* Avatar */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, marginTop: 4, paddingBottom: 22 }}>
-                <TurboAvatar profile={profile} />
+                <TurboAvatar profile={profile} accent={planAccent} accentMid={planAccentMid} accentLight={planAccentLight} rgb={planRgb} label={isElite ? 'ELITE' : 'TURBO'} />
               </div>
 
               {/* Info */}
@@ -337,10 +342,10 @@ export default function PublicProProfile() {
                     <span className="pp-badge-glow" style={{
                       display: 'inline-flex', alignItems: 'center', gap: 5,
                       padding: '4px 13px', borderRadius: 99,
-                      background: 'rgba(255,107,0,0.1)', border: '1px solid rgba(255,107,0,0.3)',
-                      color: '#ff6b00', fontSize: 11, fontWeight: 800, letterSpacing: '0.08em',
+                      background: `rgba(${planRgb},0.1)`, border: `1px solid rgba(${planRgb},0.3)`,
+                      color: planAccent, fontSize: 11, fontWeight: 800, letterSpacing: '0.08em',
                     }}>
-                      <Zap size={11} fill="#ff6b00" /> TURBO ÜYE
+                      <Zap size={11} fill={planAccent} /> {planLabel}
                     </span>
                   )}
                   <span style={{
@@ -488,13 +493,13 @@ export default function PublicProProfile() {
           <div style={{
             display: 'flex', alignItems: 'center', gap: 12,
             padding: '13px 20px', borderRadius: 12, marginBottom: 28,
-            background: 'linear-gradient(90deg, rgba(255,107,0,0.07) 0%, rgba(255,107,0,0.03) 100%)',
-            border: '1px solid rgba(255,107,0,0.12)',
-            borderLeft: '3px solid #ff6b00',
+            background: `linear-gradient(90deg, rgba(${planRgb},0.07) 0%, rgba(${planRgb},0.03) 100%)`,
+            border: `1px solid rgba(${planRgb},0.12)`,
+            borderLeft: `3px solid ${planAccent}`,
           }}>
-            <Zap size={15} style={{ color: '#ff6b00', flexShrink: 0 }} fill="#ff6b00" />
+            <Zap size={15} style={{ color: planAccent, flexShrink: 0 }} fill={planAccent} />
             <span style={{ fontSize: 13, color: '#777', lineHeight: 1.5 }}>
-              Bu usta <strong style={{ color: '#ff8c33', fontWeight: 700 }}>Turbo üyelik</strong> sayesinde arama sonuçlarında öncelikli listeleniyor.
+              Bu usta <strong style={{ color: planAccentLight, fontWeight: 700 }}>{planLabel}</strong> sayesinde arama sonuçlarında öncelikli listeleniyor.
             </span>
           </div>
         )}
@@ -778,6 +783,10 @@ export default function PublicProProfile() {
         @keyframes pp-badge-glow {
           0%, 100% { box-shadow: 0 0 14px rgba(255,107,0,0.7), 0 0 30px rgba(255,107,0,0.28); }
           50%       { box-shadow: 0 0 22px rgba(255,107,0,0.95), 0 0 50px rgba(255,107,0,0.45); }
+        }
+        @keyframes pp-badge-elite {
+          0%, 100% { box-shadow: 0 0 14px rgba(124,58,237,0.7), 0 0 30px rgba(124,58,237,0.28); }
+          50%       { box-shadow: 0 0 22px rgba(124,58,237,0.95), 0 0 50px rgba(124,58,237,0.45); }
         }
         @keyframes pp-shimmer {
           0%   { background-position: 200% center; }

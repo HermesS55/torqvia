@@ -130,7 +130,7 @@ export default function GlobalSearch({ onClose }) {
                     <Users className="h-3 w-3" /> Kullanıcılar
                   </p>
                   {results.users.map(u => (
-                    <button key={u.id} onClick={() => go(`/profile/${u.id}`)}
+                    <button key={u.id} onClick={() => go(u.role === 'pro' ? `/usta/${u.id}` : `/profile/${u.id}`)}
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-zinc-800 transition-colors text-left">
                       <UserAvatar profile={u} size="sm" />
                       <div className="flex-1 min-w-0">

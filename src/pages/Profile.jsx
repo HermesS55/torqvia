@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, Navigate } from 'react-router-dom'
 import {
   Car, Wrench, Store, Globe, Phone, Edit2, Camera,
   MessageCircle, Star, Grid3X3, FileText,
@@ -479,6 +479,7 @@ export default function Profile() {
 
   if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>
   if (!profile) return <div className="text-center py-20 text-zinc-500">Kullanıcı bulunamadı</div>
+  if (!isOwn && profile.role === 'pro') return <Navigate to={`/usta/${id}`} replace />
 
   const plan = profile.plan || 'free'
   const isElite = plan === 'elite'
