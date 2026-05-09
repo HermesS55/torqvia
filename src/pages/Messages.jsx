@@ -61,6 +61,7 @@ export default function Messages() {
   const [msgImageUploading, setMsgImageUploading] = useState(false)
   const [msgIsVideo, setMsgIsVideo] = useState(false)
   const bottomRef = useRef()
+  const messagesContainerRef = useRef()
   const channelRef = useRef()
   const inputRef = useRef()
   const msgImageRef = useRef()
@@ -82,7 +83,9 @@ export default function Messages() {
   }, [activeId])
 
   useEffect(() => {
-    if (!chatSearch) bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (!chatSearch && messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+    }
   }, [messages, chatSearch])
 
   useEffect(() => {
@@ -415,11 +418,11 @@ export default function Messages() {
             </button>
             {activeProfile && (
               <>
-                <Link to={`/profile/${activeId}`} className="relative shrink-0">
+                <Link to={activeProfile.role === 'pro' ? `/usta/${activeId}` : `/profile/${activeId}`} className="relative shrink-0">
                   <UserAvatar profile={activeProfile} size="sm" />
                 </Link>
                 <div className="flex-1">
-                  <Link to={`/profile/${activeId}`} className="text-sm font-semibold text-white hover:text-brand-400 transition-colors">
+                  <Link to={activeProfile.role === 'pro' ? `/usta/${activeId}` : `/profile/${activeId}`} className="text-sm font-semibold text-white hover:text-brand-400 transition-colors">
                     {activeProfile.full_name || 'İsimsiz'}
                   </Link>
                   <p className="text-xs text-zinc-500">
@@ -462,7 +465,7 @@ export default function Messages() {
             </div>
           )}
 
-          <div className="flex-1 overflow-y-auto p-4">
+          <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4">
             {loadingMsgs ? (
               <div className="flex justify-center py-8"><Spinner /></div>
             ) : filteredMessages.length === 0 ? (

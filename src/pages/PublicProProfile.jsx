@@ -241,15 +241,8 @@ export default function PublicProProfile() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 28px', height: 58,
       }}>
-        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-          <div style={{
-            width: 30, height: 30, borderRadius: 8,
-            background: 'linear-gradient(135deg, #ff6b00, #ff8c33)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 2px 10px rgba(255,107,0,0.4)',
-          }}>
-            <TorqviaLogo size={18} color="#fff" />
-          </div>
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+          <TorqviaLogo size={32} />
           <span style={{ fontSize: 16, fontWeight: 800, color: '#f0f0f0', letterSpacing: '-0.02em' }}>Torqvia</span>
         </Link>
 
@@ -348,14 +341,16 @@ export default function PublicProProfile() {
                       <Zap size={11} fill={planAccent} /> {planLabel}
                     </span>
                   )}
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 5,
-                    padding: '4px 12px', borderRadius: 99,
-                    background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.18)',
-                    color: '#22c55e', fontSize: 11, fontWeight: 700,
-                  }}>
-                    <Shield size={10} strokeWidth={2.5} /> DOĞRULANDI
-                  </span>
+                  {profile.verified && (
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 5,
+                      padding: '4px 12px', borderRadius: 99,
+                      background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.18)',
+                      color: '#22c55e', fontSize: 11, fontWeight: 700,
+                    }}>
+                      <Shield size={10} strokeWidth={2.5} /> DOĞRULANDI
+                    </span>
+                  )}
                 </div>
 
                 {/* Shop + city */}
@@ -402,16 +397,6 @@ export default function PublicProProfile() {
                     <CheckCircle size={13} style={{ color: '#22c55e' }} />
                     <span style={{ fontWeight: 700, color: '#f0f0f0' }}>{ratings.length}</span>
                     <span style={{ color: '#444' }}>tamamlanan</span>
-                  </div>
-                  {/* Response time */}
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 7,
-                    padding: '7px 14px', borderRadius: 10,
-                    background: 'rgba(255,107,0,0.05)', border: '1px solid rgba(255,107,0,0.1)',
-                    fontSize: 13,
-                  }}>
-                    <Clock size={13} style={{ color: '#ff6b00' }} />
-                    <span style={{ color: '#888' }}>≈15 dk yanıt</span>
                   </div>
                   {profile.price_range && (
                     <div style={{
@@ -516,13 +501,13 @@ export default function PublicProProfile() {
                 {[
                   {
                     icon: <Wrench size={14} style={{ color: '#ff6b00' }} />,
-                    label: 'Deneyim',
-                    value: profile.specialty || '5+ Yıl',
+                    label: 'Uzmanlık',
+                    value: profile.specialty || '—',
                   },
                   {
                     icon: <Clock size={14} style={{ color: '#ff6b00' }} />,
                     label: 'Çalışma Saatleri',
-                    value: profile.service_hours || 'Hft. 09:00–18:00',
+                    value: profile.service_hours || '—',
                   },
                   {
                     icon: <Phone size={14} style={{ color: '#ff6b00' }} />,
@@ -663,9 +648,9 @@ export default function PublicProProfile() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
                 {[
                   { label: 'Puan', value: avgRating ? avgRating.toFixed(1) : '—', unit: '/ 5.0', accent: '#f59e0b' },
-                  { label: 'Tamamlanan', value: ratings.length, unit: 'iş', accent: '#22c55e' },
+                  { label: 'Yorum', value: ratings.length, unit: 'adet', accent: '#22c55e' },
                   { label: 'Memnuniyet', value: satisfactionPct != null ? `%${satisfactionPct}` : '—', unit: '', accent: '#8b5cf6' },
-                  { label: 'Yanıt Süresi', value: '≈15', unit: 'dk', accent: '#ff6b00' },
+                  { label: 'Fiyat Aralığı', value: profile.price_range || '—', unit: '', accent: '#ff6b00', small: true },
                 ].map(s => (
                   <div key={s.label} style={{
                     padding: '14px 14px 13px',
@@ -675,8 +660,8 @@ export default function PublicProProfile() {
                     <div style={{ fontSize: 9, color: '#2e2e2e', fontFamily: 'monospace', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 9 }}>
                       {s.label}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                      <span style={{ fontSize: 23, fontWeight: 900, color: s.accent, lineHeight: 1 }}>{s.value}</span>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, overflow: 'hidden' }}>
+                      <span style={{ fontSize: s.small ? 14 : 23, fontWeight: 900, color: s.accent, lineHeight: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.value}</span>
                       {s.unit && <span style={{ fontSize: 11, color: '#333' }}>{s.unit}</span>}
                     </div>
                   </div>

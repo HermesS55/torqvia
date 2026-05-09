@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Car, PlusCircle, X, SlidersHorizontal, Fuel, Zap, AlertTriangle, Wallet, MapPin, Bookmark } from 'lucide-react'
+import { Search, Car, PlusCircle, X, SlidersHorizontal, Fuel, Zap, AlertTriangle, Wallet, MapPin, Bookmark, Users, ChevronRight } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useT } from '../../contexts/LangContext'
@@ -120,7 +120,37 @@ export default function Listings() {
   }
 
   return (
-    <div>
+    <div className="lg:grid lg:gap-6 lg:items-start" style={{ gridTemplateColumns: '200px 1fr' }}>
+
+      {/* ── Left sidebar (desktop only) ── */}
+      <aside className="hidden lg:flex lg:flex-col gap-3">
+        <Link to="/ustalar" className="block rounded-xl border border-zinc-800 bg-zinc-900 p-4 hover:border-brand-500/40 hover:bg-zinc-800/60 transition-colors group">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="h-8 w-8 rounded-lg bg-brand-500/10 border border-brand-500/20 flex items-center justify-center shrink-0">
+              <Users className="h-4 w-4 text-brand-400" />
+            </div>
+            <span className="text-sm font-semibold text-white">Usta Bul</span>
+            <ChevronRight className="h-3.5 w-3.5 text-zinc-600 group-hover:text-brand-400 ml-auto transition-colors" />
+          </div>
+          <p className="text-xs text-zinc-500 leading-relaxed">Konumuna göre servis uzmanı bul, profilleri incele ve randevu al.</p>
+        </Link>
+
+        {isOwner && (
+          <Link to="/listings/new" className="block rounded-xl border border-zinc-800 bg-zinc-900 p-4 hover:border-zinc-700 hover:bg-zinc-800/60 transition-colors group">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-8 w-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center shrink-0">
+                <PlusCircle className="h-4 w-4 text-zinc-400" />
+              </div>
+              <span className="text-sm font-semibold text-white">Yeni İlan</span>
+              <ChevronRight className="h-3.5 w-3.5 text-zinc-600 group-hover:text-zinc-400 ml-auto transition-colors" />
+            </div>
+            <p className="text-xs text-zinc-500 leading-relaxed">Araçın için servis ilanı oluştur, teklifler al.</p>
+          </Link>
+        )}
+      </aside>
+
+      {/* ── Main content ── */}
+      <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -285,12 +315,13 @@ export default function Listings() {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(listing => (
             <ListingCard key={listing.id} listing={listing} />
           ))}
         </div>
       )}
+      </div>
     </div>
   )
 }
