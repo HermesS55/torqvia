@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
-import { Send, MessageCircle, Search, ArrowLeft, Check, CheckCheck, X, Smile, Trash2, SearchIcon, Image as ImageIcon } from 'lucide-react'
+import { Send, MessageCircle, Search, ArrowLeft, Check, CheckCheck, X, Smile, Trash2, SearchIcon, Image as ImageIcon, ZoomIn, Play } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useLang } from '../contexts/LangContext'
 import { uploadPostImage, uploadPostVideo } from '../lib/avatar'
 import UserAvatar from '../components/ui/UserAvatar'
 import Spinner from '../components/ui/Spinner'
@@ -11,12 +12,13 @@ import { sanitizeText, validateImageFile } from '../lib/security'
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '🔥', '🚗', '🏎️', '⚡']
 
-function DateSeparator({ date }) {
+function DateSeparator({ date, lang }) {
   const d = new Date(date)
   const now = new Date()
   const isToday = d.toDateString() === now.toDateString()
   const isYesterday = new Date(now - 86400000).toDateString() === d.toDateString()
-  const label = isToday ? 'Bugün' : isYesterday ? 'Dün' : d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+  const locale = lang === 'tr' ? 'tr-TR' : 'en-US'
+  const label = isToday ? (lang === 'tr' ? 'Bugün' : 'Today') : isYesterday ? (lang === 'tr' ? 'Dün' : 'Yesterday') : d.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })
   return (
     <div className="flex items-center gap-3 my-4">
       <div className="flex-1 h-px bg-zinc-800" />
@@ -37,8 +39,33 @@ function groupByDate(messages) {
   return groups
 }
 
+function MediaLightboxMsg({ src, isVideo, onClose }) {
+  useEffect(() => {
+    function onKey(e) { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.96)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+    >
+      <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}>
+        <X size={18} />
+      </button>
+      {isVideo ? (
+        <video src={src} controls autoPlay style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 10 }} onClick={e => e.stopPropagation()} />
+      ) : (
+        <img src={src} alt="" style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 10 }} onClick={e => e.stopPropagation()} />
+      )}
+    </div>
+  )
+}
+
 export default function Messages() {
   const { user } = useAuth()
+  const { lang } = useLang()
+  const tr = lang === 'tr'
   const [searchParams] = useSearchParams()
   const toId = searchParams.get('to')
 
@@ -60,6 +87,8 @@ export default function Messages() {
   const [msgImagePreview, setMsgImagePreview] = useState(null)
   const [msgImageUploading, setMsgImageUploading] = useState(false)
   const [msgIsVideo, setMsgIsVideo] = useState(false)
+  const [lightboxSrc, setLightboxSrc] = useState(null)
+  const [lightboxVideo, setLightboxVideo] = useState(false)
   const bottomRef = useRef()
   const messagesContainerRef = useRef()
   const channelRef = useRef()
@@ -241,11 +270,11 @@ export default function Messages() {
     if (!ts) return null
     const diff = Date.now() - new Date(ts).getTime()
     const m = Math.floor(diff / 60000)
-    if (m < 2) return 'Şu an çevrimiçi'
-    if (m < 60) return `${m} dk önce görüldü`
+    if (m < 2) return tr ? 'Şu an çevrimiçi' : 'Online now'
+    if (m < 60) return tr ? `${m} dk önce görüldü` : `Last seen ${m}m ago`
     const h = Math.floor(m / 60)
-    if (h < 24) return `${h} sa önce görüldü`
-    return `${Math.floor(h / 24)}g önce görüldü`
+    if (h < 24) return tr ? `${h} sa önce görüldü` : `Last seen ${h}h ago`
+    return tr ? `${Math.floor(h / 24)}g önce görüldü` : `Last seen ${Math.floor(h / 24)}d ago`
   }
 
   async function handleSend(e) {
@@ -293,7 +322,7 @@ export default function Messages() {
   }
 
   async function handleDeleteMessage(id) {
-    if (!confirm('Mesajı silmek istediğine emin misin?')) return
+    if (!confirm(tr ? 'Mesajı silmek istediğine emin misin?' : 'Delete this message?')) return
     const { error } = await supabase.from('messages').delete().eq('id', id)
     if (error) { toast.error('Silinemedi'); return }
     setMessages(prev => prev.filter(m => m.id !== id))
@@ -314,15 +343,16 @@ export default function Messages() {
     inputRef.current?.focus()
   }
 
+  const locale = tr ? 'tr-TR' : 'en-US'
   const timeLabel = ts => {
     if (!ts) return ''
     const d = new Date(ts)
     const now = new Date()
-    if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
-    return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })
+    if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+    return d.toLocaleDateString(locale, { day: 'numeric', month: 'short' })
   }
 
-  const timeShort = ts => new Date(ts).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+  const timeShort = ts => new Date(ts).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
 
   const filteredMessages = chatSearch.trim()
     ? messages.filter(m => m.content?.toLowerCase().includes(chatSearch.toLowerCase()))
@@ -331,35 +361,41 @@ export default function Messages() {
   const messageGroups = groupByDate(filteredMessages)
 
   return (
-    <div className="flex h-[calc(100vh-5rem)] gap-0 rounded-2xl border border-zinc-800 overflow-hidden bg-zinc-950">
+    <>
+    {lightboxSrc && <MediaLightboxMsg src={lightboxSrc} isVideo={lightboxVideo} onClose={() => setLightboxSrc(null)} />}
+    <div className="messages-panel" style={{ display: 'flex', borderRadius: 20, overflow: 'hidden', border: '1px solid #1a1a1a', background: '#080808', boxShadow: '0 0 60px rgba(0,0,0,0.6)' }}>
 
       {/* Sidebar */}
-      <div className={`w-full sm:w-80 flex-shrink-0 border-r border-zinc-800 flex flex-col bg-zinc-950 ${activeId ? 'hidden sm:flex' : 'flex'}`}>
-        <div className="p-4 border-b border-zinc-800">
-          <div className="flex items-center gap-2 mb-3">
-            <MessageCircle className="h-4 w-4 text-brand-400" />
-            <h2 className="font-bold text-white">Mesajlar</h2>
+      <div style={{ width: 320, flexShrink: 0, borderRight: '1px solid #141414', display: activeId ? undefined : 'flex', flexDirection: 'column', background: '#0a0a0a' }} className={`${activeId ? 'hidden sm:flex' : 'flex'} flex-col`}>
+        <div style={{ padding: '18px 16px 14px', borderBottom: '1px solid #141414', background: 'linear-gradient(135deg, #0d0d0d 0%, #0a0a0a 100%)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+            <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(135deg, #ff6b00, #ff8c00)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <MessageCircle size={14} color="#fff" />
+            </div>
+            <h2 style={{ fontWeight: 700, fontSize: 15, color: '#fff', letterSpacing: '-0.3px' }}>{tr ? 'Mesajlar' : 'Messages'}</h2>
           </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+          <div style={{ position: 'relative' }}>
+            <Search style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#444' }} size={13} />
             <input value={searchUser} onChange={e => setSearchUser(e.target.value)}
-              placeholder="Kullanıcı ara..."
-              className="input-base pl-9 py-2 text-sm" />
+              placeholder={tr ? 'Kullanıcı ara...' : 'Search users...'}
+              style={{ width: '100%', background: '#131313', border: '1px solid #1e1e1e', borderRadius: 10, padding: '8px 32px 8px 32px', color: '#ccc', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
             {searchUser && (
-              <button onClick={() => setSearchUser('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400">
-                <X className="h-3.5 w-3.5" />
+              <button onClick={() => setSearchUser('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#555', background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
+                <X size={13} />
               </button>
             )}
           </div>
           {searchResults.length > 0 && (
-            <div className="mt-2 bg-zinc-800 border border-zinc-700 rounded-xl overflow-hidden shadow-xl">
+            <div style={{ marginTop: 8, background: '#131313', border: '1px solid #1e1e1e', borderRadius: 12, overflow: 'hidden', boxShadow: '0 12px 40px rgba(0,0,0,0.7)' }}>
               {searchResults.map(u => (
                 <button key={u.id} onClick={() => startConversation(u)}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-zinc-700 transition-colors text-left">
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', cursor: 'pointer', background: 'none', border: 'none', textAlign: 'left', transition: 'background 0.15s' }}
+                  onMouseOver={e => e.currentTarget.style.background = '#1a1a1a'}
+                  onMouseOut={e => e.currentTarget.style.background = 'none'}>
                   <UserAvatar profile={u} size="sm" />
                   <div>
-                    <div className="text-sm text-zinc-200 font-medium">{u.full_name || 'İsimsiz'}</div>
-                    <div className="text-xs text-zinc-500">{u.role === 'pro' ? 'Servis Uzmanı' : 'Araç Sahibi'}</div>
+                    <div style={{ fontSize: 13, color: '#e0e0e0', fontWeight: 500 }}>{u.full_name || (tr ? 'İsimsiz' : 'Unnamed')}</div>
+                    <div style={{ fontSize: 11, color: '#555', marginTop: 1 }}>{u.role === 'pro' ? (tr ? 'Servis Uzmanı' : 'Service Expert') : (tr ? 'Araç Sahibi' : 'Car Owner')}</div>
                   </div>
                 </button>
               ))}
@@ -367,40 +403,44 @@ export default function Messages() {
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div style={{ flex: 1, overflowY: 'auto' }}>
           {loadingConvs ? (
-            <div className="flex justify-center py-8"><Spinner /></div>
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 0' }}><Spinner /></div>
           ) : conversations.length === 0 ? (
-            <div className="p-6 text-center">
-              <MessageCircle className="h-10 w-10 text-zinc-800 mx-auto mb-3" />
-              <p className="text-zinc-600 text-sm">Henüz mesaj yok</p>
+            <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                <MessageCircle size={22} color="#2a2a2a" />
+              </div>
+              <p style={{ color: '#3a3a3a', fontSize: 13 }}>{tr ? 'Henüz mesaj yok' : 'No messages yet'}</p>
+              <p style={{ color: '#2a2a2a', fontSize: 11, marginTop: 4 }}>{tr ? 'Kullanıcı arayarak başla' : 'Search a user to start'}</p>
             </div>
           ) : (
             conversations.map(c => {
               const unread = unreadCounts[c.otherId] || 0
+              const isActive = activeId === c.otherId
               return (
                 <button key={c.otherId} onClick={() => setActiveId(c.otherId)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-800/60 transition-colors text-left border-b border-zinc-800/40 ${activeId === c.otherId ? 'bg-zinc-800/80 border-l-2 border-l-brand-500' : ''}`}>
-                  <div className="relative shrink-0">
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 11, padding: '12px 14px', cursor: 'pointer', border: 'none', textAlign: 'left', transition: 'background 0.15s', background: isActive ? 'linear-gradient(90deg, rgba(255,107,0,0.08) 0%, transparent 100%)' : 'none', borderLeft: isActive ? '2px solid #ff6b00' : '2px solid transparent', borderBottom: '1px solid #111' }}
+                  onMouseOver={e => { if (!isActive) e.currentTarget.style.background = '#0f0f0f' }}
+                  onMouseOut={e => { if (!isActive) e.currentTarget.style.background = 'none' }}>
+                  <div style={{ position: 'relative', flexShrink: 0 }}>
                     <UserAvatar profile={c.profile} size="sm" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <span className={`text-sm truncate ${unread > 0 ? 'font-bold text-white' : 'font-medium text-zinc-200'}`}>
-                        {c.profile?.full_name || 'İsimsiz'}
+                    {unread > 0 && (
+                      <span style={{ position: 'absolute', top: -3, right: -3, minWidth: 16, height: 16, background: '#ff6b00', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px', border: '1.5px solid #0a0a0a' }}>
+                        {unread > 9 ? '9+' : unread}
                       </span>
-                      <span className="text-[10px] text-zinc-600 shrink-0 ml-1">{timeLabel(c.lastMessage?.created_at)}</span>
+                    )}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 13, color: unread > 0 ? '#fff' : '#d0d0d0', fontWeight: unread > 0 ? 700 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>
+                        {c.profile?.full_name || (tr ? 'İsimsiz' : 'Unnamed')}
+                      </span>
+                      <span style={{ fontSize: 10, color: '#3a3a3a', flexShrink: 0, marginLeft: 4 }}>{timeLabel(c.lastMessage?.created_at)}</span>
                     </div>
-                    <div className="flex items-center justify-between gap-1">
-                      <p className={`text-xs truncate mt-0.5 ${unread > 0 ? 'text-zinc-300' : 'text-zinc-500'}`}>
-                        {c.lastMessage?.sender_id === user.id ? 'Sen: ' : ''}{c.lastMessage?.content || 'Yeni konuşma'}
-                      </p>
-                      {unread > 0 && (
-                        <span className="shrink-0 h-4 w-4 bg-brand-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                          {unread > 9 ? '9+' : unread}
-                        </span>
-                      )}
-                    </div>
+                    <p style={{ fontSize: 11, color: unread > 0 ? '#888' : '#444', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {c.lastMessage?.sender_id === user.id ? (tr ? 'Sen: ' : 'You: ') : ''}{c.lastMessage?.content || (tr ? 'Yeni konuşma' : 'New conversation')}
+                    </p>
                   </div>
                 </button>
               )
@@ -411,122 +451,142 @@ export default function Messages() {
 
       {/* Chat window */}
       {activeId ? (
-        <div className="flex-1 flex flex-col min-w-0 bg-zinc-950">
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800 bg-zinc-900/80 backdrop-blur">
-            <button onClick={() => setActiveId(null)} className="sm:hidden p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-500">
-              <ArrowLeft className="h-4 w-4" />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: '#080808' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 18px', borderBottom: '1px solid #141414', background: 'rgba(12,12,12,0.95)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
+            <button onClick={() => setActiveId(null)} style={{ display: 'flex', background: 'none', border: 'none', padding: '6px', borderRadius: 8, cursor: 'pointer', color: '#555' }} className="sm:hidden">
+              <ArrowLeft size={16} />
             </button>
             {activeProfile && (
               <>
-                <Link to={activeProfile.role === 'pro' ? `/usta/${activeId}` : `/profile/${activeId}`} className="relative shrink-0">
+                <Link to={activeProfile.role === 'pro' ? `/usta/${activeId}` : `/profile/${activeId}`} style={{ flexShrink: 0, position: 'relative' }}>
                   <UserAvatar profile={activeProfile} size="sm" />
                 </Link>
-                <div className="flex-1">
-                  <Link to={activeProfile.role === 'pro' ? `/usta/${activeId}` : `/profile/${activeId}`} className="text-sm font-semibold text-white hover:text-brand-400 transition-colors">
-                    {activeProfile.full_name || 'İsimsiz'}
+                <div style={{ flex: 1 }}>
+                  <Link to={activeProfile.role === 'pro' ? `/usta/${activeId}` : `/profile/${activeId}`} style={{ fontSize: 14, fontWeight: 600, color: '#fff', textDecoration: 'none', display: 'block', letterSpacing: '-0.2px' }}
+                    onMouseOver={e => e.currentTarget.style.color = '#ff6b00'}
+                    onMouseOut={e => e.currentTarget.style.color = '#fff'}>
+                    {activeProfile.full_name || (tr ? 'İsimsiz' : 'Unnamed')}
                   </Link>
-                  <p className="text-xs text-zinc-500">
-                    {lastSeenLabel(activeProfile.last_seen) || (activeProfile.role === 'pro' ? 'Servis Uzmanı' : 'Araç Sahibi')}
+                  <p style={{ fontSize: 11, color: '#555', marginTop: 1 }}>
+                    {lastSeenLabel(activeProfile.last_seen) || (activeProfile.role === 'pro' ? (tr ? 'Servis Uzmanı' : 'Service Expert') : (tr ? 'Araç Sahibi' : 'Car Owner'))}
                   </p>
                 </div>
               </>
             )}
             <button
               onClick={() => { setShowChatSearch(v => !v); setChatSearch('') }}
-              className={`p-1.5 rounded-lg transition-colors ${showChatSearch ? 'text-brand-400 bg-brand-500/10' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'}`}
-              title="Konuşmada Ara"
+              style={{ padding: '7px', borderRadius: 9, border: 'none', cursor: 'pointer', background: showChatSearch ? 'rgba(255,107,0,0.12)' : '#131313', color: showChatSearch ? '#ff6b00' : '#555', transition: 'all 0.15s' }}
+              title={tr ? 'Konuşmada Ara' : 'Search in chat'}
             >
-              <SearchIcon className="h-4 w-4" />
+              <SearchIcon size={15} />
             </button>
           </div>
 
           {showChatSearch && (
-            <div className="px-4 py-2 border-b border-zinc-800 bg-zinc-900/60">
-              <div className="relative">
-                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+            <div style={{ padding: '10px 16px', borderBottom: '1px solid #141414', background: '#0a0a0a' }}>
+              <div style={{ position: 'relative' }}>
+                <SearchIcon style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#444' }} size={13} />
                 <input
                   value={chatSearch}
                   onChange={e => setChatSearch(e.target.value)}
-                  placeholder="Mesajlarda ara..."
+                  placeholder={tr ? 'Mesajlarda ara...' : 'Search messages...'}
                   autoFocus
-                  className="input-base pl-9 py-2 text-sm"
+                  style={{ width: '100%', background: '#131313', border: '1px solid #1e1e1e', borderRadius: 10, padding: '8px 32px 8px 32px', color: '#ccc', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
                 />
                 {chatSearch && (
-                  <button onClick={() => setChatSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400">
-                    <X className="h-3.5 w-3.5" />
+                  <button onClick={() => setChatSearch('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#555', background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
+                    <X size={13} />
                   </button>
                 )}
               </div>
               {chatSearch && (
-                <p className="text-xs text-zinc-600 mt-1.5 px-1">
-                  {filteredMessages.length} sonuç bulundu
+                <p style={{ fontSize: 11, color: '#3a3a3a', marginTop: 6, paddingLeft: 2 }}>
+                  {filteredMessages.length} {tr ? 'sonuç bulundu' : 'results found'}
                 </p>
               )}
             </div>
           )}
 
-          <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4">
+          <div ref={messagesContainerRef} style={{ flex: 1, overflowY: 'auto', padding: '16px 18px', background: 'radial-gradient(ellipse at 50% 0%, rgba(255,107,0,0.03) 0%, transparent 60%), #080808' }}>
             {loadingMsgs ? (
-              <div className="flex justify-center py-8"><Spinner /></div>
+              <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 40 }}><Spinner /></div>
             ) : filteredMessages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center">
-                <div className="h-16 w-16 rounded-2xl bg-zinc-800/50 flex items-center justify-center mb-4">
-                  <MessageCircle className="h-8 w-8 text-zinc-700" />
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', minHeight: 240 }}>
+                <div style={{ width: 64, height: 64, borderRadius: 18, background: '#111', border: '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                  <MessageCircle size={28} color="#222" />
                 </div>
-                <p className="text-zinc-500 text-sm font-medium">
-                  {chatSearch ? 'Sonuç bulunamadı' : 'Henüz mesaj yok'}
+                <p style={{ color: '#444', fontSize: 14, fontWeight: 500 }}>
+                  {chatSearch ? (tr ? 'Sonuç bulunamadı' : 'No results found') : (tr ? 'Henüz mesaj yok' : 'No messages yet')}
                 </p>
-                {!chatSearch && <p className="text-zinc-700 text-xs mt-1">Konuşmayı başlatmak için yaz</p>}
+                {!chatSearch && <p style={{ color: '#2a2a2a', fontSize: 12, marginTop: 6 }}>{tr ? 'Konuşmayı başlatmak için yaz' : 'Type to start the conversation'}</p>}
               </div>
             ) : (
               messageGroups.map((group, gi) => (
                 <div key={gi}>
-                  <DateSeparator date={group.date} />
+                  <DateSeparator date={group.date} lang={lang} />
                   {group.messages.map((m, mi) => {
                     const isMine = m.sender_id === user.id
                     const prevMsg = group.messages[mi - 1]
                     const showAvatar = !isMine && (!prevMsg || prevMsg.sender_id !== m.sender_id)
                     const isRead = isMine && !!m.read_at
+                    const isHighlighted = chatSearch && m.content?.toLowerCase().includes(chatSearch.toLowerCase())
                     return (
-                      <div key={m.id} className={`flex mb-1.5 group ${isMine ? 'justify-end' : 'justify-start'}`}>
+                      <div key={m.id} style={{ display: 'flex', marginBottom: 6, justifyContent: isMine ? 'flex-end' : 'flex-start' }} className="group">
                         {!isMine && (
-                          <div className="w-8 shrink-0 mr-2 self-end">
+                          <div style={{ width: 30, flexShrink: 0, marginRight: 8, display: 'flex', alignItems: 'flex-end' }}>
                             {showAvatar && <UserAvatar profile={activeProfile} size="xs" />}
                           </div>
                         )}
-                        <div className={`max-w-[72%] lg:max-w-[60%] flex items-end gap-1.5 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
+                        <div style={{ maxWidth: '68%', display: 'flex', alignItems: 'flex-end', gap: 6, flexDirection: isMine ? 'row-reverse' : 'row' }}>
                           {isMine && (
                             <button
                               onClick={() => handleDeleteMessage(m.id)}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded text-zinc-600 hover:text-red-400 hover:bg-red-500/10 shrink-0 self-center"
-                              title="Mesajı Sil"
+                              style={{ opacity: 0, padding: '4px', borderRadius: 6, background: 'none', border: 'none', cursor: 'pointer', color: '#555', flexShrink: 0, alignSelf: 'center', transition: 'opacity 0.15s' }}
+                              className="group-hover:!opacity-100"
+                              title={tr ? 'Mesajı Sil' : 'Delete'}
                             >
-                              <Trash2 className="h-3 w-3" />
+                              <Trash2 size={12} />
                             </button>
                           )}
                           <div>
-                            <div className={`rounded-2xl text-sm overflow-hidden ${
-                              isMine
-                                ? 'bg-brand-500 text-white rounded-br-sm'
-                                : 'bg-zinc-800 text-zinc-200 rounded-bl-sm'
-                            }`}>
+                            <div style={{
+                              borderRadius: isMine ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                              fontSize: 13.5,
+                              overflow: 'hidden',
+                              background: isMine ? 'linear-gradient(135deg, #ff7a00, #ff5500)' : '#161616',
+                              color: isMine ? '#fff' : '#d8d8d8',
+                              border: isMine ? 'none' : '1px solid #1e1e1e',
+                              boxShadow: isMine ? '0 2px 12px rgba(255,107,0,0.25)' : '0 1px 4px rgba(0,0,0,0.4)',
+                            }}>
                               {m.image_url && (
-                                m.image_url.includes('post-videos')
-                                  ? <video src={m.image_url} className="w-full max-h-60" controls muted playsInline />
-                                  : <img src={m.image_url} alt="" className="w-full object-cover max-h-60" />
+                                m.image_url.includes('post-videos') ? (
+                                  <div style={{ position: 'relative', cursor: 'pointer' }} className="group/media" onClick={() => { setLightboxSrc(m.image_url); setLightboxVideo(true) }}>
+                                    <video src={m.image_url} style={{ width: '100%', maxHeight: 220, display: 'block', pointerEvents: 'none' }} muted playsInline />
+                                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} className="opacity-0 group-hover/media:opacity-100 transition-opacity">
+                                      <Play size={30} fill="white" color="white" />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div style={{ position: 'relative', cursor: 'zoom-in' }} className="group/media" onClick={() => { setLightboxSrc(m.image_url); setLightboxVideo(false) }}>
+                                    <img src={m.image_url} alt="" style={{ width: '100%', objectFit: 'cover', maxHeight: 220, display: 'block' }} />
+                                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} className="opacity-0 group-hover/media:opacity-100 transition-opacity">
+                                      <ZoomIn size={22} color="white" />
+                                    </div>
+                                  </div>
+                                )
                               )}
                               {m.content && (
-                                <p className={`px-3.5 py-2.5 leading-relaxed whitespace-pre-wrap ${chatSearch && m.content.toLowerCase().includes(chatSearch.toLowerCase()) ? 'bg-yellow-500/20' : ''}`}>
+                                <p style={{ padding: '9px 14px', lineHeight: 1.55, whiteSpace: 'pre-wrap', wordBreak: 'break-word', background: isHighlighted ? 'rgba(255,220,0,0.18)' : undefined }}>
                                   {m.content}
                                 </p>
                               )}
                             </div>
-                            <div className={`flex items-center gap-1 mt-0.5 ${isMine ? 'justify-end' : 'justify-start'}`}>
-                              <span className="text-[10px] text-zinc-600">{timeShort(m.created_at)}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3, justifyContent: isMine ? 'flex-end' : 'flex-start' }}>
+                              <span style={{ fontSize: 10, color: '#333' }}>{timeShort(m.created_at)}</span>
                               {isMine && (
                                 isRead
-                                  ? <CheckCheck className="h-3 w-3 text-brand-400" title="Okundu" />
-                                  : <Check className="h-3 w-3 text-zinc-600" title="Gönderildi" />
+                                  ? <CheckCheck size={11} color="#ff7a00" title={tr ? 'Okundu' : 'Read'} />
+                                  : <Check size={11} color="#333" title={tr ? 'Gönderildi' : 'Sent'} />
                               )}
                             </div>
                           </div>
@@ -540,73 +600,78 @@ export default function Messages() {
             <div ref={bottomRef} />
           </div>
 
-          <div className="border-t border-zinc-800 bg-zinc-900/60">
+          <div style={{ borderTop: '1px solid #141414', background: 'rgba(10,10,10,0.92)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
             {showEmoji && (
-              <div className="flex items-center gap-2 px-4 pt-3 pb-1 flex-wrap">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px 4px', flexWrap: 'wrap' }}>
                 {QUICK_EMOJIS.map(e => (
                   <button key={e} onClick={() => insertEmoji(e)}
-                    className="text-xl hover:scale-125 transition-transform">{e}</button>
+                    style={{ fontSize: 20, background: 'none', border: 'none', cursor: 'pointer', lineHeight: 1, padding: 2, transition: 'transform 0.15s' }}
+                    onMouseOver={el => el.currentTarget.style.transform = 'scale(1.3)'}
+                    onMouseOut={el => el.currentTarget.style.transform = 'scale(1)'}>{e}</button>
                 ))}
               </div>
             )}
             {msgImagePreview && (
-              <div className="px-4 pt-3 pb-1">
-                <div className="relative inline-block">
+              <div style={{ padding: '12px 16px 4px' }}>
+                <div style={{ position: 'relative', display: 'inline-block' }}>
                   {msgIsVideo
-                    ? <video src={msgImagePreview} className="max-h-32 rounded-lg border border-zinc-700" controls muted />
-                    : <img src={msgImagePreview} alt="" className="max-h-32 rounded-lg border border-zinc-700 object-cover" />
+                    ? <video src={msgImagePreview} style={{ maxHeight: 120, borderRadius: 10, border: '1px solid #1e1e1e', display: 'block' }} controls muted />
+                    : <img src={msgImagePreview} alt="" style={{ maxHeight: 120, borderRadius: 10, border: '1px solid #1e1e1e', objectFit: 'cover', display: 'block' }} />
                   }
                   <button type="button" onClick={clearMsgImage}
-                    className="absolute top-1 right-1 bg-black/70 rounded-full p-0.5">
-                    <X className="h-3.5 w-3.5 text-white" />
+                    style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.75)', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}>
+                    <X size={11} color="#fff" />
                   </button>
                 </div>
               </div>
             )}
-            <form onSubmit={handleSend} className="flex gap-2 p-3">
-              <input ref={msgImageRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleMsgImage} />
+            <form onSubmit={handleSend} style={{ display: 'flex', gap: 8, padding: '10px 14px 12px', alignItems: 'center' }}>
+              <input ref={msgImageRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={handleMsgImage} />
               <button
                 type="button"
                 onClick={() => msgImageRef.current?.click()}
-                className="p-2.5 rounded-xl transition-colors text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800"
-                title="Fotoğraf/video gönder"
+                style={{ padding: 9, borderRadius: 10, background: '#111', border: '1px solid #1e1e1e', cursor: 'pointer', color: '#555', display: 'flex', transition: 'all 0.15s', flexShrink: 0 }}
+                onMouseOver={e => { e.currentTarget.style.background = '#1a1a1a'; e.currentTarget.style.color = '#aaa' }}
+                onMouseOut={e => { e.currentTarget.style.background = '#111'; e.currentTarget.style.color = '#555' }}
+                title={tr ? 'Fotoğraf/video gönder' : 'Send photo/video'}
               >
-                <ImageIcon className="h-4 w-4" />
+                <ImageIcon size={15} />
               </button>
               <button
                 type="button"
                 onClick={() => setShowEmoji(v => !v)}
-                className={`p-2.5 rounded-xl transition-colors ${showEmoji ? 'text-brand-400 bg-brand-500/10' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'}`}
+                style={{ padding: 9, borderRadius: 10, border: '1px solid #1e1e1e', cursor: 'pointer', display: 'flex', transition: 'all 0.15s', flexShrink: 0, background: showEmoji ? 'rgba(255,107,0,0.12)' : '#111', color: showEmoji ? '#ff6b00' : '#555' }}
               >
-                <Smile className="h-4 w-4" />
+                <Smile size={15} />
               </button>
               <input
                 ref={inputRef}
                 value={text}
                 onChange={e => setText(e.target.value)}
-                placeholder="Mesaj yaz..."
+                placeholder={tr ? 'Mesaj yaz...' : 'Type a message...'}
                 maxLength={2000}
-                className="input-base flex-1 text-base py-2.5"
+                style={{ flex: 1, background: '#131313', border: '1px solid #1e1e1e', borderRadius: 12, padding: '10px 14px', color: '#e0e0e0', fontSize: 14, outline: 'none', lineHeight: 1.4 }}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e) } }}
               />
               <button type="submit" disabled={(!text.trim() && !msgImageFile) || sending || msgImageUploading}
-                className="btn-primary px-4 flex items-center gap-1.5 disabled:opacity-40">
-                {sending || msgImageUploading ? <Spinner size="sm" /> : <Send className="h-4 w-4" />}
+                style={{ padding: '10px 16px', borderRadius: 12, background: 'linear-gradient(135deg, #ff7a00, #ff5500)', border: 'none', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, opacity: ((!text.trim() && !msgImageFile) || sending || msgImageUploading) ? 0.4 : 1, transition: 'opacity 0.15s' }}>
+                {sending || msgImageUploading ? <Spinner size="sm" /> : <Send size={15} />}
               </button>
             </form>
           </div>
         </div>
       ) : (
-        <div className="flex-1 hidden sm:flex items-center justify-center text-center bg-zinc-950">
+        <div className="hidden sm:flex" style={{ flex: 1, alignItems: 'center', justifyContent: 'center', textAlign: 'center', background: 'radial-gradient(ellipse at center, rgba(255,107,0,0.03) 0%, transparent 70%), #080808' }}>
           <div>
-            <div className="h-20 w-20 rounded-2xl bg-zinc-800/50 flex items-center justify-center mx-auto mb-4">
-              <MessageCircle className="h-10 w-10 text-zinc-700" />
+            <div style={{ width: 72, height: 72, borderRadius: 20, background: 'linear-gradient(135deg, #111, #0d0d0d)', border: '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px', boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}>
+              <MessageCircle size={32} color="#222" />
             </div>
-            <p className="text-zinc-400 font-medium">Mesajların burada görünür</p>
-            <p className="text-zinc-600 text-sm mt-1">Sol taraftan bir konuşma seç</p>
+            <p style={{ color: '#444', fontWeight: 600, fontSize: 15 }}>{tr ? 'Mesajların burada görünür' : 'Your messages appear here'}</p>
+            <p style={{ color: '#2a2a2a', fontSize: 12, marginTop: 6 }}>{tr ? 'Sol taraftan bir konuşma seç' : 'Select a conversation on the left'}</p>
           </div>
         </div>
       )}
     </div>
+    </>
   )
 }

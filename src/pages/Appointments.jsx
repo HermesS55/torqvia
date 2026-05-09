@@ -77,84 +77,135 @@ function ApptCard({ appt, isOwner, onStatusUpdate }) {
   const title = appt.arac_bilgisi ||
     `${appt.listings?.brand || ''} ${appt.listings?.model || ''}`.trim() ||
     'Araç bilgisi yok'
-  const counterpart = isOwner
-    ? (appt.usta?.full_name || appt.profiles?.full_name || 'Servis Uzmanı')
-    : (appt.musteri?.full_name || appt.profiles?.full_name || appt.listings?.user_name || 'Araç Sahibi')
+  const counterpartProfile = isOwner ? (appt.usta || appt.profiles) : (appt.musteri || appt.profiles)
+  const counterpartName = counterpartProfile?.full_name || (isOwner ? 'Servis Uzmanı' : 'Araç Sahibi')
+  const counterpartId = counterpartProfile?.id
   const date = appt.tarih || appt.appointment_date
   const status = appt.durum || appt.status || 'beklemede'
+  const shopName = counterpartProfile?.shop_name
+  const city = counterpartProfile?.city
+
+  const isActive = ['onaylandi', 'accepted', 'in_progress'].includes(status)
+  const isCompleted = ['tamamlandi', 'completed'].includes(status)
+  const isCancelled = ['iptal', 'rejected'].includes(status)
 
   return (
     <div style={{
-      background: 'linear-gradient(160deg, #0d0d0d, #0b0b0b)',
-      border: '1px solid #181818', borderRadius: 14,
-      padding: '16px 20px', transition: 'border-color 0.15s',
+      background: '#0c0c0c',
+      border: `1px solid ${isActive ? 'rgba(34,197,94,0.15)' : isCancelled ? 'rgba(239,68,68,0.1)' : '#181818'}`,
+      borderRadius: 16, overflow: 'hidden', transition: 'border-color 0.15s',
     }}
-      onMouseOver={e => e.currentTarget.style.borderColor = '#242424'}
-      onMouseOut={e => e.currentTarget.style.borderColor = '#181818'}
+      onMouseOver={e => e.currentTarget.style.borderColor = isActive ? 'rgba(34,197,94,0.3)' : isCancelled ? 'rgba(239,68,68,0.2)' : '#262626'}
+      onMouseOut={e => e.currentTarget.style.borderColor = isActive ? 'rgba(34,197,94,0.15)' : isCancelled ? 'rgba(239,68,68,0.1)' : '#181818'}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,107,0,0.08)', border: '1px solid rgba(255,107,0,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Car size={15} style={{ color: '#ff6b00' }} />
+      {/* Top row */}
+      <div style={{ padding: '16px 18px 14px', borderBottom: '1px solid #131313', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+          {/* Counterpart avatar placeholder */}
+          <div style={{ width: 40, height: 40, borderRadius: 12, background: '#131313', border: '1px solid #1e1e1e', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+            {counterpartProfile?.avatar_url ? (
+              <img src={counterpartProfile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <User size={18} style={{ color: '#333' }} />
+            )}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#e8e8e8', display: 'flex', alignItems: 'center', gap: 6 }}>
+              {counterpartName}
             </div>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#e0e0e0' }}>{title}</div>
-              <div style={{ fontSize: 12, color: '#555', marginTop: 1 }}>{counterpart}</div>
+            <div style={{ fontSize: 11, color: '#444', marginTop: 1 }}>
+              {shopName || (isOwner ? 'Servis Uzmanı' : 'Araç Sahibi')}
+              {city && <span> · {city}</span>}
             </div>
           </div>
-          {appt.notlar && (
-            <p style={{ fontSize: 12, color: '#555', lineHeight: 1.6, margin: '0 0 8px', paddingLeft: 46 }}>{appt.notlar}</p>
-          )}
         </div>
         <StatusBadge status={status} />
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          {date && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#555' }}>
-              <Clock size={12} style={{ color: '#ff6b00', flexShrink: 0 }} />
-              {fmtDate(date)}
-            </span>
+      {/* Mid: vehicle + date */}
+      <div style={{ padding: '14px 18px', borderBottom: '1px solid #111' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: date ? 10 : 0 }}>
+          <div style={{ width: 30, height: 30, borderRadius: 8, background: 'rgba(255,107,0,0.08)', border: '1px solid rgba(255,107,0,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Car size={13} style={{ color: '#ff6b00' }} />
+          </div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#ccc' }}>{title}</div>
+            {appt.notlar && (
+              <div style={{ fontSize: 11, color: '#444', marginTop: 2, lineHeight: 1.5 }}>{appt.notlar}</div>
+            )}
+          </div>
+        </div>
+        {date && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#555', marginTop: 2 }}>
+            <Clock size={11} style={{ color: '#ff6b00', flexShrink: 0 }} />
+            <span style={{ fontWeight: 500, color: '#888' }}>{fmtDate(date)}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom: actions */}
+      <div style={{ padding: '11px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {counterpartId && (
+            <Link
+              to={`/messages?to=${counterpartId}`}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, color: '#555', textDecoration: 'none', padding: '5px 10px', borderRadius: 7, background: '#111', border: '1px solid #1e1e1e', transition: 'all 0.15s' }}
+              onMouseOver={e => { e.currentTarget.style.color = '#ff6b00'; e.currentTarget.style.borderColor = 'rgba(255,107,0,0.3)' }}
+              onMouseOut={e => { e.currentTarget.style.color = '#555'; e.currentTarget.style.borderColor = '#1e1e1e' }}
+            >
+              <MessageCircle size={11} /> Mesaj
+            </Link>
+          )}
+          {isOwner && counterpartId && (
+            <Link
+              to={`/usta/${counterpartId}`}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, color: '#555', textDecoration: 'none', padding: '5px 10px', borderRadius: 7, background: '#111', border: '1px solid #1e1e1e', transition: 'all 0.15s' }}
+              onMouseOver={e => { e.currentTarget.style.color = '#aaa'; e.currentTarget.style.borderColor = '#333' }}
+              onMouseOut={e => { e.currentTarget.style.color = '#555'; e.currentTarget.style.borderColor = '#1e1e1e' }}
+            >
+              <User size={11} /> Profil
+            </Link>
           )}
           {appt.price && (
-            <span style={{ fontSize: 12, color: '#ff8c33', fontWeight: 700 }}>
+            <span style={{ fontSize: 12, color: '#ff8c33', fontWeight: 700, marginLeft: 4 }}>
               ₺{Number(appt.price).toLocaleString('tr-TR')}
             </span>
           )}
         </div>
+
         {/* Pro can update status */}
-        {!isOwner && onStatusUpdate && status === 'beklemede' && (
-          <div style={{ display: 'flex', gap: 7 }}>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {!isOwner && onStatusUpdate && status === 'beklemede' && (
+            <>
+              <button
+                onClick={() => onStatusUpdate(appt.id, 'onaylandi')}
+                style={{ padding: '5px 12px', borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: 'pointer', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', color: '#22c55e', transition: 'all 0.15s' }}
+                onMouseOver={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.18)' }}
+                onMouseOut={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.1)' }}
+              >
+                Onayla
+              </button>
+              <button
+                onClick={() => onStatusUpdate(appt.id, 'iptal')}
+                style={{ padding: '5px 12px', borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: 'pointer', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', transition: 'all 0.15s' }}
+                onMouseOver={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)' }}
+                onMouseOut={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)' }}
+              >
+                Reddet
+              </button>
+            </>
+          )}
+          {!isOwner && onStatusUpdate && status === 'onaylandi' && (
             <button
-              onClick={() => onStatusUpdate(appt.id, 'onaylandi')}
-              style={{ padding: '5px 12px', borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: 'pointer', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', color: '#22c55e', transition: 'all 0.15s' }}
-              onMouseOver={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.18)' }}
-              onMouseOut={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.1)' }}
+              onClick={() => onStatusUpdate(appt.id, 'tamamlandi')}
+              style={{ padding: '5px 14px', borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: 'pointer', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.25)', color: '#3b82f6', transition: 'all 0.15s' }}
+              onMouseOver={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.18)' }}
+              onMouseOut={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.1)' }}
             >
-              Onayla
+              Tamamlandı İşaretle
             </button>
-            <button
-              onClick={() => onStatusUpdate(appt.id, 'iptal')}
-              style={{ padding: '5px 12px', borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: 'pointer', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', transition: 'all 0.15s' }}
-              onMouseOver={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)' }}
-              onMouseOut={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)' }}
-            >
-              Reddet
-            </button>
-          </div>
-        )}
-        {!isOwner && onStatusUpdate && status === 'onaylandi' && (
-          <button
-            onClick={() => onStatusUpdate(appt.id, 'tamamlandi')}
-            style={{ padding: '5px 14px', borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: 'pointer', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.25)', color: '#3b82f6', transition: 'all 0.15s' }}
-            onMouseOver={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.18)' }}
-            onMouseOut={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.1)' }}
-          >
-            Tamamlandı İşaretle
-          </button>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )
@@ -204,63 +255,79 @@ export default function Appointments() {
   }
 
   async function fetchOwnerAppointments() {
-    /* Try appointments table first */
-    const { data: apptData, error: apptError } = await supabase
-      .from('appointments')
-      .select('*, usta:profiles!appointments_usta_id_fkey(id, full_name, city, avatar_url, shop_name)')
-      .eq('musteri_id', user.id)
-      .order('tarih', { ascending: false })
+    const [apptResult, listingsResult] = await Promise.all([
+      supabase
+        .from('appointments')
+        .select('*, usta:profiles!appointments_usta_id_fkey(id, full_name, city, avatar_url, shop_name)')
+        .eq('musteri_id', user.id)
+        .order('tarih', { ascending: false }),
+      supabase.from('listings').select('id, brand, model').eq('user_id', user.id),
+    ])
 
-    if (!apptError && apptData) {
-      setUseAppointmentsTable(true)
-      setAppointments(apptData)
-      return
+    const apptData = (!apptResult.error && apptResult.data) ? apptResult.data : []
+    setUseAppointmentsTable(!apptResult.error)
+
+    const ids = (listingsResult.data || []).map(l => l.id)
+    let offersData = []
+    if (ids.length > 0) {
+      const { data } = await supabase
+        .from('offers')
+        .select('*, listings(brand, model), profiles!offers_sender_id_fkey(id, full_name, avatar_url, city, shop_name)')
+        .in('listing_id', ids)
+        .not('appointment_date', 'is', null)
+        .in('status', ['accepted', 'in_progress', 'completed'])
+        .order('appointment_date', { ascending: false })
+      offersData = data || []
     }
 
-    /* Fall back to offers */
-    setUseAppointmentsTable(false)
-    const { data: myListings } = await supabase
-      .from('listings')
-      .select('id, brand, model')
-      .eq('user_id', user.id)
+    /* Normalize offers to look like appointments */
+    const normalizedOffers = offersData.map(o => ({
+      ...o,
+      _source: 'offers',
+      tarih: o.appointment_date,
+      notlar: o.appointment_note || o.message,
+      durum: o.status === 'completed' ? 'tamamlandi' : o.status === 'accepted' ? 'onaylandi' : 'beklemede',
+      arac_bilgisi: `${o.listings?.brand || ''} ${o.listings?.model || ''}`.trim(),
+      usta: o.profiles,
+    }))
 
-    const ids = (myListings || []).map(l => l.id)
-    if (ids.length === 0) { setAppointments([]); return }
-
-    const { data: offersData } = await supabase
-      .from('offers')
-      .select('*, listings(brand, model), profiles!offers_sender_id_fkey(id, full_name, avatar_url, city)')
-      .in('listing_id', ids)
-      .not('appointment_date', 'is', null)
-      .order('created_at', { ascending: false })
-
-    setAppointments(offersData || [])
+    const existing = new Set(apptData.map(a => a.id))
+    const merged = [...apptData, ...normalizedOffers.filter(o => !existing.has(o.id))]
+    setAppointments(merged)
   }
 
   async function fetchProAppointments() {
-    /* Try appointments table first */
-    const { data: apptData, error: apptError } = await supabase
-      .from('appointments')
-      .select('*, musteri:profiles!appointments_musteri_id_fkey(id, full_name, city, avatar_url)')
-      .eq('usta_id', user.id)
-      .order('tarih', { ascending: false })
+    const [apptResult, offersResult] = await Promise.all([
+      supabase
+        .from('appointments')
+        .select('*, musteri:profiles!appointments_musteri_id_fkey(id, full_name, city, avatar_url)')
+        .eq('usta_id', user.id)
+        .order('tarih', { ascending: false }),
+      supabase
+        .from('offers')
+        .select('*, listings(brand, model, user_id), musteri:profiles!listings(user_id)(id, full_name, avatar_url, city)')
+        .eq('sender_id', user.id)
+        .not('appointment_date', 'is', null)
+        .in('status', ['accepted', 'in_progress', 'completed'])
+        .order('appointment_date', { ascending: false }),
+    ])
 
-    if (!apptError && apptData) {
-      setUseAppointmentsTable(true)
-      setAppointments(apptData)
-      return
-    }
+    const apptData = (!apptResult.error && apptResult.data) ? apptResult.data : []
+    setUseAppointmentsTable(!apptResult.error)
 
-    /* Fall back to offers */
-    setUseAppointmentsTable(false)
-    const { data: offersData } = await supabase
-      .from('offers')
-      .select('*, listings(brand, model, user_id)')
-      .eq('sender_id', user.id)
-      .not('appointment_date', 'is', null)
-      .order('created_at', { ascending: false })
+    const offersData = offersResult.data || []
+    const normalizedOffers = offersData.map(o => ({
+      ...o,
+      _source: 'offers',
+      tarih: o.appointment_date,
+      notlar: o.appointment_note || o.message,
+      durum: o.status === 'completed' ? 'tamamlandi' : o.status === 'accepted' ? 'onaylandi' : 'beklemede',
+      arac_bilgisi: `${o.listings?.brand || ''} ${o.listings?.model || ''}`.trim(),
+    }))
 
-    setAppointments(offersData || [])
+    const existing = new Set(apptData.map(a => a.id))
+    const merged = [...apptData, ...normalizedOffers.filter(o => !existing.has(o.id))]
+    setAppointments(merged)
   }
 
   async function fetchUsta() {
@@ -285,6 +352,25 @@ export default function Appointments() {
     setSubmitError('')
 
     if (useAppointmentsTable) {
+      /* Double-booking check: prevent same usta being booked within 2 hours of requested slot */
+      const requestedTime = new Date(form.tarih)
+      const bufferMs = 2 * 60 * 60 * 1000
+      const from = new Date(requestedTime.getTime() - bufferMs).toISOString()
+      const to   = new Date(requestedTime.getTime() + bufferMs).toISOString()
+      const { data: conflicts } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('usta_id', ustaId)
+        .neq('durum', 'iptal')
+        .gte('tarih', from)
+        .lte('tarih', to)
+
+      if (conflicts && conflicts.length > 0) {
+        setSubmitError('Bu saat diliminde ustanın başka bir randevusu var. Lütfen 2 saat önce veya sonrasını deneyin.')
+        setSubmitting(false)
+        return
+      }
+
       const { error } = await supabase.from('appointments').insert({
         usta_id: ustaId,
         musteri_id: user.id,
@@ -296,6 +382,13 @@ export default function Appointments() {
       if (error) {
         setSubmitError('Randevu oluşturulamadı. Lütfen tekrar deneyin.')
       } else {
+        /* Notify the usta */
+        supabase.from('notifications').insert({
+          user_id: ustaId,
+          type: 'appointment',
+          from_user_id: user.id,
+          message: `${profile?.full_name || 'Bir kullanıcı'} randevu talebi gönderdi: ${form.brand} ${form.model}`.trim(),
+        }).then(() => {})
         setSubmitted(true)
         fetchAll()
       }
@@ -327,7 +420,7 @@ export default function Appointments() {
   ]
   const ownerLinks = [
     { icon: LayoutDashboard, label: 'Dashboard', to: '/dashboard' },
-    { icon: Search, label: 'Usta Ara', to: '/listings' },
+    { icon: Search, label: 'Usta Ara', to: '/ustalar' },
     { icon: Calendar, label: 'Randevularım', to: '/randevular' },
     { icon: MessageCircle, label: 'Mesajlar', to: '/messages' },
     { icon: Car, label: 'Araçlarım', to: '/garage' },
@@ -370,10 +463,11 @@ export default function Appointments() {
         width: 240, flexShrink: 0, background: '#0a0a0a', borderRight: '1px solid #141414',
         display: 'flex', flexDirection: 'column',
       }} className="hidden md:flex">
-        <div style={{ padding: '20px 18px 16px', borderBottom: '1px solid #141414' }}>
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #ff6b00, #c2410c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 900, color: '#fff' }}>T</div>
-            <span style={{ fontSize: 16, fontWeight: 700, color: '#f0f0f0' }}>Torqvia</span>
+        <div style={{ padding: '14px 18px 12px', borderBottom: '1px solid #141414' }}>
+          <Link to="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#555', textDecoration: 'none', transition: 'color 0.15s' }}
+            onMouseOver={e => e.currentTarget.style.color = '#ff6b00'}
+            onMouseOut={e => e.currentTarget.style.color = '#555'}>
+            <LayoutDashboard size={13} /> Dashboard'a Dön
           </Link>
         </div>
         <nav style={{ flex: 1, padding: '12px 0', overflowY: 'auto' }}>
@@ -407,12 +501,12 @@ export default function Appointments() {
             </h1>
           </div>
           {isOwner && (
-            <Link to="/listings/new" style={{
+            <Link to="/ustalar" style={{
               display: 'inline-flex', alignItems: 'center', gap: 7,
               padding: '8px 16px', borderRadius: 8,
               background: '#ff6b00', color: '#fff', fontWeight: 700, fontSize: 13, textDecoration: 'none',
             }}>
-              <Plus size={14} /> Usta Ara
+              <Search size={14} /> Usta Ara
             </Link>
           )}
         </header>
@@ -421,6 +515,21 @@ export default function Appointments() {
 
           {/* ── Left: list ── */}
           <div style={{ flex: 1, minWidth: 0 }}>
+
+            {/* Stats row */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+              {[
+                { label: 'Toplam', count: appointments.length, color: '#555', bg: '#111' },
+                { label: 'Beklemede', count: appointments.filter(a => ['beklemede','pending'].includes(a.durum||a.status||'beklemede')).length, color: '#f59e0b', bg: 'rgba(245,158,11,0.07)' },
+                { label: 'Onaylı', count: appointments.filter(a => ['onaylandi','accepted','in_progress'].includes(a.durum||a.status||'')).length, color: '#22c55e', bg: 'rgba(34,197,94,0.07)' },
+                { label: 'Tamamlanan', count: appointments.filter(a => ['tamamlandi','completed'].includes(a.durum||a.status||'')).length, color: '#3b82f6', bg: 'rgba(59,130,246,0.07)' },
+              ].map(s => (
+                <div key={s.label} style={{ flex: '1 1 80px', minWidth: 80, background: s.bg, border: `1px solid ${s.color}22`, borderRadius: 12, padding: '12px 14px' }}>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.count}</div>
+                  <div style={{ fontSize: 10, color: '#444', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
 
             {/* appointments tablosu yoksa SQL mesajı */}
             {!useAppointmentsTable && (
@@ -497,7 +606,7 @@ CREATE POLICY "appt_update" ON appointments FOR UPDATE TO authenticated
                 <Calendar size={32} style={{ color: '#1e1e1e', margin: '0 auto 12px' }} />
                 <div style={{ fontSize: 14, color: '#2e2e2e', marginBottom: 8 }}>Bu kategoride randevu yok</div>
                 {isOwner && (
-                  <Link to="/listings" style={{ fontSize: 13, color: '#ff6b00', textDecoration: 'none' }}>
+                  <Link to="/ustalar" style={{ fontSize: 13, color: '#ff6b00', textDecoration: 'none' }}>
                     Usta ara ve randevu oluştur →
                   </Link>
                 )}

@@ -39,7 +39,7 @@ function ProCard({ pro, compact = false }) {
       >
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <div style={{ width: 46, height: 46, borderRadius: '50%', overflow: 'hidden', border: `2px solid ${hasPlan ? 'rgba(255,107,0,0.4)' : '#222'}` }}>
-            <UserAvatar profile={pro} size="md" />
+            <UserAvatar profile={pro} fill />
           </div>
           {hasPlan && (
             <span style={{ position: 'absolute', bottom: -2, right: -2, background: '#ff6b00', borderRadius: '50%', width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -77,7 +77,7 @@ function ProCard({ pro, compact = false }) {
     <div style={{
       background: 'linear-gradient(160deg, #0d0d0d, #0b0b0b)',
       border: `1px solid ${hasPlan ? 'rgba(255,107,0,0.18)' : '#181818'}`,
-      borderRadius: 18, overflow: 'hidden',
+      borderRadius: 18,
       transition: 'all 0.2s',
       boxShadow: hasPlan ? '0 4px 24px rgba(255,107,0,0.05)' : 'none',
       display: 'flex', flexDirection: 'column',
@@ -86,7 +86,7 @@ function ProCard({ pro, compact = false }) {
       onMouseOut={e => { e.currentTarget.style.borderColor = hasPlan ? 'rgba(255,107,0,0.18)' : '#181818'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = hasPlan ? '0 4px 24px rgba(255,107,0,0.05)' : 'none' }}
     >
       {/* Shop photo / banner */}
-      <div style={{ position: 'relative', height: 120, overflow: 'hidden', background: '#0a0a0a' }}>
+      <div style={{ position: 'relative', height: 120, overflow: 'hidden', background: '#0a0a0a', borderRadius: '18px 18px 0 0' }}>
         {pro.shop_photo ? (
           <img src={pro.shop_photo} alt={pro.shop_name || pro.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         ) : (
@@ -113,7 +113,7 @@ function ProCard({ pro, compact = false }) {
         {/* Avatar overlapping */}
         <div style={{ position: 'absolute', bottom: -22, left: 18 }}>
           <div style={{ width: 52, height: 52, borderRadius: '50%', overflow: 'hidden', border: `2.5px solid ${hasPlan ? '#ff6b00' : '#1a1a1a'}`, background: '#080808' }}>
-            <UserAvatar profile={pro} size="md" />
+            <UserAvatar profile={pro} fill />
           </div>
         </div>
       </div>
@@ -233,7 +233,7 @@ function TrendCard({ pro, rank }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <div style={{ width: 50, height: 50, borderRadius: '50%', overflow: 'hidden', border: `2px solid ${hasPlan ? '#ff6b00' : '#222'}` }}>
-            <UserAvatar profile={pro} size="md" />
+            <UserAvatar profile={pro} fill />
           </div>
           {hasPlan && (
             <div style={{ position: 'absolute', bottom: -2, right: -2, background: '#ff6b00', borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -355,7 +355,7 @@ export default function Ustalar() {
     <div style={{ minHeight: '100vh', background: '#080808' }}>
 
       {/* Hero / Search */}
-      <div style={{
+      <div className="ustalar-hero" style={{
         position: 'relative', overflow: 'hidden',
         background: 'linear-gradient(180deg, #0d0d0d 0%, #080808 100%)',
         borderBottom: '1px solid #141414',
@@ -449,7 +449,7 @@ export default function Ustalar() {
 
             {/* Filters + all list */}
             <section>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 20, flexWrap: 'wrap', rowGap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{ width: 28, height: 28, borderRadius: 7, background: '#111', border: '1px solid #1e1e1e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Award size={14} style={{ color: '#888' }} />
@@ -459,29 +459,30 @@ export default function Ustalar() {
                   </span>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <div className="ustalar-filter-row" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   {/* Specialty filter */}
                   <select
                     value={specFilter}
                     onChange={e => setSpecFilter(e.target.value)}
-                    style={{ background: '#0e0e0e', border: '1px solid #1e1e1e', borderRadius: 8, color: specFilter ? '#f0f0f0' : '#555', fontSize: 12, padding: '7px 12px', outline: 'none', cursor: 'pointer' }}
+                    style={{ background: '#0e0e0e', border: '1px solid #1e1e1e', borderRadius: 8, color: specFilter ? '#f0f0f0' : '#555', fontSize: 13, padding: '7px 12px', outline: 'none', cursor: 'pointer', flex: '1 1 140px' }}
                   >
                     <option value="">Tüm Uzmanlıklar</option>
                     {SPECIALTIES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
 
                   {/* Sort */}
-                  <div style={{ display: 'flex', background: '#0d0d0d', border: '1px solid #181818', borderRadius: 8, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', background: '#0d0d0d', border: '1px solid #181818', borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>
                     {[
-                      { val: 'trend', label: '🔥 Trend' },
-                      { val: 'rating', label: '⭐ Puan' },
-                      { val: 'reviews', label: '💬 Yorum' },
+                      { val: 'trend', label: '🔥' },
+                      { val: 'rating', label: '⭐' },
+                      { val: 'reviews', label: '💬' },
                     ].map(({ val, label }) => (
                       <button key={val} onClick={() => setSortBy(val)}
+                        title={val === 'trend' ? 'Trend' : val === 'rating' ? 'Puan' : 'Yorum'}
                         style={{
-                          padding: '7px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                          padding: '8px 14px', fontSize: 14, cursor: 'pointer',
                           background: sortBy === val ? '#ff6b00' : 'transparent',
-                          color: sortBy === val ? '#fff' : '#555',
+                          color: sortBy === val ? '#fff' : '#666',
                           border: 'none', transition: 'all 0.15s',
                         }}>
                         {label}
@@ -492,8 +493,8 @@ export default function Ustalar() {
                   {/* Clear filters */}
                   {hasFilters && (
                     <button onClick={() => { setSearchQ(''); setCityFilter(''); setSpecFilter('') }}
-                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 8, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
-                      <X size={11} /> Filtreleri Temizle
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 10px', borderRadius: 8, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
+                      <X size={11} /> Temizle
                     </button>
                   )}
                 </div>
@@ -523,9 +524,10 @@ export default function Ustalar() {
           .ustalar-grid, .trend-grid { grid-template-columns: repeat(2, 1fr) !important; }
         }
         @media (max-width: 640px) {
+          .ustalar-hero { padding: 28px 16px 24px !important; }
           .ustalar-search-row { flex-direction: column !important; }
-          .ustalar-search-row select { height: 48px; }
-          .ustalar-hero-h1 { font-size: 24px !important; }
+          .ustalar-search-row select { height: 48px; width: 100%; min-width: unset !important; }
+          .ustalar-hero-h1 { font-size: 22px !important; }
         }
         @media (max-width: 560px) {
           .ustalar-grid, .trend-grid { grid-template-columns: 1fr !important; }

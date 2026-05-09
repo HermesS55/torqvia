@@ -4,7 +4,7 @@ import {
   Car, Gauge, Fuel, MapPin, Calendar, Phone, MessageCircle,
   ChevronLeft, ChevronRight, X, Settings2, CheckCircle,
   Trash2, Share2, Tag, Heart, ArrowLeftRight, Shield, Eye,
-  Users,
+  Users, Send, DollarSign,
 } from 'lucide-react'
 import CarDamageReport from '../../components/sales/CarDamageReport'
 import { supabase } from '../../lib/supabase'
@@ -108,6 +108,11 @@ export default function CarSaleDetail() {
   const [actionLoading, setActionLoading] = useState(false)
   const [fav, setFav] = useState(false)
   const [favLoading, setFavLoading] = useState(false)
+  const [showOfferForm, setShowOfferForm] = useState(false)
+  const [offerAmount, setOfferAmount] = useState('')
+  const [offerNote, setOfferNote] = useState('')
+  const [offerSending, setOfferSending] = useState(false)
+  const [offerSent, setOfferSent] = useState(false)
 
   useMeta(sale ? `${sale.brand} ${sale.model} - ${Number(sale.price).toLocaleString('tr-TR')} ₺` : 'Satılık Araç')
 
@@ -167,6 +172,27 @@ export default function CarSaleDetail() {
     if (error) { toast.error('Silinemedi'); setActionLoading(false); return }
     toast.success('İlan silindi')
     navigate('/sales')
+  }
+
+  async function sendOffer() {
+    if (!offerAmount || isNaN(Number(offerAmount))) { toast.error('Geçerli bir tutar girin'); return }
+    setOfferSending(true)
+    const msg = `💰 Teklif: ${Number(offerAmount).toLocaleString('tr-TR')} ₺\n🚗 ${sale.brand} ${sale.model}${sale.year ? ` (${sale.year})` : ''}${offerNote ? `\n📝 ${offerNote}` : ''}`
+    const { error } = await supabase.from('messages').insert({
+      sender_id: user.id,
+      receiver_id: sale.profiles.id,
+      content: msg,
+    })
+    if (error) { toast.error('Teklif gönderilemedi'); setOfferSending(false); return }
+    await supabase.from('notifications').insert({
+      user_id: sale.profiles.id,
+      type: 'message',
+      from_user_id: user.id,
+      message: `${sale.brand} ${sale.model} için ${Number(offerAmount).toLocaleString('tr-TR')} ₺ teklif`,
+    })
+    setOfferSent(true)
+    setOfferSending(false)
+    toast.success('Teklifiniz satıcıya iletildi!')
   }
 
   function share() {
@@ -358,9 +384,48 @@ export default function CarSaleDetail() {
 
               {!isOwner && sale.status === 'active' ? (
                 <div className="space-y-2.5">
+                  {/* Offer button */}
+                  {offerSent ? (
+                    <div className="w-full flex items-center justify-center gap-2 py-3 text-sm text-green-400 bg-green-500/10 border border-green-500/20 rounded-xl font-medium">
+                      <CheckCircle className="h-4 w-4" /> Teklifiniz İletildi
+                    </div>
+                  ) : (
+                    <>
+                      <button onClick={() => setShowOfferForm(o => !o)}
+                        className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold rounded-xl transition-all"
+                        style={{ background: showOfferForm ? 'rgba(255,107,0,0.15)' : '#ff6b00', color: showOfferForm ? '#ff8c33' : '#fff', border: showOfferForm ? '1px solid rgba(255,107,0,0.3)' : 'none' }}
+                      >
+                        <DollarSign className="h-4 w-4" /> Teklif Ver
+                      </button>
+                      {showOfferForm && (
+                        <div className="space-y-2 pt-1">
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm font-bold">₺</span>
+                            <input
+                              type="number"
+                              value={offerAmount}
+                              onChange={e => setOfferAmount(e.target.value)}
+                              placeholder="Teklif tutarı..."
+                              className="input-base pl-8 text-sm py-2.5 w-full"
+                            />
+                          </div>
+                          <input
+                            value={offerNote}
+                            onChange={e => setOfferNote(e.target.value)}
+                            placeholder="Notunuz (isteğe bağlı)..."
+                            className="input-base text-sm py-2.5 w-full"
+                          />
+                          <button onClick={sendOffer} disabled={offerSending || !offerAmount}
+                            className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-xl bg-brand-500 text-white hover:bg-brand-600 transition-colors disabled:opacity-50">
+                            <Send className="h-3.5 w-3.5" /> {offerSending ? 'Gönderiliyor...' : 'Teklifi Gönder'}
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
                   <Link
-                    to={`/messages?with=${sale.profiles.id}`}
-                    className="w-full btn-primary flex items-center justify-center gap-2 py-3 text-sm"
+                    to={`/messages?to=${sale.profiles.id}`}
+                    className="w-full flex items-center justify-center gap-2 text-sm px-4 py-2.5 rounded-xl border border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:bg-zinc-800/50 transition-all"
                   >
                     <MessageCircle className="h-4 w-4" />Mesaj Gönder
                   </Link>

@@ -176,3 +176,47 @@
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/20 text-red-400;
   }
 }
+
+/* ── Mobile global fixes ──────────────────────────────────── */
+
+/* Prevent iOS Safari input zoom (requires font-size >= 16px on focus) */
+@media (max-width: 767px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="number"],
+  input[type="datetime-local"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Messages panel — responsive height */
+.messages-panel {
+  height: calc(100dvh - 60px - 2rem);
+}
+@media (max-width: 767px) {
+  .messages-panel {
+    /* subtract navbar + pt-4 + BottomNav */
+    height: calc(100dvh - 60px - 1rem - 64px);
+    border-radius: 12px !important;
+  }
+}
+
+/* Prevent horizontal overflow globally */
+html, body { overflow-x: hidden; }
+
+/* Ensure primary tap targets are large enough on mobile */
+@media (max-width: 767px) {
+  .btn-primary, .btn-secondary, .btn-ghost, .input-base {
+    min-height: 44px;
+  }
+}
+
+/* ─── Safe area insets (iPhone notch / home indicator) ───── */
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.pt-safe { padding-top: env(safe-area-inset-top, 0px); }

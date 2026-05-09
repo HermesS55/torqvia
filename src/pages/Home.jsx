@@ -136,7 +136,7 @@ export default function Home() {
 
   const features = tr
     ? [
-        { num: '01', title: 'Doğrulanmış Ustalar', desc: 'Her usta kimlik ve belge doğrulamasından geçiyor. Güvenli hizmet garantisi.' },
+        { num: '01', title: 'Doğrulanmış Ustalar', desc: 'Her usta kimlik ve belge doğrulamasından geçiyor.' },
         { num: '02', title: 'Şeffaf Fiyatlandırma', desc: 'Gizli ücret yok. İş başlamadan önce fiyatı bilirsin.' },
         { num: '03', title: 'Gerçek Yorumlar', desc: 'Tüm yorumlar gerçek hizmet sonrası yazılıyor. Manipüle edilemez.' },
         { num: '04', title: 'Hızlı Yanıt', desc: 'Ortalama 15 dakikada ilk teklifini al. Vakit kaybetme.' },
@@ -144,7 +144,7 @@ export default function Home() {
         { num: '06', title: 'Güvenli Ödeme', desc: 'Platform üzerinden şeffaf fiyat anlaşması. Sürpriz fatura yok.' },
       ]
     : [
-        { num: '01', title: 'Verified Mechanics', desc: 'Every mechanic passes identity and certification verification.' },
+        { num: '01', title: 'Verified Mechanics', desc: 'Every mechanic goes through identity and document verification.' },
         { num: '02', title: 'Transparent Pricing', desc: 'No hidden fees. Know the price before the job starts.' },
         { num: '03', title: 'Real Reviews', desc: 'All reviews are written after real services. Cannot be manipulated.' },
         { num: '04', title: 'Fast Response', desc: 'Get your first quote in an average of 15 minutes.' },

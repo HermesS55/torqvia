@@ -51,78 +51,121 @@ function StarRating({ rating, count }) {
 function UserCard({ profile }) {
   const isPro = profile.role === 'pro'
   const navigate = useNavigate()
-  return (
-    <div className={`card hover:border-zinc-700 transition-all relative overflow-hidden flex flex-col gap-3 ${
-      isPro ? 'hover:border-blue-500/40 border-blue-500/10' : 'hover:border-brand-500/30'
-    }`}>
-      {isPro && (
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-600/40 via-blue-400/70 to-blue-600/40" />
-      )}
+  const hasBadge = profile.plan && profile.plan !== 'free'
+  const profileUrl = isPro ? `/usta/${profile.id}` : `/profile/${profile.id}`
 
-      {/* Avatar + info */}
-      <div className="flex gap-3">
-        <Link to={isPro ? `/usta/${profile.id}` : `/profile/${profile.id}`} className="shrink-0">
-          <UserAvatar profile={profile} size="md" />
-        </Link>
-        <div className="flex-1 min-w-0">
-          <Link to={isPro ? `/usta/${profile.id}` : `/profile/${profile.id}`}>
-            <p className="font-semibold text-white hover:text-brand-400 transition-colors text-sm leading-tight truncate">
-              {profile.full_name || 'İsimsiz Kullanıcı'}
-            </p>
-          </Link>
-          <div className="flex items-center gap-1 mt-1 flex-wrap">
-            {isPro
-              ? <span className="inline-flex items-center gap-1 text-[10px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-full">
-                  <Wrench className="h-2.5 w-2.5" />Servis Uzmanı
-                </span>
-              : <span className="inline-flex items-center gap-1 text-[10px] text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded-full">
-                  <Car className="h-2.5 w-2.5" />Araç Sahibi
-                </span>
-            }
-            {profile.plan && profile.plan !== 'free' && <PlanBadge plan={profile.plan} size="xs" />}
-          </div>
-          {isPro && profile.specialty && (
-            <p className="text-xs text-blue-300/70 mt-1 truncate">{profile.specialty}</p>
-          )}
-          {isPro && profile.avg_rating > 0 && (
-            <StarRating rating={profile.avg_rating} count={profile.rating_count} />
-          )}
-        </div>
+  const coverBg = isPro
+    ? 'linear-gradient(135deg, #060e1e 0%, #0b1a32 55%, #030810 100%)'
+    : 'linear-gradient(135deg, #0e0600 0%, #1a0e00 55%, #080400 100%)'
+
+  return (
+    <div style={{
+      background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 16,
+      overflow: 'visible', position: 'relative', transition: 'border-color 0.15s',
+    }}
+      onMouseOver={e => { e.currentTarget.style.borderColor = isPro ? 'rgba(59,130,246,0.32)' : 'rgba(255,107,0,0.28)' }}
+      onMouseOut={e => { e.currentTarget.style.borderColor = '#1a1a1a' }}
+    >
+      {/* Cover */}
+      <div style={{ height: 68, borderRadius: '15px 15px 0 0', background: coverBg, position: 'relative', overflow: 'hidden' }}>
+        {hasBadge && (
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+            background: profile.plan === 'elite'
+              ? 'linear-gradient(90deg, transparent, #8b5cf6 40%, #c4a000 60%, transparent)'
+              : 'linear-gradient(90deg, transparent, #ff6b00, transparent)',
+          }} />
+        )}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: isPro
+            ? 'radial-gradient(ellipse at 25% 60%, rgba(59,130,246,0.07), transparent 65%)'
+            : 'radial-gradient(ellipse at 25% 60%, rgba(255,107,0,0.06), transparent 65%)',
+        }} />
       </div>
 
-      {/* Bio */}
-      {profile.bio && (
-        <p className="text-xs text-zinc-500 line-clamp-2 leading-relaxed">{profile.bio}</p>
-      )}
+      {/* Avatar overlapping cover */}
+      <div style={{ position: 'relative', paddingLeft: 16, marginTop: -30, zIndex: 2, marginBottom: 6 }}>
+        <Link to={profileUrl} style={{ display: 'inline-block' }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: '50%', overflow: 'hidden',
+            border: '3px solid #0d0d0d',
+            boxShadow: hasBadge
+              ? `0 0 0 1.5px ${profile.plan === 'elite' ? 'rgba(139,92,246,0.5)' : 'rgba(255,107,0,0.45)'}`
+              : `0 0 0 1px ${isPro ? 'rgba(59,130,246,0.18)' : 'rgba(255,107,0,0.12)'}`,
+          }}>
+            <UserAvatar profile={profile} fill />
+          </div>
+        </Link>
+      </div>
 
-      {/* Skills */}
-      {isPro && profile.skills?.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {profile.skills.slice(0, 3).map(s => (
-            <span key={s} className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full">{s}</span>
-          ))}
-          {profile.skills.length > 3 && (
-            <span className="text-[10px] text-zinc-600 py-0.5">+{profile.skills.length - 3}</span>
-          )}
-        </div>
-      )}
+      {/* Content */}
+      <div style={{ padding: '2px 16px 16px' }}>
+        <Link to={profileUrl} style={{ textDecoration: 'none' }}>
+          <p style={{ fontSize: 14, fontWeight: 700, color: '#f0f0f0', marginBottom: 5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {profile.full_name || 'İsimsiz Kullanıcı'}
+          </p>
+        </Link>
 
-      {/* Footer: stats + actions */}
-      <div className="flex items-center justify-between pt-2.5 border-t border-zinc-800/60 mt-auto">
-        <div className="flex items-center gap-3 text-xs text-zinc-600">
-          <span><span className="text-zinc-400 font-medium">{profile.follower_count || 0}</span> takipçi</span>
-          <span className="text-zinc-800">·</span>
-          <span><span className="text-zinc-400 font-medium">{profile.post_count || 0}</span> paylaşım</span>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+          {isPro
+            ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#60a5fa', background: 'rgba(59,130,246,0.09)', border: '1px solid rgba(59,130,246,0.15)', padding: '2px 8px', borderRadius: 99 }}>
+                <Wrench className="h-2.5 w-2.5" />Servis Uzmanı
+              </span>
+            : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#ff8c33', background: 'rgba(255,107,0,0.07)', border: '1px solid rgba(255,107,0,0.15)', padding: '2px 8px', borderRadius: 99 }}>
+                <Car className="h-2.5 w-2.5" />Araç Sahibi
+              </span>
+          }
+          {hasBadge && <PlanBadge plan={profile.plan} size="xs" />}
         </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => navigate(`/messages?to=${profile.id}`)}
-            className="p-1.5 rounded-lg border border-zinc-800 hover:border-zinc-700 text-zinc-500 hover:text-brand-400 hover:bg-brand-500/5 transition-colors"
-            title="Mesaj gönder"
-          >
-            <MessageCircle className="h-3.5 w-3.5" />
-          </button>
-          <FollowButton targetId={profile.id} size="sm" />
+
+        {isPro && profile.specialty && (
+          <p style={{ fontSize: 12, color: '#4a7bb5', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile.specialty}</p>
+        )}
+        {isPro && profile.avg_rating > 0 && (
+          <div style={{ marginBottom: 8 }}><StarRating rating={profile.avg_rating} count={profile.rating_count} /></div>
+        )}
+
+        {profile.bio && (
+          <p style={{
+            fontSize: 12, color: '#4a4a4a', lineHeight: 1.6, marginBottom: 10,
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+          }}>{profile.bio}</p>
+        )}
+
+        {isPro && profile.skills?.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 10 }}>
+            {profile.skills.slice(0, 3).map(s => (
+              <span key={s} style={{ fontSize: 10, background: '#161616', border: '1px solid #1e1e1e', color: '#555', padding: '2px 8px', borderRadius: 99 }}>{s}</span>
+            ))}
+            {profile.skills.length > 3 && (
+              <span style={{ fontSize: 10, color: '#333', padding: '2px 0' }}>+{profile.skills.length - 3}</span>
+            )}
+          </div>
+        )}
+
+        {/* Footer */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px solid #171717', marginTop: 4 }}>
+          <div style={{ fontSize: 11, color: '#3a3a3a', display: 'flex', gap: 10 }}>
+            <span><span style={{ color: '#777', fontWeight: 600 }}>{profile.follower_count || 0}</span> takipçi</span>
+            <span><span style={{ color: '#777', fontWeight: 600 }}>{profile.post_count || 0}</span> post</span>
+          </div>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <button
+              onClick={() => navigate(`/messages?to=${profile.id}`)}
+              title="Mesaj gönder"
+              style={{
+                width: 30, height: 30, borderRadius: 8, border: '1px solid #1e1e1e',
+                background: 'transparent', color: '#444', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+              onMouseOver={e => { e.currentTarget.style.borderColor = '#ff6b00'; e.currentTarget.style.color = '#ff6b00' }}
+              onMouseOut={e => { e.currentTarget.style.borderColor = '#1e1e1e'; e.currentTarget.style.color = '#444' }}
+            >
+              <MessageCircle className="h-3.5 w-3.5" />
+            </button>
+            <FollowButton targetId={profile.id} size="sm" />
+          </div>
         </div>
       </div>
     </div>

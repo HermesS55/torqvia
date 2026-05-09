@@ -222,10 +222,11 @@ export default function Analytics() {
         width: 240, flexShrink: 0, background: '#0a0a0a', borderRight: '1px solid #141414',
         display: 'flex', flexDirection: 'column',
       }} className="hidden md:flex">
-        <div style={{ padding: '20px 18px 16px', borderBottom: '1px solid #141414' }}>
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #ff6b00, #c2410c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 900, color: '#fff' }}>T</div>
-            <span style={{ fontSize: 16, fontWeight: 700, color: '#f0f0f0' }}>Torqvia</span>
+        <div style={{ padding: '14px 18px 12px', borderBottom: '1px solid #141414' }}>
+          <Link to="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#555', textDecoration: 'none', transition: 'color 0.15s' }}
+            onMouseOver={e => e.currentTarget.style.color = '#ff6b00'}
+            onMouseOut={e => e.currentTarget.style.color = '#555'}>
+            <LayoutDashboard size={13} /> Dashboard'a Dön
           </Link>
         </div>
         <nav style={{ flex: 1, padding: '12px 0', overflowY: 'auto' }}>

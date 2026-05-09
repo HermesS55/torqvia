@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { List, PlusCircle, MessageCircle, Users, Flame, Globe, Hash, Gauge, Search, Car, Menu, X, Shield, Calendar, Tag, ChevronDown } from 'lucide-react'
+import { List, PlusCircle, MessageCircle, Users, Flame, Globe, Search, Car, Menu, X, Shield, Tag, ChevronDown, Wrench } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLang, useT } from '../../contexts/LangContext'
 import { useUnreadCount } from '../../contexts/UnreadMessagesContext'
@@ -21,14 +21,12 @@ export default function Navbar({ onOpenSearch }) {
   const isAdmin = profile?.role === 'admin'
   const isPro = profile?.role === 'pro'
 
+  const { pathname } = useLocation()
+
   const navLinks = user ? [
     { to: '/messages', icon: MessageCircle, label: t('nav.messages'), badge: unreadMessages, onClick: markRead },
-    // HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak
-    // { to: '/feed',        icon: Gauge,         label: t('nav.feed') },
-    // { to: '/communities', icon: Hash,          label: 'Topluluklar' },
-    // { to: '/events',      icon: Calendar,      label: 'Etkinlikler' },
-    // { to: '/people',      icon: Users,         label: t('nav.people') },
-    ...(isOwner ? [{ to: '/garage', icon: Car, label: 'Garaj' }] : []),
+    { to: '/people', icon: Users, label: t('nav.people') },
+    ...(isOwner ? [{ to: '/garage', icon: Car, label: lang === 'tr' ? 'Garaj' : 'Garage' }] : []),
     ...(isAdmin ? [{ to: '/admin', icon: Shield, label: 'Admin' }] : []),
   ] : []
 
@@ -37,8 +35,8 @@ export default function Navbar({ onOpenSearch }) {
   // İlanlar dropdown
   const [listingsOpen, setListingsOpen] = useState(false)
   const listingsRef = useRef(null)
-  const { pathname } = useLocation()
   const listingsActive = pathname.startsWith('/listings') || pathname.startsWith('/sales')
+  const ustaActive = pathname === '/ustalar' || pathname.startsWith('/usta/')
 
   useEffect(() => {
     function handleClick(e) {
@@ -49,135 +47,205 @@ export default function Navbar({ onOpenSearch }) {
   }, [])
 
   return (
-    <nav className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur sticky top-0 z-50 pt-safe">
+    <nav style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(8,8,8,0.92)', backdropFilter: 'blur(16px)', position: 'sticky', top: 0, zIndex: 50 }} className="pt-safe">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 60 }}>
 
-          <Link to={user ? (profile?.role === 'pro' ? '/listings' : '/dashboard') : '/'} className="flex items-center gap-2 text-white font-bold text-xl shrink-0 hover:opacity-90 transition-opacity">
+          {/* Logo */}
+          <Link to={user ? (profile?.role === 'pro' ? '/listings' : '/dashboard') : '/'} style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', flexShrink: 0 }}
+            className="hover:opacity-90 transition-opacity">
             <TorqviaLogo />
-            <span className="hidden sm:inline">Torqvia</span>
+            <span style={{ fontWeight: 800, fontSize: 17, color: '#f0f0f0', letterSpacing: '-0.02em' }} className="hidden sm:inline">Torqvia</span>
           </Link>
 
-          {/* Desktop nav links */}
-          <div className="hidden md:flex items-center gap-1">
+          {/* Desktop nav */}
+          <div className="hidden md:flex items-center" style={{ gap: 2 }}>
             {loading ? (
               <>
                 <div className="h-8 w-16 bg-zinc-800 rounded-lg animate-pulse" />
                 <div className="h-8 w-16 bg-zinc-800 rounded-lg animate-pulse" />
               </>
-            ) : (
+            ) : user ? (
               <>
                 {/* İlanlar dropdown */}
-                {user && (
-                  <div ref={listingsRef} className="relative">
-                    <button
-                      onClick={() => setListingsOpen(o => !o)}
-                      className={`btn-ghost flex items-center gap-1 px-2 py-1.5 text-sm ${listingsActive ? 'text-brand-400' : ''}`}
-                      title="İlanlar"
-                    >
-                      <List className="h-4 w-4 shrink-0" />
-                      <span className="hidden xl:inline">İlanlar</span>
-                      <ChevronDown className={`h-3 w-3 transition-transform ${listingsOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    {listingsOpen && (
-                      <div className="absolute top-full left-0 mt-1 w-44 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl overflow-hidden z-50">
-                        <Link to="/listings" onClick={() => setListingsOpen(false)}
-                          className="flex items-center gap-2.5 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors">
-                          <List className="h-4 w-4 text-zinc-500" />
-                          Servis İlanları
-                        </Link>
-                        <Link to="/sales" onClick={() => setListingsOpen(false)}
-                          className="flex items-center gap-2.5 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors border-t border-zinc-800">
-                          <Tag className="h-4 w-4 text-zinc-500" />
-                          Satılık Araçlar
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-                )}
+                <div ref={listingsRef} style={{ position: 'relative' }}>
+                  <button
+                    onClick={() => setListingsOpen(o => !o)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 5,
+                      padding: '6px 10px', borderRadius: 8, fontSize: 13, fontWeight: 500,
+                      background: listingsActive ? 'rgba(255,107,0,0.08)' : 'transparent',
+                      color: listingsActive ? '#ff8c33' : '#999',
+                      border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                    }}
+                    onMouseOver={e => { if (!listingsActive) { e.currentTarget.style.color = '#ccc'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' } }}
+                    onMouseOut={e => { if (!listingsActive) { e.currentTarget.style.color = '#999'; e.currentTarget.style.background = 'transparent' } }}
+                  >
+                    <List size={15} />
+                    <span className="hidden xl:inline">{lang === 'tr' ? 'İlanlar' : 'Listings'}</span>
+                    <ChevronDown size={12} style={{ transform: listingsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                  </button>
+                  {listingsOpen && (
+                    <div style={{
+                      position: 'absolute', top: 'calc(100% + 6px)', left: 0,
+                      width: 180, background: '#111', border: '1px solid #222',
+                      borderRadius: 12, overflow: 'hidden', zIndex: 50,
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                    }}>
+                      <Link to="/listings" onClick={() => setListingsOpen(false)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', fontSize: 13, color: '#ccc', textDecoration: 'none', transition: 'background 0.1s' }}
+                        onMouseOver={e => e.currentTarget.style.background = '#1a1a1a'}
+                        onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                        <List size={14} style={{ color: '#555' }} />
+                        {lang === 'tr' ? 'Servis İlanları' : 'Service Listings'}
+                      </Link>
+                      <Link to="/sales" onClick={() => setListingsOpen(false)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', fontSize: 13, color: '#ccc', textDecoration: 'none', borderTop: '1px solid #1a1a1a', transition: 'background 0.1s' }}
+                        onMouseOver={e => e.currentTarget.style.background = '#1a1a1a'}
+                        onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                        <Tag size={14} style={{ color: '#555' }} />
+                        {lang === 'tr' ? 'Satılık Araçlar' : 'Cars for Sale'}
+                      </Link>
+                    </div>
+                  )}
+                </div>
 
-                {navLinks.map(link => (
-                  <Link key={link.to} to={link.to} onClick={link.onClick}
-                    title={link.label}
-                    className="btn-ghost flex items-center gap-1 px-2 py-1.5 text-sm relative">
-                    <link.icon className="h-4 w-4 shrink-0" />
-                    <span className="hidden xl:inline">{link.label}</span>
-                    {link.badge > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 bg-brand-500 text-white text-[9px] font-bold rounded-full h-4 w-4 flex items-center justify-center leading-none">
-                        {link.badge > 9 ? '9+' : link.badge}
-                      </span>
-                    )}
-                  </Link>
-                ))}
+                {/* Usta Ara */}
+                <Link to="/ustalar"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    padding: '6px 10px', borderRadius: 8, fontSize: 13, fontWeight: 500,
+                    background: ustaActive ? 'rgba(255,107,0,0.08)' : 'transparent',
+                    color: ustaActive ? '#ff8c33' : '#999',
+                    textDecoration: 'none', transition: 'all 0.15s',
+                  }}
+                  onMouseOver={e => { if (!ustaActive) { e.currentTarget.style.color = '#ccc'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' } }}
+                  onMouseOut={e => { if (!ustaActive) { e.currentTarget.style.color = ustaActive ? '#ff8c33' : '#999'; e.currentTarget.style.background = ustaActive ? 'rgba(255,107,0,0.08)' : 'transparent' } }}
+                >
+                  <Wrench size={15} />
+                  <span className="hidden xl:inline">{lang === 'tr' ? 'Usta Ara' : 'Find Mechanic'}</span>
+                </Link>
+
+                {/* Nav links (messages, feed, people…) */}
+                {navLinks.map(link => {
+                  const isActive = pathname === link.to
+                  return (
+                    <Link key={link.to} to={link.to} onClick={link.onClick}
+                      title={link.label}
+                      style={{
+                        position: 'relative', display: 'flex', alignItems: 'center', gap: 5,
+                        padding: '6px 10px', borderRadius: 8, fontSize: 13, fontWeight: 500,
+                        background: isActive ? 'rgba(255,107,0,0.08)' : 'transparent',
+                        color: isActive ? '#ff8c33' : '#999',
+                        textDecoration: 'none', transition: 'all 0.15s',
+                      }}
+                      onMouseOver={e => { if (!isActive) { e.currentTarget.style.color = '#ccc'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' } }}
+                      onMouseOut={e => { if (!isActive) { e.currentTarget.style.color = '#999'; e.currentTarget.style.background = 'transparent' } }}
+                    >
+                      <link.icon size={15} />
+                      <span className="hidden xl:inline">{link.label}</span>
+                      {link.badge > 0 && (
+                        <span style={{
+                          position: 'absolute', top: 2, right: 2,
+                          background: '#ff6b00', color: '#fff', fontSize: 9, fontWeight: 800,
+                          borderRadius: '50%', minWidth: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          lineHeight: 1,
+                        }}>
+                          {link.badge > 9 ? '9+' : link.badge}
+                        </span>
+                      )}
+                    </Link>
+                  )
+                })}
               </>
-            )}
+            ) : null}
           </div>
 
-          {/* Right side controls */}
-          <div className="flex items-center gap-1">
+          {/* Right side */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {loading ? (
-              <div className="flex items-center gap-1">
+              <div style={{ display: 'flex', gap: 6 }}>
                 <div className="h-8 w-8 bg-zinc-800 rounded-lg animate-pulse" />
                 <div className="h-8 w-8 bg-zinc-800 rounded-lg animate-pulse" />
               </div>
             ) : user ? (
               <>
                 {/* Search */}
-                <button onClick={onOpenSearch} className="btn-ghost p-2" title="Ara (Ctrl+K)">
-                  <Search className="h-4 w-4" />
+                <button onClick={onOpenSearch}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#888', cursor: 'pointer', transition: 'all 0.15s' }}
+                  onMouseOver={e => { e.currentTarget.style.color = '#ccc'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)' }}
+                  onMouseOut={e => { e.currentTarget.style.color = '#888'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+                  title={lang === 'tr' ? 'Ara (Ctrl+K)' : 'Search (Ctrl+K)'}>
+                  <Search size={15} />
                 </button>
 
-                {/* Upgrade (desktop only) */}
+                {/* Upgrade */}
                 {!hasPlan && (
                   <Link to="/pricing"
-                    className="hidden lg:flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-orange-500/20 text-orange-400/70 hover:border-orange-500/40 hover:text-orange-400 transition-colors">
-                    <Flame className="h-3 w-3" />
-                    Turbo
+                    className="hidden lg:flex items-center gap-1"
+                    style={{ fontSize: 12, fontWeight: 600, padding: '5px 11px', borderRadius: 7, border: '1px solid rgba(255,107,0,0.2)', color: 'rgba(255,140,51,0.7)', textDecoration: 'none', transition: 'all 0.15s' }}
+                    onMouseOver={e => { e.currentTarget.style.borderColor = 'rgba(255,107,0,0.4)'; e.currentTarget.style.color = '#ff8c33' }}
+                    onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(255,107,0,0.2)'; e.currentTarget.style.color = 'rgba(255,140,51,0.7)' }}
+                  >
+                    <Flame size={11} /> Turbo
                   </Link>
                 )}
 
-                {/* İlanları Keşfet (desktop, Pro kullanıcı) */}
+                {/* İlanları Keşfet (Pro) */}
                 {isPro && (
                   <Link to="/listings"
-                    className="hidden sm:flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-blue-500/40 text-blue-400 hover:bg-blue-500/10 transition-colors">
-                    <List className="h-3.5 w-3.5" />
-                    <span className="hidden lg:inline">İlanları Keşfet</span>
+                    className="hidden sm:flex items-center gap-1.5"
+                    style={{ fontSize: 12, fontWeight: 600, padding: '5px 11px', borderRadius: 7, border: '1px solid rgba(59,130,246,0.3)', color: '#60a5fa', textDecoration: 'none', transition: 'all 0.15s' }}
+                    onMouseOver={e => e.currentTarget.style.background = 'rgba(59,130,246,0.08)'}
+                    onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <List size={13} />
+                    <span className="hidden lg:inline">{lang === 'tr' ? 'İlanları Keşfet' : 'Browse Listings'}</span>
                   </Link>
                 )}
 
-                {/* New listing (desktop, Owner — ana CTA) */}
+                {/* Yeni ilan (Owner) */}
                 {isOwner && (
                   <Link to="/listings/new"
-                    className="hidden sm:flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-lg bg-brand-500 text-white hover:bg-brand-600 transition-colors shadow-lg shadow-brand-500/20">
-                    <PlusCircle className="h-3.5 w-3.5" />
+                    className="hidden sm:flex items-center gap-1.5"
+                    style={{ fontSize: 13, fontWeight: 700, padding: '7px 14px', borderRadius: 8, background: '#ff6b00', color: '#fff', textDecoration: 'none', boxShadow: '0 2px 12px rgba(255,107,0,0.3)', transition: 'all 0.15s' }}
+                    onMouseOver={e => e.currentTarget.style.background = '#e05e00'}
+                    onMouseOut={e => e.currentTarget.style.background = '#ff6b00'}
+                  >
+                    <PlusCircle size={14} />
                     <span className="hidden lg:inline">{t('nav.newListing')}</span>
                   </Link>
                 )}
 
-                {/* Notifications */}
                 <NotificationBell />
 
-                {/* Profile */}
-                <div className="ml-1">
+                <div style={{ marginLeft: 2 }}>
                   <ProfileDropdown />
                 </div>
 
-                {/* Hamburger (mobile only) */}
+                {/* Hamburger */}
                 <button
                   onClick={() => setMobileOpen(o => !o)}
-                  className="md:hidden p-2 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors relative"
+                  className="md:hidden"
+                  style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 8, background: 'rgba(255,255,255,0.04)', color: '#888', border: 'none', cursor: 'pointer' }}
                 >
-                  {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                  {mobileOpen ? <X size={18} /> : <Menu size={18} />}
                   {unreadMessages > 0 && !mobileOpen && (
-                    <span className="absolute top-1 right-1 h-2 w-2 bg-brand-500 rounded-full" />
+                    <span style={{ position: 'absolute', top: 6, right: 6, width: 8, height: 8, borderRadius: '50%', background: '#ff6b00' }} />
                   )}
                 </button>
               </>
             ) : (
               <>
-                <Link to="/pricing"  className="btn-ghost text-sm hidden sm:block">{t('nav.plans')}</Link>
-                <Link to="/login"    className="text-sm px-3 py-1.5 rounded-lg text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors">{t('nav.login')}</Link>
-                <Link to="/register" className="btn-primary text-sm px-3 py-1.5">{t('nav.register')}</Link>
+                <Link to="/pricing" style={{ fontSize: 13, color: '#888', textDecoration: 'none', padding: '6px 10px' }} className="hidden sm:block">{t('nav.plans')}</Link>
+                <Link to="/login" style={{ fontSize: 13, padding: '6px 12px', borderRadius: 8, color: '#ccc', textDecoration: 'none', transition: 'background 0.15s' }}
+                  onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                  onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                >{t('nav.login')}</Link>
+                <Link to="/register" style={{ fontSize: 13, fontWeight: 700, padding: '7px 14px', borderRadius: 8, background: '#ff6b00', color: '#fff', textDecoration: 'none', boxShadow: '0 2px 12px rgba(255,107,0,0.3)', transition: 'all 0.15s' }}
+                  onMouseOver={e => e.currentTarget.style.background = '#e05e00'}
+                  onMouseOut={e => e.currentTarget.style.background = '#ff6b00'}
+                >{t('nav.register')}</Link>
               </>
             )}
 
@@ -185,9 +253,11 @@ export default function Navbar({ onOpenSearch }) {
             <button
               onClick={toggle}
               title={lang === 'tr' ? 'Switch to English' : "Türkçe'ye geç"}
-              className="hidden sm:flex ml-1 items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800/60 transition-colors text-xs font-medium text-zinc-500 hover:text-zinc-300"
+              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 7, border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: '#666', cursor: 'pointer', fontSize: 11, fontWeight: 600, transition: 'all 0.15s', marginLeft: 2 }}
+              onMouseOver={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = '#aaa' }}
+              onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#666' }}
             >
-              <Globe className="h-3.5 w-3.5" />
+              <Globe size={13} />
               {lang === 'tr' ? 'EN' : 'TR'}
             </button>
           </div>
@@ -196,52 +266,67 @@ export default function Navbar({ onOpenSearch }) {
 
       {/* Mobile drawer */}
       {mobileOpen && user && (
-        <div className="md:hidden border-t border-zinc-800 bg-zinc-950 px-4 py-3 space-y-1">
-          <Link to="/listings" onClick={closeMobile}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors">
-            <List className="h-4 w-4 text-zinc-500" />Servis İlanları
-          </Link>
-          <Link to="/sales" onClick={closeMobile}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors">
-            <Tag className="h-4 w-4 text-zinc-500" />Satılık Araçlar
-          </Link>
-          {/* İlanları Keşfet (mobil, Pro kullanıcı) */}
-          {isPro && (
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: '#080808', padding: '12px 16px' }} className="md:hidden">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Link to="/listings" onClick={closeMobile}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-blue-400 hover:bg-blue-500/10 transition-colors">
-              <List className="h-4 w-4" />İlanları Keşfet
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, fontSize: 14, color: '#ccc', textDecoration: 'none', transition: 'background 0.1s' }}
+              onMouseOver={e => e.currentTarget.style.background = '#111'}
+              onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+              <List size={16} style={{ color: '#555' }} />{lang === 'tr' ? 'Servis İlanları' : 'Service Listings'}
             </Link>
-          )}
-          {navLinks.map(link => (
-            <Link key={link.to} to={link.to}
-              onClick={() => { link.onClick?.(); closeMobile() }}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors">
-              <link.icon className="h-4 w-4 text-zinc-500" />
-              {link.label}
-              {link.badge > 0 && (
-                <span className="ml-auto bg-brand-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">
-                  {link.badge > 9 ? '9+' : link.badge}
-                </span>
+            <Link to="/sales" onClick={closeMobile}
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, fontSize: 14, color: '#ccc', textDecoration: 'none', transition: 'background 0.1s' }}
+              onMouseOver={e => e.currentTarget.style.background = '#111'}
+              onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+              <Tag size={16} style={{ color: '#555' }} />{lang === 'tr' ? 'Satılık Araçlar' : 'Cars for Sale'}
+            </Link>
+            <Link to="/ustalar" onClick={closeMobile}
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, fontSize: 14, color: '#ccc', textDecoration: 'none', transition: 'background 0.1s' }}
+              onMouseOver={e => e.currentTarget.style.background = '#111'}
+              onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+              <Wrench size={16} style={{ color: '#555' }} />{lang === 'tr' ? 'Usta Ara' : 'Find Mechanic'}
+            </Link>
+            {isPro && (
+              <Link to="/listings" onClick={closeMobile}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, fontSize: 14, color: '#60a5fa', textDecoration: 'none' }}>
+                <List size={16} />{lang === 'tr' ? 'İlanları Keşfet' : 'Browse Listings'}
+              </Link>
+            )}
+            {navLinks.map(link => (
+              <Link key={link.to} to={link.to}
+                onClick={() => { link.onClick?.(); closeMobile() }}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, fontSize: 14, color: '#ccc', textDecoration: 'none', transition: 'background 0.1s' }}
+                onMouseOver={e => e.currentTarget.style.background = '#111'}
+                onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                <link.icon size={16} style={{ color: '#555' }} />
+                {link.label}
+                {link.badge > 0 && (
+                  <span style={{ marginLeft: 'auto', background: '#ff6b00', color: '#fff', fontSize: 10, fontWeight: 800, borderRadius: 99, padding: '1px 7px' }}>
+                    {link.badge > 9 ? '9+' : link.badge}
+                  </span>
+                )}
+              </Link>
+            ))}
+
+            <div style={{ paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 8, marginTop: 4 }}>
+              {isOwner && (
+                <Link to="/listings/new" onClick={closeMobile}
+                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '9px 0', borderRadius: 9, background: '#ff6b00', color: '#fff', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
+                  <PlusCircle size={15} /> {t('nav.newListing')}
+                </Link>
               )}
-            </Link>
-          ))}
-          <div className="pt-2 border-t border-zinc-800 flex items-center gap-2">
-            {isOwner && (
-              <Link to="/listings/new" onClick={closeMobile} className="btn-primary flex items-center gap-1.5 text-sm flex-1 justify-center">
-                <PlusCircle className="h-4 w-4" /> {t('nav.newListing')}
-              </Link>
-            )}
-            {!hasPlan && (
-              <Link to="/pricing" onClick={closeMobile}
-                className="flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-lg bg-gradient-to-r from-orange-500/15 to-red-500/10 border border-orange-500/30 text-orange-400 flex-1 justify-center">
-                <Flame className="h-3.5 w-3.5" /> {t('nav.upgrade')}
-              </Link>
-            )}
-            <button onClick={() => { toggle(); closeMobile() }}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-800 hover:bg-zinc-800 text-xs font-medium text-zinc-500 hover:text-zinc-300 transition-colors">
-              <Globe className="h-3.5 w-3.5" />
-              {lang === 'tr' ? 'EN' : 'TR'}
-            </button>
+              {!hasPlan && (
+                <Link to="/pricing" onClick={closeMobile}
+                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '9px 0', borderRadius: 9, background: 'rgba(255,107,0,0.1)', border: '1px solid rgba(255,107,0,0.25)', color: '#ff8c33', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
+                  <Flame size={14} /> {t('nav.upgrade')}
+                </Link>
+              )}
+              <button onClick={() => { toggle(); closeMobile() }}
+                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '9px 14px', borderRadius: 9, border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: '#666', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+                <Globe size={13} />
+                {lang === 'tr' ? 'EN' : 'TR'}
+              </button>
+            </div>
           </div>
         </div>
       )}

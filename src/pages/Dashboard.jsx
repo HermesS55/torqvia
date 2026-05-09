@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Calendar, MessageCircle, TrendingUp,
-  User, Settings, Zap, Bell, Plus, Car, Search,
+  User, Settings, Zap, Plus, Car, Search,
   CheckCircle2, Clock, Send, Wrench, MapPin,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -210,7 +210,7 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
 
   const ownerSidebarLinks = [
     { icon: LayoutDashboard, label: 'Dashboard', to: '/dashboard' },
-    { icon: Search, label: 'Usta Ara', to: '/listings' },
+    { icon: Search, label: 'Usta Ara', to: '/ustalar' },
     { icon: Calendar, label: 'Randevularım', to: '/randevular' },
     { icon: MessageCircle, label: 'Mesajlar', to: '/messages' },
     { icon: Car, label: 'Araçlarım', to: '/garage' },
@@ -230,18 +230,6 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
         background: '#0a0a0a', borderRight: '1px solid #141414',
         display: 'flex', flexDirection: 'column',
       }} className="hidden md:flex">
-        {/* Logo */}
-        <div style={{ padding: '20px 18px 16px', borderBottom: '1px solid #141414' }}>
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: '50%',
-              background: 'linear-gradient(135deg, #ff6b00, #c2410c)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 14, fontWeight: 900, color: '#fff',
-            }}>T</div>
-            <span style={{ fontSize: 16, fontWeight: 700, color: '#f0f0f0' }}>Torqvia</span>
-          </Link>
-        </div>
 
         {/* Menu */}
         <nav style={{ flex: 1, padding: '12px 0', overflowY: 'auto' }}>
@@ -288,12 +276,6 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
             </h1>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <button style={{
-              width: 36, height: 36, borderRadius: 8, border: '1px solid #1a1a1a',
-              background: '#0e0e0e', color: '#555', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Bell size={15} />
-            </button>
             <Link to={isOwner ? '/listings/new' : '/listings'} style={{
               display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 16px',
               borderRadius: 8, background: '#ff6b00', color: '#fff', fontWeight: 700,

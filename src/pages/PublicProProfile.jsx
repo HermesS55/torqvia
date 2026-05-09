@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   MapPin, Phone, Clock, Banknote, Wrench, Store,
   ChevronLeft, Star, Zap, CheckCircle, MessageCircle,
-  Calendar, Shield,
+  Calendar, Shield, X,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -11,11 +11,12 @@ import { useMeta } from '../hooks/useMeta'
 import UserAvatar from '../components/ui/UserAvatar'
 import Spinner from '../components/ui/Spinner'
 import TorqviaLogo from '../components/ui/TorqviaLogo'
+import PostCard from '../components/posts/PostCard'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /* ─── Particle canvas ─── */
-function ParticleCanvas() {
+function ParticleCanvas({ rgb1 = '255,107,0', rgb2 = null }) {
   const ref = useRef(null)
   useEffect(() => {
     const canvas = ref.current
@@ -24,10 +25,11 @@ function ParticleCanvas() {
     let raf
     const setSize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight }
     setSize()
-    const N = 60
-    const pts = Array.from({ length: N }, () => ({
+    const N = 55
+    const pts = Array.from({ length: N }, (_, i) => ({
       x: Math.random() * canvas.width, y: Math.random() * canvas.height,
       vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4,
+      rgb: rgb2 && i % 3 === 0 ? rgb2 : rgb1,
     }))
     function frame() {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -37,13 +39,14 @@ function ParticleCanvas() {
         if (p.x < 0 || p.x > canvas.width) p.vx *= -1
         if (p.y < 0 || p.y > canvas.height) p.vy *= -1
         ctx.beginPath(); ctx.arc(p.x, p.y, 1.6, 0, Math.PI * 2)
-        ctx.fillStyle = 'rgba(255,107,0,0.85)'; ctx.shadowColor = '#ff6b00'; ctx.shadowBlur = 6
+        ctx.fillStyle = `rgba(${p.rgb},0.85)`
+        ctx.shadowColor = `rgb(${p.rgb})`; ctx.shadowBlur = 6
         ctx.fill(); ctx.shadowBlur = 0
         for (let j = i + 1; j < N; j++) {
           const q = pts[j]; const d = Math.hypot(p.x - q.x, p.y - q.y)
           if (d < 115) {
             ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y)
-            ctx.strokeStyle = `rgba(255,107,0,${(1 - d / 115) * 0.28})`; ctx.lineWidth = 0.65; ctx.stroke()
+            ctx.strokeStyle = `rgba(${p.rgb},${(1 - d / 115) * 0.28})`; ctx.lineWidth = 0.65; ctx.stroke()
           }
         }
       }
@@ -52,12 +55,32 @@ function ParticleCanvas() {
     frame()
     const ro = new ResizeObserver(setSize); ro.observe(canvas)
     return () => { cancelAnimationFrame(raf); ro.disconnect() }
-  }, [])
+  }, [rgb1, rgb2])
   return <canvas ref={ref} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }} />
 }
 
-/* ─── Avatar with spinning rings ─── */
-function TurboAvatar({ profile: p, accent = '#ff6b00', accentMid = '#ff7d1a', accentLight = '#ff8c33', rgb = '255,107,0', label = 'TURBO' }) {
+/* ─── Plain avatar (free plan) ─── */
+function PlainAvatar({ profile: p }) {
+  return (
+    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <div style={{
+        width: 88, height: 88, borderRadius: '50%', overflow: 'hidden',
+        border: '2px solid #1e1e1e', boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
+      }}>
+        <UserAvatar profile={p} fill />
+      </div>
+    </div>
+  )
+}
+
+/* ─── Avatar with spinning rings (turbo / elite) ─── */
+function TurboAvatar({ profile: p, accent, accentLight, rgb, rgb2 = null, label, badgeClass }) {
+  const outerRing = rgb2
+    ? `conic-gradient(from 0deg, rgba(${rgb},0.6), transparent 30%, rgba(${rgb2},0.5), transparent 65%, rgba(${rgb},0.6))`
+    : `conic-gradient(from 0deg, rgba(${rgb},0.6), transparent 35%, rgba(${rgb},0.45), transparent 70%, rgba(${rgb},0.6))`
+  const innerRing = rgb2
+    ? `conic-gradient(from 60deg, ${accent}, rgba(${rgb},0.05), ${accentLight}, rgba(${rgb2},0.4), ${accent})`
+    : `conic-gradient(from 60deg, ${accent}, rgba(${rgb},0.07), ${accentLight}, rgba(${rgb},0.09), ${accent})`
   return (
     <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
       <div className="pp-pulse-ring" style={{
@@ -66,13 +89,13 @@ function TurboAvatar({ profile: p, accent = '#ff6b00', accentMid = '#ff7d1a', ac
       }} />
       <div className="pp-spin-ccw" style={{
         position: 'absolute', width: 110, height: 110, borderRadius: '50%',
-        background: `conic-gradient(from 0deg, rgba(${rgb},0.6), transparent 35%, rgba(${rgb},0.45), transparent 70%, rgba(${rgb},0.6))`,
+        background: outerRing,
         maskImage: 'radial-gradient(farthest-side at 50% 50%, transparent calc(100% - 2.5px), black 100%)',
         WebkitMaskImage: 'radial-gradient(farthest-side at 50% 50%, transparent calc(100% - 2.5px), black 100%)',
       }} />
       <div className="pp-spin-cw" style={{
         position: 'absolute', width: 98, height: 98, borderRadius: '50%',
-        background: `conic-gradient(from 60deg, ${accent}, rgba(${rgb},0.07), ${accentLight}, rgba(${rgb},0.09), ${accent})`,
+        background: innerRing,
         maskImage: 'radial-gradient(farthest-side at 50% 50%, transparent calc(100% - 2.5px), black 100%)',
         WebkitMaskImage: 'radial-gradient(farthest-side at 50% 50%, transparent calc(100% - 2.5px), black 100%)',
       }} />
@@ -81,9 +104,9 @@ function TurboAvatar({ profile: p, accent = '#ff6b00', accentMid = '#ff7d1a', ac
         overflow: 'hidden', border: '2.5px solid #080808', zIndex: 2,
         boxShadow: `0 0 0 1px rgba(${rgb},0.15)`,
       }}>
-        <UserAvatar profile={p} size="xl" />
+        <UserAvatar profile={p} fill />
       </div>
-      <div className="pp-badge-glow" style={{
+      <div className={badgeClass} style={{
         position: 'absolute', bottom: -16, left: '50%', transform: 'translateX(-50%)',
         display: 'inline-flex', alignItems: 'center', gap: 4,
         padding: '3px 11px', borderRadius: 99,
@@ -137,8 +160,10 @@ export default function PublicProProfile() {
   const [profile, setProfile] = useState(null)
   const [portfolio, setPortfolio] = useState([])
   const [ratings, setRatings] = useState([])
+  const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [photoSrc, setPhotoSrc] = useState(null)
 
   const title = profile ? `${profile.full_name} — ${profile.city || 'Türkiye'}` : 'Usta Profili'
   const specialtiesForMeta = profile?.specialties?.length ? profile.specialties.join(', ') : profile?.specialty || ''
@@ -154,20 +179,28 @@ export default function PublicProProfile() {
 
   async function fetchProfile() {
     setLoading(true)
-    const [{ data: p }, { data: items }, { data: ratingData }] = await Promise.all([
-      supabase.from('profiles')
-        .select('id, full_name, avatar_url, role, specialty, specialties, shop_name, city, location, phone, service_hours, price_range, bio, plan, banned')
-        .eq('id', id).single(),
+    const [{ data: p, error: pErr }, { data: items }, { data: ratingData }, { data: postsData }] = await Promise.all([
+      supabase.from('profiles').select('*').eq('id', id).single(),
       supabase.from('portfolio_items')
         .select('id, image_url, caption').eq('pro_id', id).order('created_at', { ascending: false }),
       supabase.from('pro_ratings')
         .select('id, rating, comment, created_at, reviewer:profiles!pro_ratings_owner_id_fkey(id, full_name)')
         .eq('pro_id', id).order('created_at', { ascending: false }),
+      supabase.from('posts')
+        .select('*, profiles!posts_user_id_fkey(id, avatar_url, full_name, role, specialty, plan), post_likes(user_id), post_comments(count)')
+        .eq('user_id', id).order('created_at', { ascending: false }).limit(10),
     ])
-    if (!p || p.role !== 'pro' || p.banned) {
+    if (pErr || !p || p.role !== 'pro' || p.banned) {
       setNotFound(true)
     } else {
-      setProfile(p); setPortfolio(items || []); setRatings(ratingData || [])
+      const uid = user?.id
+      const mapped = (postsData || []).map(post => ({
+        ...post,
+        like_count: post.post_likes?.length || 0,
+        comment_count: post.post_comments?.[0]?.count || 0,
+        liked_by_me: post.post_likes?.some(l => l.user_id === uid) || false,
+      }))
+      setProfile(p); setPortfolio(items || []); setRatings(ratingData || []); setPosts(mapped)
     }
     setLoading(false)
   }
@@ -188,14 +221,16 @@ export default function PublicProProfile() {
   }
 
   /* ─── Derived ─── */
-  const isTurbo = profile.plan === 'turbo'
-  const isElite = profile.plan === 'elite'
+  const planValue = profile.plan || profile.membership_type || 'free'
+  const isTurbo = planValue === 'turbo'
+  const isElite = planValue === 'elite'
   const hasPlan = isTurbo || isElite
-  const planAccent      = isElite ? '#7c3aed' : '#ff6b00'
-  const planAccentMid   = isElite ? '#9333ea' : '#ff7d1a'
-  const planAccentLight = isElite ? '#a855f7' : '#ff8c33'
-  const planRgb         = isElite ? '124,58,237' : '255,107,0'
-  const planLabel       = isElite ? 'ELİTE ÜYE' : 'TURBO ÜYE'
+  const planAccent      = isElite ? '#8b5cf6' : '#ff6b00'
+  const planAccentLight = isElite ? '#a78bfa' : '#ff8c33'
+  const planRgb         = isElite ? '139,92,246' : '255,107,0'
+  const planRgb2        = isElite ? '196,160,0' : null
+  const planLabel       = isElite ? '⚡ ELİTE ÜYE' : '⚡ TURBO ÜYE'
+  const badgeAnimClass  = isElite ? 'pp-badge-elite-glow' : 'pp-badge-glow'
   const avgRating = ratings.length > 0
     ? Math.round(ratings.reduce((s, r) => s + r.rating, 0) / ratings.length * 10) / 10
     : null
@@ -289,15 +324,17 @@ export default function PublicProProfile() {
 
           {/* Background layers */}
           <div style={{ position: 'absolute', inset: 0, background: '#080808' }}>
-            <ParticleCanvas />
+            {hasPlan && <ParticleCanvas rgb1={planRgb} rgb2={planRgb2} />}
           </div>
 
           {/* Shimmer sweep */}
-          <div className="pp-shimmer" style={{
-            position: 'absolute', inset: 0, pointerEvents: 'none',
-            background: 'linear-gradient(108deg, transparent 30%, rgba(255,255,255,0.022) 50%, transparent 70%)',
-            backgroundSize: '220% 100%',
-          }} />
+          {hasPlan && (
+            <div className="pp-shimmer" style={{
+              position: 'absolute', inset: 0, pointerEvents: 'none',
+              background: 'linear-gradient(108deg, transparent 30%, rgba(255,255,255,0.022) 50%, transparent 70%)',
+              backgroundSize: '220% 100%',
+            }} />
+          )}
 
           {/* Bottom fade */}
           <div style={{
@@ -319,8 +356,15 @@ export default function PublicProProfile() {
             <div className="pp-hero-inner" style={{ display: 'flex', alignItems: 'flex-start', gap: 36 }}>
 
               {/* Avatar */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, marginTop: 4, paddingBottom: 22 }}>
-                <TurboAvatar profile={profile} accent={planAccent} accentMid={planAccentMid} accentLight={planAccentLight} rgb={planRgb} label={isElite ? 'ELITE' : 'TURBO'} />
+              <div
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, marginTop: 4, paddingBottom: hasPlan ? 22 : 0, cursor: profile.avatar_url ? 'zoom-in' : 'default' }}
+                onClick={() => profile.avatar_url && setPhotoSrc(profile.avatar_url)}
+                title={profile.avatar_url ? 'Fotoğrafı büyüt' : undefined}
+              >
+                {hasPlan
+                  ? <TurboAvatar profile={profile} accent={planAccent} accentLight={planAccentLight} rgb={planRgb} rgb2={planRgb2} label={planLabel} badgeClass={badgeAnimClass} />
+                  : <PlainAvatar profile={profile} />
+                }
               </div>
 
               {/* Info */}
@@ -332,7 +376,7 @@ export default function PublicProProfile() {
                     {profile.full_name || 'İsimsiz Usta'}
                   </h1>
                   {hasPlan && (
-                    <span className="pp-badge-glow" style={{
+                    <span className={badgeAnimClass} style={{
                       display: 'inline-flex', alignItems: 'center', gap: 5,
                       padding: '4px 13px', borderRadius: 99,
                       background: `rgba(${planRgb},0.1)`, border: `1px solid rgba(${planRgb},0.3)`,
@@ -484,7 +528,10 @@ export default function PublicProProfile() {
           }}>
             <Zap size={15} style={{ color: planAccent, flexShrink: 0 }} fill={planAccent} />
             <span style={{ fontSize: 13, color: '#777', lineHeight: 1.5 }}>
-              Bu usta <strong style={{ color: planAccentLight, fontWeight: 700 }}>{planLabel}</strong> sayesinde arama sonuçlarında öncelikli listeleniyor.
+              {isElite
+                ? <>Bu usta <strong style={{ color: planAccentLight, fontWeight: 700 }}>ELİTE ÜYE</strong> sayesinde arama sonuçlarında en üstte listeleniyor ve premium rozet taşıyor.</>
+                : <>Bu usta <strong style={{ color: planAccentLight, fontWeight: 700 }}>TURBO ÜYE</strong> sayesinde arama sonuçlarında öncelikli listeleniyor.</>
+              }
             </span>
           </div>
         )}
@@ -619,21 +666,26 @@ export default function PublicProProfile() {
               <Panel label="// PORTFÖY">
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
                   {portfolio.map(item => (
-                    <div key={item.id} style={{
-                      position: 'relative', borderRadius: 11, overflow: 'hidden',
-                      aspectRatio: '1', border: '1px solid #1a1a1a',
-                    }}>
+                    <div key={item.id} style={{ position: 'relative', borderRadius: 11, overflow: 'hidden', aspectRatio: '1', border: '1px solid #1a1a1a', cursor: 'zoom-in' }}
+                      onClick={() => setPhotoSrc(item.image_url)}>
                       <img src={item.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       {item.caption && (
-                        <div style={{
-                          position: 'absolute', bottom: 0, left: 0, right: 0,
-                          background: 'linear-gradient(transparent, rgba(0,0,0,0.85))',
-                          padding: '18px 8px 7px', fontSize: 11, color: '#ddd',
-                        }}>
+                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(transparent, rgba(0,0,0,0.85))', padding: '18px 8px 7px', fontSize: 11, color: '#ddd' }}>
                           {item.caption}
                         </div>
                       )}
                     </div>
+                  ))}
+                </div>
+              </Panel>
+            )}
+
+            {/* Posts */}
+            {posts.length > 0 && (
+              <Panel label="// PAYLAŞIMLAR">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {posts.map(post => (
+                    <PostCard key={post.id} post={post} />
                   ))}
                 </div>
               </Panel>
@@ -782,8 +834,9 @@ export default function PublicProProfile() {
         .pp-pulse-ring  { animation: pp-pulse-ring 2.4s ease-in-out infinite; }
         .pp-spin-ccw    { animation: pp-spin-ccw 6s linear infinite; }
         .pp-spin-cw     { animation: pp-spin-cw 3.5s linear infinite; }
-        .pp-badge-glow  { animation: pp-badge-glow 2.2s ease-in-out infinite; }
-        .pp-shimmer     { animation: pp-shimmer 5s linear infinite; }
+        .pp-badge-glow       { animation: pp-badge-glow 2.2s ease-in-out infinite; }
+        .pp-badge-elite-glow { animation: pp-badge-elite 2.2s ease-in-out infinite; }
+        .pp-shimmer          { animation: pp-shimmer 5s linear infinite; }
 
         /* ── Responsive ── */
         @media (max-width: 768px) {
@@ -798,6 +851,27 @@ export default function PublicProProfile() {
           .pp-hero-content { padding: 28px 18px 28px !important; }
         }
       `}</style>
+
+      {/* ══ PHOTO LIGHTBOX ══ */}
+      {photoSrc && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out', backdropFilter: 'blur(6px)' }}
+          onClick={() => setPhotoSrc(null)}
+        >
+          <button
+            onClick={() => setPhotoSrc(null)}
+            style={{ position: 'absolute', top: 20, right: 20, width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 1 }}
+          >
+            <X size={18} />
+          </button>
+          <img
+            src={photoSrc}
+            alt=""
+            style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 12, objectFit: 'contain', boxShadow: '0 20px 80px rgba(0,0,0,0.8)' }}
+            onClick={e => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   )
 }

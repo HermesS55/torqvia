@@ -79,14 +79,10 @@ export default function App() {
             <Route path="/reset-password"  element={<ResetPassword />} />
 
             <Route path="/dashboard"   element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            {/* HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak */}
-            <Route path="/feed"        element={<ProtectedRoute><ComingSoon /></ProtectedRoute>} />
-            {/* <Route path="/feed"        element={<ProtectedRoute><Feed /></ProtectedRoute>} /> */}
+            <Route path="/feed"        element={<ProtectedRoute><Feed /></ProtectedRoute>} />
             <Route path="/profile/:id" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/messages"    element={<ProtectedRoute><Messages /></ProtectedRoute>} />
-            {/* HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak */}
-            <Route path="/people"      element={<ProtectedRoute><ComingSoon /></ProtectedRoute>} />
-            {/* <Route path="/people"      element={<ProtectedRoute><People /></ProtectedRoute>} /> */}
+            <Route path="/people"      element={<ProtectedRoute><People /></ProtectedRoute>} />
             <Route path="/settings"    element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/pricing"     element={<Pricing />} />
             <Route path="/terms"       element={<Terms />} />
@@ -108,9 +104,7 @@ export default function App() {
             <Route path="/sales/:id"    element={<ProtectedRoute><CarSaleDetail /></ProtectedRoute>} />
             <Route path="/search"    element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
             <Route path="/admin"     element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-            {/* HIDDEN_FOR_LAUNCH: sosyal medya, sonra açılacak */}
-            <Route path="/posts/:id" element={<ProtectedRoute><ComingSoon /></ProtectedRoute>} />
-            {/* <Route path="/posts/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} /> */}
+            <Route path="/posts/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
             <Route path="/events"          element={<Events />} />
             <Route path="/events/:id"     element={<EventDetail />} />
             <Route path="/usta/:id"       element={<PublicProProfile />} />

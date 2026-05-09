@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { getInitials } from '../../lib/avatar'
 
 const SIZES = {
@@ -8,23 +9,33 @@ const SIZES = {
   xl: 'h-20 w-20 text-2xl',
 }
 
-export default function UserAvatar({ profile, email, size = 'md', className = '' }) {
+export default function UserAvatar({ profile, email, size = 'md', className = '', fill = false, style: customStyle }) {
+  const [imgError, setImgError] = useState(false)
   const isOwner = profile?.role === 'owner'
   const ring = isOwner ? 'ring-2 ring-brand-500/40' : 'ring-2 ring-blue-500/40'
   const bg   = isOwner ? 'bg-brand-500/15 text-brand-400' : 'bg-blue-500/15 text-blue-400'
 
-  if (profile?.avatar_url) {
+  const sizeClass  = fill ? '' : SIZES[size]
+  const fillStyle  = fill ? { width: '100%', height: '100%', display: 'block', ...customStyle } : customStyle
+  const avatarUrl  = profile?.avatar_url || profile?.profile_image_url
+
+  if (avatarUrl && !imgError) {
     return (
       <img
-        src={profile.avatar_url}
-        alt=""
-        className={`${SIZES[size]} rounded-full object-cover ${ring} ${className}`}
+        src={avatarUrl}
+        alt={profile?.full_name || ''}
+        className={`${sizeClass} rounded-full object-cover ${fill ? '' : ring} ${className}`}
+        style={fillStyle}
+        onError={() => setImgError(true)}
       />
     )
   }
 
   return (
-    <div className={`${SIZES[size]} rounded-full flex items-center justify-center font-bold shrink-0 ${bg} ${ring} ${className}`}>
+    <div
+      className={`${sizeClass} rounded-full flex items-center justify-center font-bold shrink-0 ${bg} ${fill ? '' : ring} ${className}`}
+      style={fillStyle}
+    >
       {getInitials(email || profile?.full_name || '')}
     </div>
   )
