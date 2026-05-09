@@ -228,7 +228,7 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
       <aside style={{
         width: 240, flexShrink: 0,
         background: '#0a0a0a', borderRight: '1px solid #141414',
-        display: 'flex', flexDirection: 'column',
+        flexDirection: 'column',
       }} className="hidden md:flex">
 
         {/* Menu */}
@@ -554,16 +554,17 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
 
       <style>{`
         @media (max-width: 768px) {
-          .dash-outer       { margin-bottom: 0 !important; min-height: calc(100dvh - 144px) !important; }
+          .dash-outer       { margin-bottom: 0 !important; min-height: calc(100dvh - 124px) !important; }
           .dash-scroll-area { overflow-y: visible !important; }
-          .metrics-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .metrics-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
           .main-grid    { grid-template-columns: 1fr !important; }
           .dash-header  { padding: 12px 16px !important; }
-          .dash-main    { padding: 16px !important; }
+          .dash-main    { padding: 14px !important; }
         }
         @media (max-width: 480px) {
-          .metrics-grid     { grid-template-columns: 1fr !important; }
+          .metrics-grid     { grid-template-columns: repeat(2, 1fr) !important; }
           .dash-search-row  { flex-direction: column !important; }
+          .dash-header h1   { font-size: 16px !important; }
         }
       `}</style>
     </div>

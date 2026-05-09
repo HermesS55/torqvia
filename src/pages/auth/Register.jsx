@@ -205,7 +205,7 @@ export default function Register() {
             {/* Role selector */}
             <div style={{ marginBottom: 20 }}>
               <label style={labelStyle}>{t('auth.register.iam')}</label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div className="register-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 {[
                   { value: 'owner', label: t('auth.register.carOwner'), desc: t('auth.register.carOwnerDesc') },
                   { value: 'pro', label: t('auth.register.pro'), desc: t('auth.register.proDesc') },

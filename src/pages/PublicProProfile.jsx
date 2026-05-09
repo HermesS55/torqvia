@@ -312,7 +312,7 @@ export default function PublicProProfile() {
         </div>
       </header>
 
-      <div style={{ maxWidth: 980, margin: '0 auto', padding: '0 20px 80px' }}>
+      <div className="pp-outer" style={{ maxWidth: 980, margin: '0 auto', padding: '0 20px 80px' }}>
 
         {/* ══ HERO ══ */}
         <div style={{
@@ -544,7 +544,7 @@ export default function PublicProProfile() {
 
             {/* Hakkında */}
             <Panel label="// HAKKINDA">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: profile.bio ? 20 : 0 }}>
+              <div className="pp-info-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: profile.bio ? 20 : 0 }}>
                 {[
                   {
                     icon: <Wrench size={14} style={{ color: '#ff6b00' }} />,
@@ -664,7 +664,7 @@ export default function PublicProProfile() {
             {/* Portfolio */}
             {portfolio.length > 0 && (
               <Panel label="// PORTFÖY">
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                <div className="pp-portfolio-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
                   {portfolio.map(item => (
                     <div key={item.id} style={{ position: 'relative', borderRadius: 11, overflow: 'hidden', aspectRatio: '1', border: '1px solid #1a1a1a', cursor: 'zoom-in' }}
                       onClick={() => setPhotoSrc(item.image_url)}>
@@ -843,12 +843,16 @@ export default function PublicProProfile() {
           .pp-body-grid    { grid-template-columns: 1fr !important; }
           .pp-hero-content { padding: 32px 24px 32px !important; }
           .pp-navbar       { padding: 0 16px !important; }
+          .pp-outer        { padding-left: 12px !important; padding-right: 12px !important; }
         }
         @media (max-width: 600px) {
           .pp-hero-inner { flex-direction: column !important; align-items: center !important; text-align: center !important; }
           .pp-hero-inner > div:first-child { margin-top: 0 !important; }
           .pp-hero-inner > div:last-child > div { justify-content: center !important; }
-          .pp-hero-content { padding: 28px 18px 28px !important; }
+          .pp-hero-content { padding: 24px 16px 24px !important; }
+          .pp-outer        { padding-left: 8px !important; padding-right: 8px !important; }
+          .pp-info-grid    { grid-template-columns: 1fr !important; }
+          .pp-portfolio-grid { grid-template-columns: repeat(2, 1fr) !important; }
         }
       `}</style>
 

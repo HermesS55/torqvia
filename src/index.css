@@ -220,3 +220,20 @@ html, body { overflow-x: hidden; }
 /* ─── Safe area insets (iPhone notch / home indicator) ───── */
 .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
 .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+
+/* ─── Global mobile layout helpers ───────────────────────── */
+@media (max-width: 767px) {
+  /* Reduce hero h1 font size on small screens */
+  .pp-hero-content h1 { font-size: 22px !important; }
+
+  /* Make card grids single column when using the .card class in flex columns */
+  .card { padding: 14px !important; }
+
+  /* Prevent very wide modals from overflowing */
+  [role="dialog"], .modal-content {
+    max-width: calc(100vw - 24px) !important;
+  }
+
+  /* Register 2-col form grid → 1-col */
+  .register-grid-2 { grid-template-columns: 1fr !important; }
+}
