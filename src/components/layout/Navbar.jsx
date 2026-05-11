@@ -243,7 +243,7 @@ export default function Navbar({ onOpenSearch }) {
               onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#666' }}
             >
               <Globe size={13} />
-              {lang === 'tr' ? 'EN' : 'TR'}
+              <span className="hidden sm:inline">{lang === 'tr' ? 'EN' : 'TR'}</span>
             </button>
           </div>
         </div>

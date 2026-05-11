@@ -612,12 +612,13 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
           .metrics-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
           .main-grid    { grid-template-columns: 1fr !important; }
           .dash-header  { padding: 12px 16px !important; }
-          .dash-main    { padding: 14px !important; }
+          .dash-main    { padding: 14px 14px 80px !important; }
         }
         @media (max-width: 480px) {
           .metrics-grid     { grid-template-columns: repeat(2, 1fr) !important; }
           .dash-search-row  { flex-direction: column !important; }
           .dash-header h1   { font-size: 16px !important; }
+          .dash-main        { padding: 12px 12px 80px !important; }
         }
       `}</style>
     </div>

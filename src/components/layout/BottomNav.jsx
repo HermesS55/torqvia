@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, List, Calendar, MessageCircle,
-  TrendingUp, Car, Search,
+  Car, Search, Newspaper,
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useUnreadCount } from '../../contexts/UnreadMessagesContext'
@@ -16,17 +16,18 @@ export default function BottomNav() {
 
   const items = isPro ? [
     { to: '/dashboard',  icon: LayoutDashboard, label: 'Panel' },
+    { to: '/feed',       icon: Newspaper,       label: 'Akış' },
     { to: '/listings',   icon: List,            label: 'İlanlar' },
     { to: '/randevular', icon: Calendar,        label: 'Randevu' },
     { to: '/messages',   icon: MessageCircle,   label: 'Mesaj', msg: true },
-    { to: '/analytics',  icon: TrendingUp,      label: 'Analitik' },
   ] : isOwner ? [
     { to: '/dashboard',  icon: LayoutDashboard, label: 'Panel' },
+    { to: '/feed',       icon: Newspaper,       label: 'Akış' },
     { to: '/ustalar',    icon: Search,          label: 'Usta Bul' },
     { to: '/randevular', icon: Calendar,        label: 'Randevu' },
     { to: '/messages',   icon: MessageCircle,   label: 'Mesaj', msg: true },
-    { to: '/garage',     icon: Car,             label: 'Garaj' },
   ] : [
+    { to: '/feed',       icon: Newspaper,       label: 'Akış' },
     { to: '/listings',   icon: List,            label: 'İlanlar' },
     { to: '/ustalar',    icon: Search,          label: 'Ustalar' },
     { to: '/messages',   icon: MessageCircle,   label: 'Mesaj', msg: true },

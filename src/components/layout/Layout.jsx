@@ -61,6 +61,7 @@ export default function Layout({ children }) {
       <BottomNav />
       <Toaster
         position="bottom-right"
+        containerStyle={{ bottom: 72 }}
         toastOptions={{
           style: {
             background: '#18181b',
