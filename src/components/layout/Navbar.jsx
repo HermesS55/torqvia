@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { List, PlusCircle, MessageCircle, Users, Flame, Globe, Search, Car, Menu, X, Shield, Tag, ChevronDown, Wrench } from 'lucide-react'
+import { List, PlusCircle, MessageCircle, Users, Flame, Globe, Search, Car, Shield, Tag, ChevronDown, Wrench } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLang, useT } from '../../contexts/LangContext'
 import { useUnreadCount } from '../../contexts/UnreadMessagesContext'
@@ -14,7 +14,6 @@ export default function Navbar({ onOpenSearch }) {
   const { lang, toggle } = useLang()
   const t = useT()
   const { unread: unreadMessages, markRead } = useUnreadCount()
-  const [mobileOpen, setMobileOpen] = useState(false)
   const plan = profile?.plan || 'free'
   const hasPlan = plan !== 'free'
   const isOwner = profile?.role === 'owner'
@@ -29,8 +28,6 @@ export default function Navbar({ onOpenSearch }) {
     ...(isOwner ? [{ to: '/garage', icon: Car, label: lang === 'tr' ? 'Garaj' : 'Garage' }] : []),
     ...(isAdmin ? [{ to: '/admin', icon: Shield, label: 'Admin' }] : []),
   ] : []
-
-  function closeMobile() { setMobileOpen(false) }
 
   // İlanlar dropdown
   const [listingsOpen, setListingsOpen] = useState(false)
@@ -222,18 +219,6 @@ export default function Navbar({ onOpenSearch }) {
                 <div style={{ marginLeft: 2 }}>
                   <ProfileDropdown />
                 </div>
-
-                {/* Hamburger */}
-                <button
-                  onClick={() => setMobileOpen(o => !o)}
-                  className="md:hidden"
-                  style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 8, background: 'rgba(255,255,255,0.04)', color: '#888', border: 'none', cursor: 'pointer' }}
-                >
-                  {mobileOpen ? <X size={18} /> : <Menu size={18} />}
-                  {unreadMessages > 0 && !mobileOpen && (
-                    <span style={{ position: 'absolute', top: 6, right: 6, width: 8, height: 8, borderRadius: '50%', background: '#ff6b00' }} />
-                  )}
-                </button>
               </>
             ) : (
               <>
@@ -264,72 +249,6 @@ export default function Navbar({ onOpenSearch }) {
         </div>
       </div>
 
-      {/* Mobile drawer */}
-      {mobileOpen && user && (
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: '#080808', padding: '12px 16px' }} className="md:hidden">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Link to="/listings" onClick={closeMobile}
-              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, fontSize: 14, color: '#ccc', textDecoration: 'none', transition: 'background 0.1s' }}
-              onMouseOver={e => e.currentTarget.style.background = '#111'}
-              onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
-              <List size={16} style={{ color: '#555' }} />{lang === 'tr' ? 'Servis İlanları' : 'Service Listings'}
-            </Link>
-            <Link to="/sales" onClick={closeMobile}
-              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, fontSize: 14, color: '#ccc', textDecoration: 'none', transition: 'background 0.1s' }}
-              onMouseOver={e => e.currentTarget.style.background = '#111'}
-              onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
-              <Tag size={16} style={{ color: '#555' }} />{lang === 'tr' ? 'Satılık Araçlar' : 'Cars for Sale'}
-            </Link>
-            <Link to="/ustalar" onClick={closeMobile}
-              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, fontSize: 14, color: '#ccc', textDecoration: 'none', transition: 'background 0.1s' }}
-              onMouseOver={e => e.currentTarget.style.background = '#111'}
-              onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
-              <Wrench size={16} style={{ color: '#555' }} />{lang === 'tr' ? 'Usta Ara' : 'Find Mechanic'}
-            </Link>
-            {isPro && (
-              <Link to="/listings" onClick={closeMobile}
-                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, fontSize: 14, color: '#60a5fa', textDecoration: 'none' }}>
-                <List size={16} />{lang === 'tr' ? 'İlanları Keşfet' : 'Browse Listings'}
-              </Link>
-            )}
-            {navLinks.map(link => (
-              <Link key={link.to} to={link.to}
-                onClick={() => { link.onClick?.(); closeMobile() }}
-                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, fontSize: 14, color: '#ccc', textDecoration: 'none', transition: 'background 0.1s' }}
-                onMouseOver={e => e.currentTarget.style.background = '#111'}
-                onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
-                <link.icon size={16} style={{ color: '#555' }} />
-                {link.label}
-                {link.badge > 0 && (
-                  <span style={{ marginLeft: 'auto', background: '#ff6b00', color: '#fff', fontSize: 10, fontWeight: 800, borderRadius: 99, padding: '1px 7px' }}>
-                    {link.badge > 9 ? '9+' : link.badge}
-                  </span>
-                )}
-              </Link>
-            ))}
-
-            <div style={{ paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 8, marginTop: 4 }}>
-              {isOwner && (
-                <Link to="/listings/new" onClick={closeMobile}
-                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '9px 0', borderRadius: 9, background: '#ff6b00', color: '#fff', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
-                  <PlusCircle size={15} /> {t('nav.newListing')}
-                </Link>
-              )}
-              {!hasPlan && (
-                <Link to="/pricing" onClick={closeMobile}
-                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '9px 0', borderRadius: 9, background: 'rgba(255,107,0,0.1)', border: '1px solid rgba(255,107,0,0.25)', color: '#ff8c33', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
-                  <Flame size={14} /> {t('nav.upgrade')}
-                </Link>
-              )}
-              <button onClick={() => { toggle(); closeMobile() }}
-                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '9px 14px', borderRadius: 9, border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: '#666', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-                <Globe size={13} />
-                {lang === 'tr' ? 'EN' : 'TR'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </nav>
   )
 }

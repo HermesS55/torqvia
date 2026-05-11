@@ -165,6 +165,12 @@ export default function PublicProProfile() {
   const [notFound, setNotFound] = useState(false)
   const [photoSrc, setPhotoSrc] = useState(null)
 
+  useEffect(() => {
+    if (user?.id && id && user.id === id) {
+      navigate(`/profile/${id}`, { replace: true })
+    }
+  }, [user?.id, id])
+
   const title = profile ? `${profile.full_name} — ${profile.city || 'Türkiye'}` : 'Usta Profili'
   const specialtiesForMeta = profile?.specialties?.length ? profile.specialties.join(', ') : profile?.specialty || ''
   const description = profile

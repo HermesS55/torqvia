@@ -86,31 +86,34 @@ function ProCard({ pro, compact = false }) {
       onMouseOut={e => { e.currentTarget.style.borderColor = hasPlan ? 'rgba(255,107,0,0.18)' : '#181818'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = hasPlan ? '0 4px 24px rgba(255,107,0,0.05)' : 'none' }}
     >
       {/* Shop photo / banner */}
-      <div style={{ position: 'relative', height: 120, overflow: 'hidden', background: '#0a0a0a', borderRadius: '18px 18px 0 0' }}>
-        {pro.shop_photo ? (
-          <img src={pro.shop_photo} alt={pro.shop_name || pro.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        ) : (
-          <div style={{
-            width: '100%', height: '100%',
-            background: hasPlan
-              ? 'linear-gradient(135deg, rgba(255,107,0,0.08), rgba(255,107,0,0.03))'
-              : 'linear-gradient(135deg, #111, #0d0d0d)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <div style={{ opacity: 0.07, fontSize: 48, fontWeight: 900, color: hasPlan ? '#ff6b00' : '#888', letterSpacing: '-0.04em', userSelect: 'none' }}>
-              {(pro.shop_name || pro.full_name || '?')[0]}
+      <div style={{ position: 'relative', height: 120, background: '#0a0a0a', borderRadius: '18px 18px 0 0' }}>
+        {/* Image + overlay wrapper — overflow hidden burada, avatar kırpılmasın */}
+        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: '18px 18px 0 0' }}>
+          {pro.shop_photo ? (
+            <img src={pro.shop_photo} alt={pro.shop_name || pro.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <div style={{
+              width: '100%', height: '100%',
+              background: hasPlan
+                ? 'linear-gradient(135deg, rgba(255,107,0,0.08), rgba(255,107,0,0.03))'
+                : 'linear-gradient(135deg, #111, #0d0d0d)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <div style={{ opacity: 0.07, fontSize: 48, fontWeight: 900, color: hasPlan ? '#ff6b00' : '#888', letterSpacing: '-0.04em', userSelect: 'none' }}>
+                {(pro.shop_name || pro.full_name || '?')[0]}
+              </div>
             </div>
-          </div>
-        )}
-        {/* Dark gradient overlay */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(10,10,10,0.9) 100%)' }} />
-        {/* Plan badge */}
-        {hasPlan && (
-          <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', alignItems: 'center', gap: 4, padding: '3px 9px', borderRadius: 99, background: 'rgba(255,107,0,0.85)', backdropFilter: 'blur(8px)', color: '#fff', fontSize: 9, fontWeight: 900, letterSpacing: '0.12em' }}>
-            <Zap size={8} fill="white" /> TURBO
-          </div>
-        )}
-        {/* Avatar overlapping */}
+          )}
+          {/* Dark gradient overlay */}
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(10,10,10,0.9) 100%)' }} />
+          {/* Plan badge */}
+          {hasPlan && (
+            <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', alignItems: 'center', gap: 4, padding: '3px 9px', borderRadius: 99, background: 'rgba(255,107,0,0.85)', backdropFilter: 'blur(8px)', color: '#fff', fontSize: 9, fontWeight: 900, letterSpacing: '0.12em' }}>
+              <Zap size={8} fill="white" /> TURBO
+            </div>
+          )}
+        </div>
+        {/* Avatar overlapping — dış div'de overflow yok, tam görünür */}
         <div style={{ position: 'absolute', bottom: -22, left: 18 }}>
           <div style={{ width: 52, height: 52, borderRadius: '50%', overflow: 'hidden', border: `2.5px solid ${hasPlan ? '#ff6b00' : '#1a1a1a'}`, background: '#080808' }}>
             <UserAvatar profile={pro} fill />

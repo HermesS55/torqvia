@@ -100,7 +100,7 @@ export default function CreatePost({ onCreated }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!content.trim()) return
+    if (!content.trim() && !mediaFile) return
     setLoading(true)
     try {
       let imageUrl = null
@@ -272,7 +272,7 @@ export default function CreatePost({ onCreated }) {
 
               <div className="flex items-center gap-3">
                 <span className="text-xs text-zinc-600">{content.length}/1000</span>
-                <button type="submit" disabled={!content.trim() || loading}
+                <button type="submit" disabled={(!content.trim() && !mediaFile) || loading}
                   className="btn-primary flex items-center gap-1.5 text-sm py-2">
                   {loading ? <Spinner size="sm" /> : <><Send className="h-3.5 w-3.5" />Paylaş</>}
                 </button>

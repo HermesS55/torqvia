@@ -12,11 +12,13 @@ import UserAvatar from '../components/ui/UserAvatar'
 import { useMeta } from '../hooks/useMeta'
 
 const STATUS_LABELS = {
-  pending:   { label: 'Beklemede',    color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.25)' },
-  accepted:  { label: 'Kabul Edildi', color: '#22c55e', bg: 'rgba(34,197,94,0.1)',  border: 'rgba(34,197,94,0.25)' },
-  rejected:  { label: 'Reddedildi',  color: '#ef4444', bg: 'rgba(239,68,68,0.1)',   border: 'rgba(239,68,68,0.25)' },
-  completed: { label: 'Tamamlandı',  color: '#3b82f6', bg: 'rgba(59,130,246,0.1)', border: 'rgba(59,130,246,0.25)' },
+  pending:     { label: 'Beklemede',    color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.25)' },
+  accepted:    { label: 'Kabul Edildi', color: '#22c55e', bg: 'rgba(34,197,94,0.1)',  border: 'rgba(34,197,94,0.25)' },
+  rejected:    { label: 'Reddedildi',  color: '#ef4444', bg: 'rgba(239,68,68,0.1)',   border: 'rgba(239,68,68,0.25)' },
+  completed:   { label: 'Tamamlandı',  color: '#3b82f6', bg: 'rgba(59,130,246,0.1)', border: 'rgba(59,130,246,0.25)' },
   in_progress: { label: 'Devam Ediyor', color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)', border: 'rgba(139,92,246,0.25)' },
+  open:        { label: 'Açık',        color: '#22c55e', bg: 'rgba(34,197,94,0.1)',  border: 'rgba(34,197,94,0.25)' },
+  closed:      { label: 'Tamamlandı',  color: '#3b82f6', bg: 'rgba(59,130,246,0.1)', border: 'rgba(59,130,246,0.25)' },
 }
 
 const MONTH_LABELS = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara']
@@ -188,9 +190,13 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
   const pendingOffers   = offers.filter(o => o.status === 'pending')
   const acceptedOffers  = offers.filter(o => o.status === 'accepted')
   const completedOffers = offers.filter(o => o.status === 'completed')
-  const upcomingAppointments = offers.filter(o =>
-    o.appointment_date && new Date(o.appointment_date) > new Date()
-  ).sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date))
+  const now = new Date()
+  const upcomingAppointments = offers
+    .filter(o => o.appointment_date && o.status !== 'completed' && new Date(o.appointment_date) > now)
+    .sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date))
+  const pastAppointments = offers
+    .filter(o => o.appointment_date && (o.status === 'completed' || new Date(o.appointment_date) <= now))
+    .sort((a, b) => new Date(b.appointment_date) - new Date(a.appointment_date))
 
   const fmtDate = dt => new Date(dt).toLocaleString('tr-TR', {
     day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
@@ -392,6 +398,30 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
                     </div>
                   </div>
                 )}
+                {/* Past / completed appointments */}
+                {pastAppointments.length > 0 && (
+                  <div style={{ marginTop: 20 }}>
+                    <p style={{ fontFamily: 'monospace', fontSize: 10, color: '#444', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 12 }}>// TAMAMLANAN İŞLER</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {pastAppointments.slice(0, 3).map(o => (
+                        <Link key={o.id} to={`/listings/${o.listing_id}`} style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          background: '#0b0b0b', border: '1px solid #141414', borderRadius: 10,
+                          padding: '12px 16px', textDecoration: 'none', opacity: 0.75,
+                        }}>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: '#f0f0f0' }}>{o.listings?.brand} {o.listings?.model}</div>
+                            <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{o.profiles?.full_name}</div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: 11, color: '#555' }}>{fmtDate(o.appointment_date)}</div>
+                            <StatusBadge status="completed" />
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Right: top pros + messages */}
@@ -479,6 +509,29 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
                     </Link>
                   ))}
                 </div>
+                {pastAppointments.length > 0 && (
+                  <div style={{ marginTop: 20 }}>
+                    <p style={{ fontFamily: 'monospace', fontSize: 10, color: '#444', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 12 }}>// TAMAMLANAN İŞLER</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {pastAppointments.slice(0, 5).map(o => (
+                        <Link key={o.id} to={`/listings/${o.listing_id}`} style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          background: '#0b0b0b', border: '1px solid #141414', borderRadius: 10,
+                          padding: '14px 16px', textDecoration: 'none', opacity: 0.75,
+                        }}>
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: '#f0f0f0' }}>{o.listings?.brand} {o.listings?.model}</div>
+                            <div style={{ fontSize: 12, color: '#ff6b00', fontWeight: 700, marginTop: 2 }}>₺{Number(o.price).toLocaleString('tr-TR')}</div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: 11, color: '#555' }}>{fmtDate(o.appointment_date)}</div>
+                            <StatusBadge status="completed" />
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* All offers */}
                 {offers.length > 0 && (

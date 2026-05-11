@@ -103,12 +103,17 @@ export default function ListingDetail() {
   async function setListingStatus(newStatus) {
     setTogglingStatus(true)
     const { error } = await supabase.from('listings').update({ status: newStatus }).eq('id', id)
-    if (error) toast.error('Güncellenemedi')
-    else {
-      setListing(l => ({ ...l, status: newStatus }))
-      const labels = { open: 'İlan açıldı', in_progress: 'İlan devam ediyor', closed: 'İlan kapatıldı' }
-      toast.success(labels[newStatus] || 'Güncellendi')
+    if (error) { toast.error('Güncellenemedi'); setTogglingStatus(false); return }
+    setListing(l => ({ ...l, status: newStatus }))
+    if (newStatus === 'closed') {
+      const acceptedOffer = offers.find(o => o.status === 'accepted')
+      if (acceptedOffer) {
+        await supabase.from('offers').update({ status: 'completed' }).eq('id', acceptedOffer.id)
+        setOffers(prev => prev.map(o => o.id === acceptedOffer.id ? { ...o, status: 'completed' } : o))
+      }
     }
+    const labels = { open: 'İlan açıldı', in_progress: 'İlan devam ediyor', closed: 'İlan tamamlandı!' }
+    toast.success(labels[newStatus] || 'Güncellendi')
     setTogglingStatus(false)
   }
 
@@ -138,6 +143,10 @@ export default function ListingDetail() {
         listing_id: id,
         message: `${listing.brand} ${listing.model}`,
       }).then(() => {})
+    }
+    if (status === 'completed') {
+      await supabase.from('listings').update({ status: 'closed' }).eq('id', id)
+      setListing(l => ({ ...l, status: 'closed' }))
     }
   }
 
