@@ -17,9 +17,13 @@ function generateAuth(body) {
 }
 
 async function readBody(req) {
-  // Vercel otomatik parse ediyorsa doğrudan döner
-  if (req.body && typeof req.body === 'object') return req.body
-  // Yoksa stream'den oku
+  // Vercel parsed it as an object already
+  if (req.body !== null && req.body !== undefined && typeof req.body === 'object') return req.body
+  // Vercel stored it as a string
+  if (typeof req.body === 'string') {
+    try { return JSON.parse(req.body) } catch { return {} }
+  }
+  // Read from stream (body not yet consumed)
   return new Promise((resolve) => {
     let raw = ''
     req.on('data', chunk => { raw += chunk })

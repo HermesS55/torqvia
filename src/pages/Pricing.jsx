@@ -87,14 +87,16 @@ function PaymentModal({ plan, onClose }) {
   async function handlePay() {
     setState('loading')
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { user } } = await supabase.auth.getUser()
+      const userId = user?.id || profile?.id
+      if (!userId) throw new Error('Oturum bulunamadı')
       const res = await fetch('/api/iyzico-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           plan: plan.id,
-          userId: session?.user?.id || profile?.id,
-          userEmail: session?.user?.email || profile?.email,
+          userId,
+          userEmail: user?.email || profile?.email,
           userName: profile?.full_name || '',
         }),
       })
