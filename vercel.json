@@ -11,7 +11,7 @@
       "permanent": true
     }
   ],
-  "rewrites": [{ "source": "/((?!.*\\.[a-z0-9]{2,5}$).*)", "destination": "/index.html" }],
+  "rewrites": [{ "source": "/((?!api(?:/|$))(?!.*\\.[a-z0-9]{2,5}$).*)", "destination": "/index.html" }],
   "headers": [
     {
       "source": "/sitemap.xml",

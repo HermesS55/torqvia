@@ -1,5 +1,5 @@
-import { Check, Flame, Zap, X, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
-import { useState, useEffect, useRef } from 'react'
+import { Check, Flame, Zap, X, Loader2, AlertCircle } from 'lucide-react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -76,81 +76,52 @@ const PLANS = [
   },
 ]
 
-function PaymentModal({ plan, onClose, onSuccess }) {
-  const [state, setState] = useState('loading') // loading | iframe | success | error
+function PaymentModal({ plan, onClose }) {
+  const { profile } = useAuth()
+  const [state, setState] = useState('idle') // idle | loading | error
   const [errorMsg, setErrorMsg] = useState('')
-  const iframeRef = useRef(null)
 
-  useEffect(() => {
-    let cancelled = false
-
-    async function getToken() {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        const res = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paytr-create-token`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${session.access_token}`,
-            },
-            body: JSON.stringify({ plan: plan.id }),
-          }
-        )
-        const data = await res.json()
-        if (cancelled) return
-
-        if (!res.ok || data.error) {
-          setErrorMsg(data.error || 'Ödeme başlatılamadı')
-          setState('error')
-          return
-        }
-
-        iframeRef.current.src = `https://www.paytr.com/odeme/guvenli/${data.token}`
-        setState('iframe')
-      } catch {
-        if (!cancelled) {
-          setErrorMsg('Bağlantı hatası, lütfen tekrar deneyin')
-          setState('error')
-        }
-      }
-    }
-
-    getToken()
-
-    const handleMessage = (e) => {
-      if (e.data?.paytr === 'success') {
-        setState('success')
-        setTimeout(() => { onSuccess(); onClose() }, 2000)
-      } else if (e.data?.paytr === 'failed') {
-        setErrorMsg('Ödeme işlemi başarısız oldu')
-        setState('error')
-      }
-    }
-    window.addEventListener('message', handleMessage)
-
-    return () => {
-      cancelled = true
-      window.removeEventListener('message', handleMessage)
-    }
-  }, [plan, onSuccess, onClose])
-
-  const Icon = plan.icon
   const isElite = plan.id === 'elite'
+  const Icon = plan.icon
+
+  async function handlePay() {
+    setState('loading')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/iyzico-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan: plan.id,
+          userId: session?.user?.id || profile?.id,
+          userEmail: session?.user?.email || profile?.email,
+          userName: profile?.full_name || '',
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || data.error) {
+        setErrorMsg(data.error || 'Ödeme başlatılamadı')
+        setState('error')
+        return
+      }
+      window.location.href = data.paymentPageUrl
+    } catch {
+      setErrorMsg('Bağlantı hatası, lütfen tekrar deneyin')
+      setState('error')
+    }
+  }
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
-      onClick={state !== 'iframe' ? onClose : undefined}
+      onClick={state !== 'loading' ? onClose : undefined}
     >
       <div
-        className="w-full max-w-md bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden shadow-2xl"
+        className="w-full max-w-sm bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
         <div className={`h-1 w-full ${isElite ? 'bg-gradient-to-r from-violet-500 to-amber-400' : 'bg-gradient-to-r from-orange-500 to-red-500'}`} />
 
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
           <div className="flex items-center gap-2">
             {Icon && (
@@ -163,42 +134,58 @@ function PaymentModal({ plan, onClose, onSuccess }) {
               {plan.price}₺/ay
             </span>
           </div>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors">
-            <X className="h-5 w-5" />
-          </button>
+          {state !== 'loading' && (
+            <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors">
+              <X className="h-5 w-5" />
+            </button>
+          )}
         </div>
 
-        {/* Content */}
-        <div className="relative">
-          {/* PayTR iframe — her zaman render edilir, state'e göre gizlenir */}
-          <iframe
-            ref={iframeRef}
-            className={`w-full border-0 transition-all ${state === 'iframe' ? 'h-[520px]' : 'h-0'}`}
-            title="PayTR Güvenli Ödeme"
-            allow="payment"
-          />
-
-          {state === 'loading' && (
-            <div className="flex flex-col items-center justify-center py-16 gap-3">
-              <Loader2 className="h-8 w-8 text-brand-400 animate-spin" />
-              <p className="text-zinc-400 text-sm">Güvenli ödeme sayfası hazırlanıyor...</p>
-            </div>
-          )}
-
-          {state === 'success' && (
-            <div className="flex flex-col items-center justify-center py-16 gap-3 text-center px-6">
-              <CheckCircle className="h-12 w-12 text-green-400" />
-              <h3 className="text-lg font-bold text-white">{plan.name} aktifleştirildi!</h3>
-              <p className="text-zinc-400 text-sm">Ödemen alındı, üyeliğin başladı.</p>
-            </div>
-          )}
-
-          {state === 'error' && (
-            <div className="flex flex-col items-center justify-center py-12 gap-3 text-center px-6">
+        <div className="p-6">
+          {state === 'error' ? (
+            <div className="flex flex-col items-center gap-3 text-center">
               <AlertCircle className="h-10 w-10 text-red-400" />
-              <p className="text-zinc-300 font-medium">{errorMsg}</p>
-              <button onClick={onClose} className="btn-secondary mt-2">Kapat</button>
+              <p className="text-zinc-300 font-medium text-sm">{errorMsg}</p>
+              <button
+                onClick={() => setState('idle')}
+                className="btn-secondary mt-1 w-full"
+              >
+                Tekrar Dene
+              </button>
             </div>
+          ) : (
+            <>
+              <p className="text-zinc-400 text-sm mb-5 leading-relaxed">
+                iyzico güvenli ödeme sayfasına yönlendirileceksin. Ödeme tamamlandıktan
+                sonra otomatik olarak geri döneceksin.
+              </p>
+              <ul className="space-y-2 mb-6">
+                {plan.features.filter(f => f.ok).slice(0, 4).map((f, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm text-zinc-300">
+                    <Check className="h-3.5 w-3.5 text-green-400 shrink-0" />
+                    {f.text}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={handlePay}
+                disabled={state === 'loading'}
+                className={`w-full flex items-center justify-center gap-2 font-semibold rounded-xl px-4 py-3 text-sm transition-opacity disabled:opacity-60
+                  ${isElite
+                    ? 'bg-gradient-to-r from-violet-500 to-amber-400 text-white'
+                    : 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
+                  }`}
+              >
+                {state === 'loading' ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Yönlendiriliyor...</>
+                ) : (
+                  `${plan.price}₺/ay · Ödemeye Geç`
+                )}
+              </button>
+              <p className="text-center text-zinc-600 text-xs mt-3">
+                3D Secure · SSL · iyzico altyapısı
+              </p>
+            </>
           )}
         </div>
       </div>
@@ -293,7 +280,7 @@ function PlanCard({ plan, currentPlan, onUpgradeClick }) {
 
 export default function Pricing() {
   useMeta('Üyelik Planları | Torqvia', { description: 'Torqvia Free, Turbo ve Elite planlarını karşılaştır; aracını ve işini topluluğun önünde öne çıkar.' })
-  const { profile, refetchProfile } = useAuth()
+  const { profile } = useAuth()
   const currentPlan = profile?.plan || 'free'
   const [activePlan, setActivePlan] = useState(null)
 
@@ -303,7 +290,6 @@ export default function Pricing() {
         <PaymentModal
           plan={activePlan}
           onClose={() => setActivePlan(null)}
-          onSuccess={() => { refetchProfile(); setActivePlan(null) }}
         />
       )}
 
@@ -341,7 +327,7 @@ export default function Pricing() {
           },
           {
             q: 'Ödeme güvenli mi?',
-            a: 'Evet, tüm ödemeler PayTR altyapısı üzerinden 3D Secure ve SSL korumalı olarak işlenir.',
+            a: 'Evet, tüm ödemeler iyzico altyapısı üzerinden 3D Secure ve SSL korumalı olarak işlenir.',
           },
         ].map((item, i) => (
           <div key={i} className="card p-5">
