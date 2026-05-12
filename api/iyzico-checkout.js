@@ -18,9 +18,17 @@ function generateAuth(bodyStr) {
 }
 
 export default async function handler(req, res) {
-  // GET: health check
+  // GET: health check — env var varlığını da kontrol et
   if (req.method === 'GET') {
-    return res.status(200).json({ magic: MAGIC, ts: Date.now() })
+    return res.status(200).json({
+      magic: MAGIC,
+      ts: Date.now(),
+      env: {
+        api_key_len:    API_KEY    ? API_KEY.length    : 0,
+        secret_key_len: SECRET_KEY ? SECRET_KEY.length : 0,
+        base_url:       BASE_URL,
+      },
+    })
   }
 
   if (req.method !== 'POST') return res.status(405).end()
@@ -78,7 +86,7 @@ export default async function handler(req, res) {
     })
     const data = await iyziRes.json()
     if (data.status !== 'success') {
-      return res.status(400).json({ magic: MAGIC, code: 'IYZICO_ERR', error: data.errorMessage || 'odeme baslatilmadi', iyzico: data })
+      return res.status(400).json({ magic: MAGIC, code: 'IYZICO_ERR', error: data.errorMessage || 'odeme baslatilmadi', iyzico: data, sentPrice: price, sentLocale: payload.locale })
     }
     return res.status(200).json({ paymentPageUrl: data.paymentPageUrl, token: data.token })
   } catch (err) {
