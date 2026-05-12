@@ -171,12 +171,47 @@ export default function PublicProProfile() {
     }
   }, [user?.id, id])
 
-  const title = profile ? `${profile.full_name} — ${profile.city || 'Türkiye'}` : 'Usta Profili'
   const specialtiesForMeta = profile?.specialties?.length ? profile.specialties.join(', ') : profile?.specialty || ''
-  const description = profile
-    ? `${profile.full_name} oto servis${specialtiesForMeta ? ' - ' + specialtiesForMeta : ''}. Torqvia üzerinden iletişim.`
+  const titleForMeta = profile
+    ? [profile.full_name, profile.shop_name].filter(Boolean).join(' · ')
+    : 'Usta Profili'
+  const descForMeta = profile
+    ? `${profile.full_name}${profile.city ? ', ' + profile.city : ''} — oto servis uzmanı${specialtiesForMeta ? ': ' + specialtiesForMeta : ''}. Torqvia üzerinden randevu alın ve iletişime geçin.`
     : ''
-  useMeta(title, { description, image: profile?.avatar_url || '/og-default.png', robots: 'index, follow' })
+  const canonicalForMeta = id ? `https://www.torqvia.net/usta/${id}` : undefined
+
+  const avgRatingForMeta = ratings.length > 0
+    ? Math.round(ratings.reduce((s, r) => s + r.rating, 0) / ratings.length * 10) / 10
+    : null
+  const ldJsonData = profile ? {
+    '@context': 'https://schema.org',
+    '@type': 'LocalBusiness',
+    name: profile.shop_name || profile.full_name,
+    url: canonicalForMeta,
+    image: profile.avatar_url || undefined,
+    description: descForMeta,
+    ...(profile.city ? { address: { '@type': 'PostalAddress', addressLocality: profile.city, addressCountry: 'TR' } } : {}),
+    ...(profile.phone ? { telephone: profile.phone } : {}),
+    ...(profile.price_range ? { priceRange: profile.price_range } : {}),
+    ...(avgRatingForMeta && ratings.length > 0 ? {
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: avgRatingForMeta,
+        reviewCount: ratings.length,
+        bestRating: 5,
+        worstRating: 1,
+      },
+    } : {}),
+  } : null
+
+  useMeta(titleForMeta, {
+    description: descForMeta,
+    image: profile?.avatar_url || '/torqvia-og.png',
+    robots: 'index, follow',
+    canonical: canonicalForMeta,
+    ldJson: ldJsonData,
+    ldJsonId: 'usta-ld-json',
+  })
 
   useEffect(() => {
     if (!UUID_RE.test(id || '')) { setNotFound(true); setLoading(false); return }

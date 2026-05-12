@@ -293,7 +293,10 @@ export default function Ustalar() {
   const [specFilter, setSpecFilter] = useState('')
   const [sortBy, setSortBy] = useState('rating') // rating | trend | reviews
 
-  useMeta('Usta Bul — Torqvia')
+  useMeta('Usta Bul — Güvenilir Oto Servis Uzmanları', {
+    description: "Türkiye'nin en iyi oto servis uzmanlarını bul. Motor, kaporta, boya, elektrik ve daha fazlası. Puana, yoruma ve konuma göre filtrele — ücretsiz randevu al.",
+    canonical: 'https://www.torqvia.net/ustalar',
+  })
 
   useEffect(() => { fetchPros() }, [])
 

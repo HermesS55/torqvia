@@ -1,4 +1,6 @@
 User-agent: *
+
+# Private — authenticated pages
 Disallow: /api/
 Disallow: /auth/
 Disallow: /admin/
@@ -12,7 +14,21 @@ Disallow: /garage
 Disallow: /messages
 Disallow: /feed
 Disallow: /search
-Disallow: /search?*
-Disallow: /payment/
+Disallow: /randevular
+Disallow: /analytics
+Disallow: /appointments
+Disallow: /posts/
 Disallow: /profile/
+
+# Write / edit actions
+Disallow: /listings/new
+Disallow: /*/edit
+Disallow: /sales/new
+Disallow: /communities/new
+
+# Payment & URL params
+Disallow: /payment/
+Disallow: /*?*token=
+Disallow: /*?*code=
+
 Sitemap: https://www.torqvia.net/sitemap.xml

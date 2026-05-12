@@ -130,8 +130,11 @@ export default function Home() {
   const tr = lang === 'tr'
 
   useMeta(
-    "Torqvia — Samsun'un Oto Servis Platformu",
-    "Samsun'da araç sahipleri ve servis ustalarını buluşturan platform.",
+    "Türkiye'nin Oto Servis Platformu | Güvenilir Tamirci Bul",
+    {
+      description: "Torqvia ile Türkiye'nin en güvenilir oto servis uzmanlarını bul. Araç tamiri, boya, kaporta, motor ve daha fazlası. Servis ilanı oluştur, teklif al, randevu ayarla.",
+      canonical: 'https://www.torqvia.net/',
+    }
   )
 
   const features = tr
