@@ -61,17 +61,16 @@ export default async function handler(req, res) {
     conversationId: `${userId}__${plan}`,
     price, paidPrice: price, currency: 'TRY',
     basketId: `${userId}_${plan}_${Date.now()}`,
-    paymentGroup: 'SUBSCRIPTION',
+    paymentGroup: 'PRODUCT',
     callbackUrl: `${SITE_URL}/api/iyzico-callback`,
-    enabledInstallments: [1, 2, 3, 6, 9],
     buyer: {
       id: userId, name: firstName, surname: lastName,
       gsmNumber: '+905350000000', email,
-      identityNumber: '74300864791', registrationAddress: 'Türkiye',
+      identityNumber: '74300864791', registrationAddress: 'Turkiye',
       ip, city: 'Istanbul', country: 'Turkey',
     },
-    shippingAddress: { contactName: `${firstName} ${lastName}`, city: 'Istanbul', country: 'Turkey', address: 'Türkiye' },
-    billingAddress:  { contactName: `${firstName} ${lastName}`, city: 'Istanbul', country: 'Turkey', address: 'Türkiye' },
+    shippingAddress: { contactName: `${firstName} ${lastName}`, city: 'Istanbul', country: 'Turkey', address: 'Turkiye' },
+    billingAddress:  { contactName: `${firstName} ${lastName}`, city: 'Istanbul', country: 'Turkey', address: 'Turkiye' },
     basketItems: [{ id: plan, name: `Torqvia ${plan[0].toUpperCase() + plan.slice(1)} Uyelik`, category1: 'Uyelik', itemType: 'VIRTUAL', price }],
   }
 
