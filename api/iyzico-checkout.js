@@ -1,5 +1,9 @@
 import { createHmac, randomBytes } from 'crypto'
 
+export const config = {
+  api: { bodyParser: { sizeLimit: '1mb' } },
+}
+
 const API_KEY    = process.env.IYZICO_API_KEY
 const SECRET_KEY = process.env.IYZICO_SECRET_KEY
 const BASE_URL   = process.env.IYZICO_BASE_URL || 'https://api.iyzipay.com'
@@ -16,28 +20,16 @@ function generateAuth(body) {
   return `IYZWSv2 ${Buffer.from(pki).toString('base64')}`
 }
 
-async function readBody(req) {
-  // Vercel parsed it as an object already
-  if (req.body !== null && req.body !== undefined && typeof req.body === 'object') return req.body
-  // Vercel stored it as a string
-  if (typeof req.body === 'string') {
-    try { return JSON.parse(req.body) } catch { return {} }
-  }
-  // Read from stream (body not yet consumed)
-  return new Promise((resolve) => {
-    let raw = ''
-    req.on('data', chunk => { raw += chunk })
-    req.on('end', () => {
-      try { resolve(JSON.parse(raw)) } catch { resolve({}) }
-    })
-    req.on('error', () => resolve({}))
-  })
+function parseBody(raw) {
+  if (!raw) return {}
+  if (typeof raw === 'object') return raw
+  try { return JSON.parse(raw) } catch { return {} }
 }
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
 
-  const body = await readBody(req)
+  const body = parseBody(req.body)
   const { plan, userId, userEmail, userName } = body
 
   const price = PLAN_PRICES[plan]
