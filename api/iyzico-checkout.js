@@ -36,15 +36,15 @@ export default async function handler(req, res) {
     const raw = await readRawBody(req)
     const b   = JSON.parse(raw)
     plan = b.plan; userId = b.userId; userEmail = b.userEmail; userName = b.userName
-    console.log(`[checkout-v9] raw=${raw.slice(0, 80)} plan=${plan} userId=${userId ? userId.slice(0,8) : 'NONE'}`)
+    console.log(`[checkout-v10] raw=${raw.slice(0, 120)} plan=${plan} userId=${userId ? userId.slice(0,8) : 'NONE'}`)
   } catch (e) {
-    console.error('[checkout-v9] body read error:', e.message)
-    return res.status(400).json({ v: 9, error: 'Body okunamadı: ' + e.message })
+    console.error('[checkout-v10] body read error:', e.message)
+    return res.status(400).json({ v: 10, code: 'BODY_ERROR', error: 'body okunamadi: ' + e.message })
   }
 
   const price = PLAN_PRICES[plan]
-  if (!price)  return res.status(400).json({ v: 9, error: `Geçersiz plan: "${plan}"` })
-  if (!userId) return res.status(400).json({ v: 9, error: 'Kullanıcı ID eksik' })
+  if (!price)  return res.status(400).json({ v: 10, code: 'PLAN_MISSING', error: `plan="${plan}" gecersiz`, planKeys: Object.keys(PLAN_PRICES) })
+  if (!userId) return res.status(400).json({ v: 10, code: 'USER_MISSING',  error: 'userId bos' })
 
   const parts     = (userName || 'Torqvia Kullanicisi').split(' ')
   const firstName = parts[0] || 'Kullanici'
