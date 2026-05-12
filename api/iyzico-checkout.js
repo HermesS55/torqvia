@@ -1,5 +1,8 @@
 import { createHmac, randomBytes } from 'crypto'
 
+// Vercel auto-parser devre dışı — raw stream okuyoruz
+export const config = { api: { bodyParser: false } }
+
 const API_KEY    = process.env.IYZICO_API_KEY
 const SECRET_KEY = process.env.IYZICO_SECRET_KEY
 const BASE_URL   = process.env.IYZICO_BASE_URL || 'https://api.iyzipay.com'
@@ -16,25 +19,32 @@ function generateAuth(bodyStr) {
   return `IYZWSv2 ${Buffer.from(pki).toString('base64')}`
 }
 
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', 'https://www.torqvia.net')
+function readRawBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = []
+    req.on('data', chunk => chunks.push(chunk))
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
+    req.on('error', reject)
+  })
+}
 
+export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
 
-  // body: Vercel Node.js runtime auto-parses JSON when Content-Type: application/json
   let plan, userId, userEmail, userName
   try {
-    const b = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {})
+    const raw = await readRawBody(req)
+    const b   = JSON.parse(raw)
     plan = b.plan; userId = b.userId; userEmail = b.userEmail; userName = b.userName
-  } catch {
-    return res.status(400).json({ v: 8, error: 'Body parse hatası' })
+    console.log(`[checkout-v9] raw=${raw.slice(0, 80)} plan=${plan} userId=${userId ? userId.slice(0,8) : 'NONE'}`)
+  } catch (e) {
+    console.error('[checkout-v9] body read error:', e.message)
+    return res.status(400).json({ v: 9, error: 'Body okunamadı: ' + e.message })
   }
 
-  console.log(`[checkout-v8] plan=${plan} userId=${userId ? userId.slice(0,8) : 'NONE'}`)
-
   const price = PLAN_PRICES[plan]
-  if (!price) return res.status(400).json({ v: 8, error: `Geçersiz plan: "${plan}"` })
-  if (!userId) return res.status(400).json({ v: 8, error: 'Kullanıcı oturumu bulunamadı' })
+  if (!price)  return res.status(400).json({ v: 9, error: `Geçersiz plan: "${plan}"` })
+  if (!userId) return res.status(400).json({ v: 9, error: 'Kullanıcı ID eksik' })
 
   const parts     = (userName || 'Torqvia Kullanicisi').split(' ')
   const firstName = parts[0] || 'Kullanici'
@@ -87,13 +97,13 @@ export default async function handler(req, res) {
     const data = await iyziRes.json()
 
     if (data.status !== 'success') {
-      console.error('[checkout-v8] iyzico error:', JSON.stringify(data))
-      return res.status(400).json({ v: 8, error: data.errorMessage || 'Ödeme başlatılamadı' })
+      console.error('[checkout-v9] iyzico error:', JSON.stringify(data))
+      return res.status(400).json({ v: 9, error: data.errorMessage || 'Ödeme başlatılamadı' })
     }
 
     return res.status(200).json({ paymentPageUrl: data.paymentPageUrl, token: data.token })
   } catch (err) {
-    console.error('[checkout-v8] exception:', err.message)
-    return res.status(500).json({ v: 8, error: 'Sunucu hatası: ' + err.message })
+    console.error('[checkout-v9] exception:', err.message)
+    return res.status(500).json({ v: 9, error: 'Sunucu hatası: ' + err.message })
   }
 }
