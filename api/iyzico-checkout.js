@@ -42,11 +42,13 @@ export default async function handler(req, res) {
 
   const price = PLAN_PRICES[plan]
 
+  console.log('[checkout] body keys:', Object.keys(body), '| plan:', plan, '| userId:', userId ? userId.slice(0, 8) + '...' : 'MISSING')
+
   if (!plan || !price) {
-    return res.status(400).json({ error: `Geçersiz plan: "${plan}"` })
+    return res.status(400).json({ error: `Geçersiz plan: "${plan}"`, _debug: { bodyType: typeof req.body, keys: Object.keys(body) } })
   }
   if (!userId) {
-    return res.status(400).json({ error: 'Kullanıcı oturumu bulunamadı' })
+    return res.status(400).json({ error: 'Kullanıcı oturumu bulunamadı', _debug: { plan, bodyType: typeof req.body } })
   }
 
   const parts     = (userName || 'Torqvia Kullanicisi').split(' ')
