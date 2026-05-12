@@ -16,12 +16,34 @@ function generateAuth(body) {
   return `IYZWSv2 ${Buffer.from(pki).toString('base64')}`
 }
 
+async function readBody(req) {
+  // Vercel otomatik parse ediyorsa doğrudan döner
+  if (req.body && typeof req.body === 'object') return req.body
+  // Yoksa stream'den oku
+  return new Promise((resolve) => {
+    let raw = ''
+    req.on('data', chunk => { raw += chunk })
+    req.on('end', () => {
+      try { resolve(JSON.parse(raw)) } catch { resolve({}) }
+    })
+    req.on('error', () => resolve({}))
+  })
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
 
-  const { plan, userId, userEmail, userName } = req.body || {}
+  const body = await readBody(req)
+  const { plan, userId, userEmail, userName } = body
+
   const price = PLAN_PRICES[plan]
-  if (!price || !userId) return res.status(400).json({ error: 'Geçersiz istek' })
+
+  if (!plan || !price) {
+    return res.status(400).json({ error: `Geçersiz plan: "${plan}"` })
+  }
+  if (!userId) {
+    return res.status(400).json({ error: 'Kullanıcı oturumu bulunamadı' })
+  }
 
   const parts     = (userName || 'Torqvia Kullanicisi').split(' ')
   const firstName = parts[0] || 'Kullanici'
@@ -74,25 +96,25 @@ export default async function handler(req, res) {
     ],
   }
 
-  const body          = JSON.stringify(payload)
-  const authorization = generateAuth(body)
+  const reqBody       = JSON.stringify(payload)
+  const authorization = generateAuth(reqBody)
 
   try {
     const iyziRes = await fetch(`${BASE_URL}/payment/iyzipos/initialize`, {
       method: 'POST',
       headers: { Authorization: authorization, 'Content-Type': 'application/json' },
-      body,
+      body: reqBody,
     })
     const data = await iyziRes.json()
 
     if (data.status !== 'success') {
-      console.error('iyzico checkout error:', data)
+      console.error('iyzico checkout error:', JSON.stringify(data))
       return res.status(400).json({ error: data.errorMessage || 'Ödeme başlatılamadı' })
     }
 
     return res.status(200).json({ paymentPageUrl: data.paymentPageUrl, token: data.token })
   } catch (err) {
     console.error('iyzico checkout exception:', err)
-    return res.status(500).json({ error: 'Sunucu hatası' })
+    return res.status(500).json({ error: 'Sunucu hatası: ' + err.message })
   }
 }
