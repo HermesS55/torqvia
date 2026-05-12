@@ -1,9 +1,5 @@
 import { createHmac, randomBytes } from 'crypto'
 
-export const config = {
-  api: { bodyParser: { sizeLimit: '1mb' } },
-}
-
 const API_KEY    = process.env.IYZICO_API_KEY
 const SECRET_KEY = process.env.IYZICO_SECRET_KEY
 const BASE_URL   = process.env.IYZICO_BASE_URL || 'https://api.iyzipay.com'
@@ -11,37 +7,34 @@ const SITE_URL   = 'https://www.torqvia.net'
 
 const PLAN_PRICES = { turbo: '79.00', elite: '199.00' }
 
-function generateAuth(body) {
+function generateAuth(bodyStr) {
   const randomKey = randomBytes(12).toString('hex')
   const sig = createHmac('sha256', SECRET_KEY)
-    .update(API_KEY + randomKey + body)
+    .update(API_KEY + randomKey + bodyStr)
     .digest('base64')
   const pki = `apiKey:${API_KEY}&randomKey:${randomKey}&signature:${sig}`
   return `IYZWSv2 ${Buffer.from(pki).toString('base64')}`
 }
 
-function parseBody(raw) {
-  if (!raw) return {}
-  if (typeof raw === 'object') return raw
-  try { return JSON.parse(raw) } catch { return {} }
-}
-
 export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', 'https://www.torqvia.net')
+
   if (req.method !== 'POST') return res.status(405).end()
 
-  const body = parseBody(req.body)
-  const { plan, userId, userEmail, userName } = body
+  // body: Vercel Node.js runtime auto-parses JSON when Content-Type: application/json
+  let plan, userId, userEmail, userName
+  try {
+    const b = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {})
+    plan = b.plan; userId = b.userId; userEmail = b.userEmail; userName = b.userName
+  } catch {
+    return res.status(400).json({ v: 8, error: 'Body parse hatası' })
+  }
+
+  console.log(`[checkout-v8] plan=${plan} userId=${userId ? userId.slice(0,8) : 'NONE'}`)
 
   const price = PLAN_PRICES[plan]
-
-  console.log('[checkout-v7] body keys:', Object.keys(body), '| plan:', plan, '| userId:', userId ? userId.slice(0, 8) + '...' : 'MISSING')
-
-  if (!plan || !price) {
-    return res.status(400).json({ v: 7, error: `Geçersiz plan: "${plan}"`, _debug: { bodyType: typeof req.body, keys: Object.keys(body) } })
-  }
-  if (!userId) {
-    return res.status(400).json({ v: 7, error: 'Kullanıcı oturumu bulunamadı', _debug: { plan, bodyType: typeof req.body } })
-  }
+  if (!price) return res.status(400).json({ v: 8, error: `Geçersiz plan: "${plan}"` })
+  if (!userId) return res.status(400).json({ v: 8, error: 'Kullanıcı oturumu bulunamadı' })
 
   const parts     = (userName || 'Torqvia Kullanicisi').split(' ')
   const firstName = parts[0] || 'Kullanici'
@@ -71,27 +64,15 @@ export default async function handler(req, res) {
       city: 'Istanbul',
       country: 'Turkey',
     },
-    shippingAddress: {
-      contactName: `${firstName} ${lastName}`,
-      city: 'Istanbul',
-      country: 'Turkey',
-      address: 'Türkiye',
-    },
-    billingAddress: {
-      contactName: `${firstName} ${lastName}`,
-      city: 'Istanbul',
-      country: 'Turkey',
-      address: 'Türkiye',
-    },
-    basketItems: [
-      {
-        id: plan,
-        name: `Torqvia ${plan.charAt(0).toUpperCase() + plan.slice(1)} Üyelik`,
-        category1: 'Üyelik',
-        itemType: 'VIRTUAL',
-        price,
-      },
-    ],
+    shippingAddress: { contactName: `${firstName} ${lastName}`, city: 'Istanbul', country: 'Turkey', address: 'Türkiye' },
+    billingAddress:  { contactName: `${firstName} ${lastName}`, city: 'Istanbul', country: 'Turkey', address: 'Türkiye' },
+    basketItems: [{
+      id: plan,
+      name: `Torqvia ${plan.charAt(0).toUpperCase() + plan.slice(1)} Üyelik`,
+      category1: 'Üyelik',
+      itemType: 'VIRTUAL',
+      price,
+    }],
   }
 
   const reqBody       = JSON.stringify(payload)
@@ -106,13 +87,13 @@ export default async function handler(req, res) {
     const data = await iyziRes.json()
 
     if (data.status !== 'success') {
-      console.error('iyzico checkout error:', JSON.stringify(data))
-      return res.status(400).json({ error: data.errorMessage || 'Ödeme başlatılamadı' })
+      console.error('[checkout-v8] iyzico error:', JSON.stringify(data))
+      return res.status(400).json({ v: 8, error: data.errorMessage || 'Ödeme başlatılamadı' })
     }
 
     return res.status(200).json({ paymentPageUrl: data.paymentPageUrl, token: data.token })
   } catch (err) {
-    console.error('iyzico checkout exception:', err)
-    return res.status(500).json({ error: 'Sunucu hatası: ' + err.message })
+    console.error('[checkout-v8] exception:', err.message)
+    return res.status(500).json({ v: 8, error: 'Sunucu hatası: ' + err.message })
   }
 }
