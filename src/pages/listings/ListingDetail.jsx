@@ -183,16 +183,28 @@ export default function ListingDetail() {
 
       {/* Image gallery */}
       {allImages.length > 0 && (
-        <div className={`grid gap-2 mb-5 ${allImages.length === 1 ? '' : 'grid-cols-4'}`}>
-          <MediaThumb src={allImages[0]} type="image" onOpen={showMedia}
-            className={allImages.length > 1 ? 'col-span-3' : ''}>
-            <img src={allImages[0]} alt="" className="w-full h-56 object-cover rounded-xl border border-zinc-800" />
+        <div className="mb-5">
+          <MediaThumb src={allImages[0]} type="image" onOpen={showMedia} className="block">
+            <img
+              src={allImages[0]} alt="" loading="lazy" decoding="async"
+              className="w-full rounded-xl border border-zinc-800 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+              style={{ height: allImages.length > 1 ? 340 : 300 }}
+            />
           </MediaThumb>
-          {allImages.slice(1).map((img, i) => (
-            <MediaThumb key={i} src={img} type="image" onOpen={showMedia}>
-              <img src={img} alt="" className="w-full h-[106px] object-cover rounded-xl border border-zinc-800" />
-            </MediaThumb>
-          ))}
+          {allImages.length > 1 && (
+            <div className="flex gap-2 mt-2 overflow-x-auto scrollbar-none pb-1">
+              {allImages.map((img, i) => (
+                <MediaThumb key={i} src={img} type="image" onOpen={showMedia} className="shrink-0">
+                  <img
+                    src={img} alt="" loading="lazy" decoding="async"
+                    className={`h-20 w-28 object-cover rounded-lg border cursor-pointer transition-all hover:opacity-90 ${
+                      i === 0 ? 'border-brand-500/60 ring-1 ring-brand-500/30' : 'border-zinc-800 hover:border-zinc-600'
+                    }`}
+                  />
+                </MediaThumb>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

@@ -52,10 +52,9 @@ Deno.serve(async req => {
   const label    = TYPE_LABELS[notif.type] || 'bir işlem yaptı'
   const url      = URL_MAP[notif.type]?.(notif) ?? '/'
 
-  // Kullanıcının push subscription'larını getir
   const { data: subs } = await supabase
     .from('push_subscriptions')
-    .select('subscription')
+    .select('id, endpoint, p256dh, auth')
     .eq('user_id', notif.user_id)
 
   if (!subs?.length) return new Response('no subs', { status: 200 })
@@ -67,17 +66,17 @@ Deno.serve(async req => {
   })
 
   await Promise.allSettled(
-    subs.map(row =>
-      webPush.sendNotification(row.subscription, payload).catch(async err => {
-        // Geçersiz subscription'ı sil
+    subs.map(row => {
+      const subscription = {
+        endpoint: row.endpoint,
+        keys: { p256dh: row.p256dh, auth: row.auth },
+      }
+      return webPush.sendNotification(subscription, payload).catch(async (err: { statusCode?: number }) => {
         if (err.statusCode === 410 || err.statusCode === 404) {
-          await supabase
-            .from('push_subscriptions')
-            .delete()
-            .eq('subscription->endpoint', row.subscription.endpoint)
+          await supabase.from('push_subscriptions').delete().eq('id', row.id)
         }
       })
-    )
+    })
   )
 
   return new Response('ok', { status: 200 })

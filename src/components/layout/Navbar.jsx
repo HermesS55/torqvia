@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { List, PlusCircle, MessageCircle, Users, Flame, Globe, Search, Car, Shield, Tag, ChevronDown, Wrench } from 'lucide-react'
+import { List, PlusCircle, MessageCircle, Users, Flame, Globe, Search, Car, Shield, Tag, ChevronDown, Wrench, Newspaper } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLang, useT } from '../../contexts/LangContext'
 import { useUnreadCount } from '../../contexts/UnreadMessagesContext'
@@ -23,6 +23,7 @@ export default function Navbar({ onOpenSearch }) {
   const { pathname } = useLocation()
 
   const navLinks = user ? [
+    { to: '/feed', icon: Newspaper, label: lang === 'tr' ? 'Akış' : 'Feed' },
     { to: '/messages', icon: MessageCircle, label: t('nav.messages'), badge: unreadMessages, onClick: markRead },
     { to: '/people', icon: Users, label: t('nav.people') },
     ...(isOwner ? [{ to: '/garage', icon: Car, label: lang === 'tr' ? 'Garaj' : 'Garage' }] : []),

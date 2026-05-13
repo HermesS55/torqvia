@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import {
   Shield, Lock, Bell, User, Eye, EyeOff,
   Phone, Mail, Check, AlertTriangle,
-  KeyRound, Trash2, Heart, MessageCircle, UserPlus, Send,
+  KeyRound, Trash2, Heart, MessageCircle, UserPlus, Send, Smartphone,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import Spinner from '../components/ui/Spinner'
 import toast from 'react-hot-toast'
 import { sanitizeText } from '../lib/security'
+import { usePushNotifications } from '../hooks/usePushNotifications'
 
 function SectionTitle({ icon: Icon, title, desc }) {
   return (
@@ -120,6 +121,7 @@ const DEFAULT_PREFS = {
 function NotificationsTab({ profile, refetchProfile }) {
   const prefs = { ...DEFAULT_PREFS, ...(profile?.notification_prefs || {}) }
   const [saving, setSaving] = useState({})
+  const { supported: pushSupported, permission: pushPermission, subscribed: pushSubscribed, loading: pushLoading, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotifications()
 
   async function toggle(key, value) {
     setSaving(s => ({ ...s, [key]: true }))
@@ -135,9 +137,40 @@ function NotificationsTab({ profile, refetchProfile }) {
 
   if (!profile) return <div className="flex justify-center py-10"><Spinner /></div>
 
+  async function handlePushToggle(enable) {
+    if (enable) await pushSubscribe()
+    else await pushUnsubscribe()
+  }
+
   return (
     <div>
       <SectionTitle icon={Bell} title="Bildirim Tercihleri" desc="Hangi bildirimleri almak istediğini seç" />
+
+      {pushSupported && (
+        <div className="mb-5 p-4 rounded-xl bg-zinc-800/40 border border-zinc-700/50">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="p-1.5 rounded-lg bg-zinc-800 mt-0.5">
+                <Smartphone className="h-4 w-4 text-brand-400" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-zinc-200">Tarayıcı Bildirimleri</p>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  {pushPermission === 'denied'
+                    ? 'Bildirim izni reddedildi — tarayıcı ayarlarından etkinleştir'
+                    : 'Uygulama kapalıyken de bildirim al'}
+                </p>
+              </div>
+            </div>
+            <Toggle
+              checked={pushSubscribed}
+              onChange={handlePushToggle}
+              disabled={pushLoading || pushPermission === 'denied'}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="space-y-0 divide-y divide-zinc-800/60">
         {NOTIF_OPTIONS.map(({ key, label, desc, icon: Icon }) => (
           <SettingRow key={key} icon={Icon} label={label} desc={desc}>

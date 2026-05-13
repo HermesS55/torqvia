@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext'
 import Spinner from '../components/ui/Spinner'
 import UserAvatar from '../components/ui/UserAvatar'
 import { useMeta } from '../hooks/useMeta'
+import ProfileCompletionCard from '../components/ui/ProfileCompletionCard'
 
 const STATUS_LABELS = {
   pending:     { label: 'Beklemede',    color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.25)' },
@@ -294,6 +295,8 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
         </header>
 
         <div className="dash-main" style={{ padding: '24px', flex: 1 }}>
+
+          <ProfileCompletionCard profile={profile} />
 
           {/* Owner search bar */}
           {isOwner && (

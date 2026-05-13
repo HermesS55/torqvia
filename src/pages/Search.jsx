@@ -8,6 +8,8 @@ import Spinner from '../components/ui/Spinner'
 import { useMeta } from '../hooks/useMeta'
 import { useLang } from '../contexts/LangContext'
 
+const SPECIALTIES = ['Motor', 'Kaporta', 'Boya', 'Elektrik', 'Lastik', 'Süspansiyon', 'Fren', 'Tuning', 'Detailing', 'Egzoz', 'Klima', 'Cam', 'Döşeme', 'Yakıt Sistemi', 'Periyodik Bakım']
+
 const TABS = [
   { id: 'all',         label: { tr: 'Hepsi', en: 'All' } },
   { id: 'users',       label: { tr: 'Kullanıcılar', en: 'Users' } },
@@ -51,6 +53,8 @@ export default function SearchPage() {
   const [results, setResults] = useState({ users: [], listings: [], communities: [], posts: [] })
   const [loading, setLoading] = useState(false)
   const [history, setHistory] = useState(loadHistory)
+  const [roleFilter, setRoleFilter] = useState('all')
+  const [specFilter, setSpecFilter] = useState('')
 
   // Sync input → URL with debounce
   useEffect(() => {
@@ -126,6 +130,12 @@ export default function SearchPage() {
 
   const show = (section) => tab === 'all' || tab === section
   const slice = (arr) => tab === 'all' ? arr.slice(0, 4) : arr
+
+  const filteredUsers = results.users.filter(u => {
+    if (roleFilter !== 'all' && u.role !== roleFilter) return false
+    if (specFilter && u.specialty !== specFilter && !(u.specialties || []).includes(specFilter)) return false
+    return true
+  })
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -206,6 +216,33 @@ export default function SearchPage() {
             ))}
           </div>
 
+          {tab === 'users' && (
+            <div className="flex items-center gap-2 mb-5 flex-wrap">
+              {[
+                { val: 'all', label: 'Tümü' },
+                { val: 'pro', label: 'Servis Uzmanı' },
+                { val: 'owner', label: 'Araç Sahibi' },
+              ].map(r => (
+                <button key={r.val} onClick={() => setRoleFilter(r.val)}
+                  className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                    roleFilter === r.val
+                      ? 'bg-brand-500/20 border-brand-500/40 text-brand-400'
+                      : 'border-zinc-700 text-zinc-500 hover:text-zinc-300'
+                  }`}>
+                  {r.label}
+                </button>
+              ))}
+              <select
+                value={specFilter}
+                onChange={e => setSpecFilter(e.target.value)}
+                className="text-xs bg-zinc-900 border border-zinc-700 rounded-full px-3 py-1.5 text-zinc-400 outline-none cursor-pointer"
+              >
+                <option value="">Tüm Uzmanlıklar</option>
+                {SPECIALTIES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          )}
+
           {loading ? (
             <div className="flex justify-center py-16"><Spinner size="lg" /></div>
           ) : !totalCount ? (
@@ -218,13 +255,13 @@ export default function SearchPage() {
             <div className="space-y-8">
 
               {/* Users */}
-              {show('users') && results.users.length > 0 && (
+              {show('users') && filteredUsers.length > 0 && (
                 <section>
                   <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                     <Users className="h-3.5 w-3.5" /> {tr ? 'Kullanıcılar' : 'Users'}
                   </h2>
                   <div className="space-y-2">
-                    {slice(results.users).map(u => (
+                    {slice(filteredUsers).map(u => (
                       <Link key={u.id} to={u.role === 'pro' ? `/usta/${u.id}` : `/profile/${u.id}`}
                         className="card flex items-center gap-3 hover:border-zinc-700 transition-colors py-3">
                         <UserAvatar profile={u} size="md" />
@@ -244,9 +281,9 @@ export default function SearchPage() {
                         </span>
                       </Link>
                     ))}
-                    {tab === 'all' && results.users.length > 4 && (
+                    {tab === 'all' && filteredUsers.length > 4 && (
                       <button onClick={() => setTab('users')} className="text-xs text-brand-400 hover:text-brand-300 transition-colors pl-1">
-                        +{results.users.length - 4} {tr ? 'kullanıcı daha →' : 'more users →'}
+                        +{filteredUsers.length - 4} {tr ? 'kullanıcı daha →' : 'more users →'}
                       </button>
                     )}
                   </div>

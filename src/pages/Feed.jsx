@@ -12,6 +12,26 @@ import FollowButton from '../components/profile/FollowButton'
 import { Link } from 'react-router-dom'
 
 const PAGE_SIZE = 20
+const FEED_CACHE_KEY = 'torqvia_feed_cache'
+
+function FeedSkeleton() {
+  return (
+    <div className="space-y-4">
+      {[1, 2, 3].map(i => (
+        <div key={i} className="card animate-pulse">
+          <div className="flex gap-3">
+            <div className="h-10 w-10 rounded-full bg-zinc-800 shrink-0" />
+            <div className="flex-1 space-y-2">
+              <div className="h-3 w-32 bg-zinc-800 rounded" />
+              <div className="h-3 w-full bg-zinc-800 rounded" />
+              <div className="h-3 w-3/4 bg-zinc-800 rounded" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 const TABS = [
   { id: 'discover',  label: 'Keşfet' },
@@ -83,7 +103,16 @@ export default function Feed() {
   }
 
   async function fetchPosts(pageNum, quiet, append, fids, bids) {
-    if (!quiet && !append) setLoading(true)
+    if (!quiet && !append) {
+      // Show cached posts immediately while loading
+      if (pageNum === 0 && tab === 'discover') {
+        try {
+          const cached = JSON.parse(localStorage.getItem(FEED_CACHE_KEY) || 'null')
+          if (cached?.length) setPosts(cached)
+        } catch {}
+      }
+      setLoading(true)
+    }
     else if (append) setLoadingMore(true)
     else setRefreshing(true)
 
@@ -145,6 +174,10 @@ export default function Feed() {
         })
       } else {
         setPosts(newPosts)
+        // Cache first page of discover feed for offline use
+        if (tab === 'discover' && pageNum === 0 && newPosts.length > 0) {
+          try { localStorage.setItem(FEED_CACHE_KEY, JSON.stringify(newPosts.slice(0, 10))) } catch {}
+        }
       }
       setHasMore((data || []).length === PAGE_SIZE * 3)
     }
@@ -257,8 +290,10 @@ export default function Feed() {
             ))}
           </div>
         )
+      ) : loading && posts.length === 0 ? (
+        <FeedSkeleton />
       ) : loading ? (
-        <div className="flex justify-center py-16"><Spinner size="lg" /></div>
+        <div className="flex justify-center py-8"><Spinner size="md" /></div>
       ) : posts.length === 0 ? (
         tab === 'following' && suggestedUsers.length > 0 ? (
           <div>

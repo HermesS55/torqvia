@@ -233,8 +233,8 @@ export default function CreatePost({ onCreated }) {
               </div>
             )}
 
-            <div className="flex items-center justify-between mt-3">
-              <div className="flex gap-1">
+            <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
+              <div className="flex gap-1 flex-shrink-0">
                 <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
                 <input ref={videoRef} type="file" accept="video/mp4,video/mov,video/webm,video/*" className="hidden" onChange={handleVideo} />
 

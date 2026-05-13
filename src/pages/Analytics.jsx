@@ -220,8 +220,7 @@ export default function Analytics() {
       {/* Sidebar */}
       <aside style={{
         width: 240, flexShrink: 0, background: '#0a0a0a', borderRight: '1px solid #141414',
-        display: 'flex', flexDirection: 'column',
-      }} className="hidden md:flex">
+      }} className="hidden md:flex flex-col">
         <div style={{ padding: '14px 18px 12px', borderBottom: '1px solid #141414' }}>
           <Link to="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#555', textDecoration: 'none', transition: 'color 0.15s' }}
             onMouseOver={e => e.currentTarget.style.color = '#ff6b00'}

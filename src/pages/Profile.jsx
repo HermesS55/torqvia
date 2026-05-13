@@ -1308,10 +1308,13 @@ export default function Profile() {
           .pp-body-grid    { grid-template-columns: 1fr !important; }
           .pp-hero-content { padding: 32px 24px !important; }
           .pp-outer        { padding-left: 12px !important; padding-right: 12px !important; }
+          /* CreatePost inside Panel: reduce padding on mobile */
+          .pp-body-grid .card { padding: 12px !important; }
         }
         @media (max-width: 600px) {
           .pp-hero-inner { flex-direction: column !important; align-items: center !important; text-align: center !important; }
           .pp-hero-inner > div:first-child { margin-top: 0 !important; }
+          .pp-hero-inner > div:last-child { min-width: 0 !important; width: 100% !important; }
           .pp-hero-inner > div:last-child > div { justify-content: center !important; }
           .pp-hero-content { padding: 24px 16px !important; }
           .pp-outer        { padding-left: 8px !important; padding-right: 8px !important; }

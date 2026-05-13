@@ -3,7 +3,7 @@ import { Link, useLocation, useSearchParams, useNavigate } from 'react-router-do
 import {
   LayoutDashboard, Calendar, MessageCircle, TrendingUp,
   User, Settings, Zap, Car, Search, Clock, CheckCircle2,
-  XCircle, AlertCircle, ChevronRight, Plus, Send, MapPin,
+  XCircle, AlertCircle, ChevronRight, Plus, Send, MapPin, Star,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -73,7 +73,7 @@ function fmtDate(dt) {
 }
 
 /* ─── Appointment card ─── */
-function ApptCard({ appt, isOwner, onStatusUpdate }) {
+function ApptCard({ appt, isOwner, onStatusUpdate, rated, onRate }) {
   const title = appt.arac_bilgisi ||
     `${appt.listings?.brand || ''} ${appt.listings?.model || ''}`.trim() ||
     'Araç bilgisi yok'
@@ -166,6 +166,24 @@ function ApptCard({ appt, isOwner, onStatusUpdate }) {
               <User size={11} /> Profil
             </Link>
           )}
+          {isOwner && isCompleted && onRate && (
+            <button
+              onClick={onRate}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                padding: '5px 12px', borderRadius: 7,
+                background: rated ? 'rgba(34,197,94,0.08)' : 'rgba(245,158,11,0.1)',
+                border: rated ? '1px solid rgba(34,197,94,0.2)' : '1px solid rgba(245,158,11,0.3)',
+                color: rated ? '#22c55e' : '#f59e0b',
+                transition: 'all 0.15s',
+              }}
+              disabled={rated}
+            >
+              <Star size={11} fill={rated ? '#22c55e' : 'none'} />
+              {rated ? 'Değerlendirildi' : 'Değerlendir'}
+            </button>
+          )}
           {appt.price && (
             <span style={{ fontSize: 12, color: '#ff8c33', fontWeight: 700, marginLeft: 4 }}>
               ₺{Number(appt.price).toLocaleString('tr-TR')}
@@ -211,6 +229,114 @@ function ApptCard({ appt, isOwner, onStatusUpdate }) {
   )
 }
 
+function RateProModal({ proId, proName, proAvatar, onClose, onSubmitted }) {
+  const { user } = useAuth()
+  const [rating, setRating] = useState(0)
+  const [hover, setHover] = useState(0)
+  const [comment, setComment] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  async function handleSubmit() {
+    if (rating === 0) return
+    setSubmitting(true)
+    const { error } = await supabase.from('pro_ratings').insert({
+      pro_id: proId,
+      owner_id: user.id,
+      rating,
+      comment: comment.trim() || null,
+    })
+    if (error) {
+      // If duplicate, just close
+    }
+    onSubmitted()
+    onClose()
+    setSubmitting(false)
+  }
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div style={{ background: '#0e0e0e', border: '1px solid #222', borderRadius: 20, padding: '28px 24px', width: '100%', maxWidth: 380 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+          {proAvatar ? (
+            <img src={proAvatar} alt="" style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '1px solid #2a2a2a' }} />
+          ) : (
+            <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#1a1a1a', border: '1px solid #2a2a2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <User size={20} style={{ color: '#444' }} />
+            </div>
+          )}
+          <div>
+            <div style={{ fontFamily: 'monospace', fontSize: 9, color: '#444', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 3 }}>// USTA DEĞERLENDİRMESİ</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#f0f0f0' }}>{proName || 'Servis Uzmanı'}</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 20 }}>
+          {[1, 2, 3, 4, 5].map(s => (
+            <button
+              key={s}
+              onClick={() => setRating(s)}
+              onMouseEnter={() => setHover(s)}
+              onMouseLeave={() => setHover(0)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, transition: 'transform 0.1s' }}
+              onMouseOver={e => e.currentTarget.style.transform = 'scale(1.2)'}
+              onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              <Star
+                size={32}
+                style={{ color: s <= (hover || rating) ? '#f59e0b' : '#2a2a2a', transition: 'color 0.15s' }}
+                fill={s <= (hover || rating) ? '#f59e0b' : 'none'}
+              />
+            </button>
+          ))}
+        </div>
+
+        {rating > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <textarea
+              value={comment}
+              onChange={e => setComment(e.target.value)}
+              placeholder="Yorum ekle (isteğe bağlı)..."
+              rows={3}
+              style={{
+                width: '100%', background: '#111', border: '1px solid #1e1e1e', borderRadius: 10,
+                color: '#f0f0f0', fontSize: 13, padding: '10px 12px', outline: 'none',
+                resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box',
+                transition: 'border-color 0.15s',
+              }}
+              onFocus={e => { e.target.style.borderColor = '#f59e0b' }}
+              onBlur={e => { e.target.style.borderColor = '#1e1e1e' }}
+            />
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            onClick={onClose}
+            style={{ flex: 1, padding: '10px', borderRadius: 9, fontSize: 13, fontWeight: 600, cursor: 'pointer', background: '#111', border: '1px solid #222', color: '#555' }}
+          >
+            İptal
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={rating === 0 || submitting}
+            style={{
+              flex: 1, padding: '10px', borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: rating === 0 ? 'not-allowed' : 'pointer',
+              background: rating === 0 ? '#1a1a1a' : 'linear-gradient(135deg, #f59e0b, #f59e0b)',
+              color: rating === 0 ? '#333' : '#000', border: 'none',
+              opacity: submitting ? 0.7 : 1,
+            }}
+          >
+            {submitting ? 'Gönderiliyor...' : 'Değerlendirmeyi Gönder'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ═══════════════════════════════════════════ */
 export default function Appointments() {
   useMeta('Randevular')
@@ -227,6 +353,8 @@ export default function Appointments() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('Tümü')
   const [useAppointmentsTable, setUseAppointmentsTable] = useState(true)
+  const [ratingModal, setRatingModal] = useState(null) // { proId, proName, proAvatar } | null
+  const [ratedProIds, setRatedProIds] = useState(new Set())
 
   /* Form state */
   const [form, setForm] = useState({ brand: '', model: '', description: '', tarih: '' })
@@ -294,6 +422,13 @@ export default function Appointments() {
     const existing = new Set(apptData.map(a => a.id))
     const merged = [...apptData, ...normalizedOffers.filter(o => !existing.has(o.id))]
     setAppointments(merged)
+
+    // Fetch which pros the owner has already rated
+    const { data: myRatings } = await supabase
+      .from('pro_ratings')
+      .select('pro_id')
+      .eq('owner_id', user.id)
+    setRatedProIds(new Set((myRatings || []).map(r => r.pro_id)))
   }
 
   async function fetchProAppointments() {
@@ -461,8 +596,7 @@ export default function Appointments() {
       {/* Sidebar */}
       <aside style={{
         width: 240, flexShrink: 0, background: '#0a0a0a', borderRight: '1px solid #141414',
-        display: 'flex', flexDirection: 'column',
-      }} className="hidden md:flex">
+      }} className="hidden md:flex flex-col">
         <div style={{ padding: '14px 18px 12px', borderBottom: '1px solid #141414' }}>
           <Link to="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#555', textDecoration: 'none', transition: 'color 0.15s' }}
             onMouseOver={e => e.currentTarget.style.color = '#ff6b00'}
@@ -619,6 +753,15 @@ CREATE POLICY "appt_update" ON appointments FOR UPDATE TO authenticated
                     appt={appt}
                     isOwner={isOwner}
                     onStatusUpdate={useAppointmentsTable && !isOwner ? handleStatusUpdate : null}
+                    rated={isOwner && ratedProIds.has(
+                      (appt.usta || appt.profiles)?.id
+                    )}
+                    onRate={isOwner ? () => {
+                      const proProfile = appt.usta || appt.profiles
+                      if (proProfile) {
+                        setRatingModal({ proId: proProfile.id, proName: proProfile.full_name, proAvatar: proProfile.avatar_url })
+                      }
+                    } : null}
                   />
                 ))}
               </div>
@@ -735,6 +878,18 @@ CREATE POLICY "appt_update" ON appointments FOR UPDATE TO authenticated
           )}
         </div>
       </div>
+
+      {ratingModal && (
+        <RateProModal
+          proId={ratingModal.proId}
+          proName={ratingModal.proName}
+          proAvatar={ratingModal.proAvatar}
+          onClose={() => setRatingModal(null)}
+          onSubmitted={() => {
+            setRatedProIds(prev => new Set([...prev, ratingModal.proId]))
+          }}
+        />
+      )}
 
       <style>{`
         @media (max-width: 768px) {

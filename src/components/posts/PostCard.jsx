@@ -339,7 +339,7 @@ export default function PostCard({ post, onDelete, onRepost, pinnedPostId }) {
 
             {post.image_url && (
               <MediaThumb src={post.image_url} type="image" onOpen={showMedia} className="mt-3">
-                <img src={post.image_url} alt="" className="rounded-xl w-full max-h-80 object-cover border border-zinc-800" />
+                <img src={post.image_url} alt="" loading="lazy" decoding="async" className="rounded-xl w-full max-h-80 object-cover border border-zinc-800" />
               </MediaThumb>
             )}
 

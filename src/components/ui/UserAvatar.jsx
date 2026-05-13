@@ -24,19 +24,27 @@ export default function UserAvatar({ profile, email, size = 'md', className = ''
       <img
         src={avatarUrl}
         alt={profile?.full_name || ''}
-        className={`${sizeClass} rounded-full object-cover ${fill ? '' : ring} ${className}`}
+        className={`${sizeClass} rounded-full object-cover shrink-0 ${fill ? '' : ring} ${className}`}
         style={fillStyle}
         onError={() => setImgError(true)}
       />
     )
   }
 
+  const initials = getInitials(email || profile?.full_name || '')
+  const showSvg = initials === '?'
+
   return (
     <div
       className={`${sizeClass} rounded-full flex items-center justify-center font-bold shrink-0 ${bg} ${fill ? '' : ring} ${className}`}
       style={fillStyle}
     >
-      {getInitials(email || profile?.full_name || '')}
+      {showSvg ? (
+        <svg viewBox="0 0 40 40" fill="none" style={{ width: '55%', height: '55%' }}>
+          <circle cx="20" cy="14" r="7" fill="currentColor" opacity="0.7" />
+          <path d="M4 38c0-8.837 7.163-16 16-16s16 7.163 16 16" fill="currentColor" opacity="0.5" />
+        </svg>
+      ) : initials}
     </div>
   )
 }

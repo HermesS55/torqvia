@@ -650,7 +650,7 @@ export default function Messages() {
                 onChange={e => setText(e.target.value)}
                 placeholder={tr ? 'Mesaj yaz...' : 'Type a message...'}
                 maxLength={2000}
-                style={{ flex: 1, background: '#131313', border: '1px solid #1e1e1e', borderRadius: 12, padding: '10px 14px', color: '#e0e0e0', fontSize: 14, outline: 'none', lineHeight: 1.4 }}
+                style={{ flex: 1, background: '#131313', border: '1px solid #1e1e1e', borderRadius: 12, padding: '10px 14px', color: '#e0e0e0', fontSize: 16, outline: 'none', lineHeight: 1.4 }}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e) } }}
               />
               <button type="submit" disabled={(!text.trim() && !msgImageFile) || sending || msgImageUploading}
