@@ -146,30 +146,37 @@ function NotificationsTab({ profile, refetchProfile }) {
     <div>
       <SectionTitle icon={Bell} title="Bildirim Tercihleri" desc="Hangi bildirimleri almak istediğini seç" />
 
-      {pushSupported && (
-        <div className="mb-5 p-4 rounded-xl bg-zinc-800/40 border border-zinc-700/50">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <div className="p-1.5 rounded-lg bg-zinc-800 mt-0.5">
-                <Smartphone className="h-4 w-4 text-brand-400" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-zinc-200">Tarayıcı Bildirimleri</p>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  {pushPermission === 'denied'
+      <div className="mb-5 p-4 rounded-xl bg-zinc-800/40 border border-zinc-700/50">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className="p-1.5 rounded-lg bg-zinc-800 mt-0.5">
+              <Smartphone className="h-4 w-4 text-brand-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-zinc-200">Tarayıcı Bildirimleri</p>
+              <p className="text-xs text-zinc-500 mt-0.5">
+                {!pushSupported
+                  ? (() => {
+                      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+                      const isStandalone = window.navigator.standalone === true
+                      if (isIOS && !isStandalone)
+                        return 'iOS\'ta bildirim için uygulamayı Ana Ekrana ekle (Safari → Paylaş → Ana Ekrana Ekle)'
+                      return 'Bu tarayıcı push bildirimi desteklemiyor'
+                    })()
+                  : pushPermission === 'denied'
                     ? 'Bildirim izni reddedildi — tarayıcı ayarlarından etkinleştir'
                     : 'Uygulama kapalıyken de bildirim al'}
-                </p>
-              </div>
+              </p>
             </div>
-            <Toggle
-              checked={pushSubscribed}
-              onChange={handlePushToggle}
-              disabled={pushLoading || pushPermission === 'denied'}
-            />
           </div>
+          <Toggle
+            checked={pushSubscribed}
+            onChange={handlePushToggle}
+            disabled={!pushSupported || pushLoading || pushPermission === 'denied'}
+          />
         </div>
-      )}
+      </div>
 
       <div className="space-y-0 divide-y divide-zinc-800/60">
         {NOTIF_OPTIONS.map(({ key, label, desc, icon: Icon }) => (
