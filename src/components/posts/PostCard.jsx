@@ -126,7 +126,7 @@ function PostMenu({ isOwn, isPinned, postId, onDelete, onPin, onEdit, onReport, 
   )
 }
 
-export default function PostCard({ post, onDelete, onRepost, pinnedPostId }) {
+export default function PostCard({ post, onDelete, onRepost, pinnedPostId, onPinChange }) {
   const { user } = useAuth()
   const t = useT()
   const { show: showMedia, LightboxModal } = useLightbox()
@@ -200,7 +200,10 @@ export default function PostCard({ post, onDelete, onRepost, pinnedPostId }) {
     const newPinId = isPinned ? null : post.id
     const { error } = await supabase.from('profiles').update({ pinned_post_id: newPinId }).eq('id', user.id)
     if (error) toast.error('Kaydedilemedi')
-    else toast.success(isPinned ? 'Sabitleme kaldırıldı' : 'Gönderi profile sabitlendi!')
+    else {
+      toast.success(isPinned ? 'Sabitleme kaldırıldı' : 'Gönderi profile sabitlendi!')
+      onPinChange?.(newPinId)
+    }
   }
 
   async function handleEdit() {

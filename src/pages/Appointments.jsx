@@ -660,7 +660,7 @@ export default function Appointments() {
               ].map(s => (
                 <div key={s.label} style={{ flex: '1 1 80px', minWidth: 80, background: s.bg, border: `1px solid ${s.color}22`, borderRadius: 12, padding: '12px 14px' }}>
                   <div style={{ fontSize: 20, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.count}</div>
-                  <div style={{ fontSize: 10, color: '#444', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</div>
+                  <div style={{ fontSize: 10, color: '#444', marginTop: 4, textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.label}</div>
                 </div>
               ))}
             </div>

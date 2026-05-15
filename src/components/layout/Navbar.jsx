@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { List, PlusCircle, MessageCircle, Users, Flame, Globe, Search, Car, Shield, Tag, ChevronDown, Wrench, Newspaper } from 'lucide-react'
+import { List, PlusCircle, MessageCircle, Users, Flame, Globe, Search, Car, Shield, Tag, ChevronDown, Wrench, Newspaper, Hash } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLang, useT } from '../../contexts/LangContext'
 import { useUnreadCount } from '../../contexts/UnreadMessagesContext'
@@ -23,9 +23,10 @@ export default function Navbar({ onOpenSearch }) {
   const { pathname } = useLocation()
 
   const navLinks = user ? [
-    { to: '/feed', icon: Newspaper, label: lang === 'tr' ? 'Akış' : 'Feed' },
-    { to: '/messages', icon: MessageCircle, label: t('nav.messages'), badge: unreadMessages, onClick: markRead },
-    { to: '/people', icon: Users, label: t('nav.people') },
+    { to: '/feed',        icon: Newspaper,      label: lang === 'tr' ? 'Akış' : 'Feed' },
+    { to: '/communities', icon: Hash,           label: lang === 'tr' ? 'Topluluk' : 'Community' },
+    { to: '/messages',    icon: MessageCircle,  label: t('nav.messages'), badge: unreadMessages, onClick: markRead },
+    { to: '/people',      icon: Users,          label: t('nav.people') },
     ...(isOwner ? [{ to: '/garage', icon: Car, label: lang === 'tr' ? 'Garaj' : 'Garage' }] : []),
     ...(isAdmin ? [{ to: '/admin', icon: Shield, label: 'Admin' }] : []),
   ] : []
@@ -170,7 +171,7 @@ export default function Navbar({ onOpenSearch }) {
               <>
                 {/* Search */}
                 <button onClick={onOpenSearch}
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#888', cursor: 'pointer', transition: 'all 0.15s' }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 40, minHeight: 40, width: 40, height: 40, borderRadius: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#888', cursor: 'pointer', transition: 'all 0.15s' }}
                   onMouseOver={e => { e.currentTarget.style.color = '#ccc'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)' }}
                   onMouseOut={e => { e.currentTarget.style.color = '#888'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
                   title={lang === 'tr' ? 'Ara (Ctrl+K)' : 'Search (Ctrl+K)'}>

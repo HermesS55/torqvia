@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Hash, AlertTriangle, ArrowLeft } from 'lucide-react'
+import { Hash, AlertTriangle, ArrowLeft, Camera, Image as ImageIcon, X } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import Spinner from '../../components/ui/Spinner'
 import toast from 'react-hot-toast'
 import { sanitizeText } from '../../lib/security'
+import { uploadPostImage } from '../../lib/avatar'
 
 const CATEGORIES = ['Motor', 'Kaporta & Boya', 'Tuning', 'Klasik Araçlar', 'Elektrikli Araçlar', 'Off-Road', 'Genel']
 
@@ -17,6 +18,14 @@ export default function CreateCommunity() {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
+
+  // Avatar / cover
+  const [avatarFile, setAvatarFile]     = useState(null)
+  const [avatarPreview, setAvatarPreview] = useState(null)
+  const [coverFile, setCoverFile]       = useState(null)
+  const [coverPreview, setCoverPreview] = useState(null)
+  const avatarRef = useRef()
+  const coverRef  = useRef()
 
   function set(field, value) { setForm(f => ({ ...f, [field]: value })); setError('') }
 
@@ -30,6 +39,22 @@ export default function CreateCommunity() {
     setError('')
   }
 
+  function handleAvatarChange(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) { toast.error('Fotoğraf en fazla 5 MB olabilir'); return }
+    setAvatarFile(file)
+    setAvatarPreview(URL.createObjectURL(file))
+  }
+
+  function handleCoverChange(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) { toast.error('Fotoğraf en fazla 5 MB olabilir'); return }
+    setCoverFile(file)
+    setCoverPreview(URL.createObjectURL(file))
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     if (!form.name.trim()) { setError('Topluluk adı zorunludur'); return }
@@ -37,15 +62,21 @@ export default function CreateCommunity() {
     setLoading(true)
     try {
       const cats = form.categories.length > 0 ? form.categories : ['Genel']
+      let avatar_url = null
+      let cover_url  = null
+      if (avatarFile) avatar_url = await uploadPostImage(user.id, avatarFile)
+      if (coverFile)  cover_url  = await uploadPostImage(user.id, coverFile)
+
       const { data, error: err } = await supabase
         .from('communities')
         .insert({
           name:        sanitizeText(form.name, 80),
           description: sanitizeText(form.description, 500),
           category:    cats[0],
-          categories:  cats,
           rules:       sanitizeText(form.rules, 1000),
           created_by:  user.id,
+          ...(avatar_url ? { avatar_url } : {}),
+          ...(cover_url  ? { cover_url }  : {}),
         })
         .select().single()
       if (err) throw err
@@ -84,6 +115,48 @@ export default function CreateCommunity() {
             {error}
           </div>
         )}
+
+        {/* Cover + Avatar */}
+        <div className="card p-0 overflow-hidden">
+          {/* Cover */}
+          <div className="relative h-32 bg-zinc-800 group cursor-pointer" onClick={() => coverRef.current?.click()}>
+            {coverPreview
+              ? <img src={coverPreview} alt="" className="w-full h-full object-cover" />
+              : <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 text-zinc-600 hover:text-zinc-400 transition-colors">
+                  <ImageIcon className="h-6 w-6" />
+                  <span className="text-xs">Kapak fotoğrafı ekle</span>
+                </div>
+            }
+            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <Camera className="h-6 w-6 text-white" />
+            </div>
+            {coverPreview && (
+              <button type="button"
+                onClick={e => { e.stopPropagation(); setCoverFile(null); setCoverPreview(null) }}
+                className="absolute top-2 right-2 bg-black/70 rounded-full p-1 z-10">
+                <X className="h-3.5 w-3.5 text-white" />
+              </button>
+            )}
+            <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
+          </div>
+
+          {/* Avatar */}
+          <div className="px-5 pb-5 pt-0 flex items-end gap-4" style={{ marginTop: -32 }}>
+            <div className="relative shrink-0 cursor-pointer" onClick={() => avatarRef.current?.click()}>
+              <div className="h-16 w-16 rounded-xl border-2 border-zinc-900 overflow-hidden bg-brand-500/15 flex items-center justify-center">
+                {avatarPreview
+                  ? <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
+                  : <Hash className="h-7 w-7 text-brand-400" />
+                }
+              </div>
+              <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                <Camera className="h-4 w-4 text-white" />
+              </div>
+              <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+            </div>
+            <p className="text-xs text-zinc-500 pb-1">Topluluk ikonu ve kapak fotoğrafını ayarla</p>
+          </div>
+        </div>
 
         <div className="card p-5 space-y-4">
           {/* Name */}

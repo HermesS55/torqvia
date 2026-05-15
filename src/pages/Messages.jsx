@@ -366,7 +366,7 @@ export default function Messages() {
     <div className="messages-panel" style={{ display: 'flex', borderRadius: 20, overflow: 'hidden', border: '1px solid #1a1a1a', background: '#080808', boxShadow: '0 0 60px rgba(0,0,0,0.6)' }}>
 
       {/* Sidebar */}
-      <div style={{ width: 320, flexShrink: 0, borderRight: '1px solid #141414', display: activeId ? undefined : 'flex', flexDirection: 'column', background: '#0a0a0a' }} className={`${activeId ? 'hidden sm:flex' : 'flex'} flex-col`}>
+      <div style={{ width: activeId ? 320 : '100%', flexShrink: 0, borderRight: '1px solid #141414', display: activeId ? undefined : 'flex', flexDirection: 'column', background: '#0a0a0a' }} className={`${activeId ? 'hidden sm:flex sm:!w-80' : 'flex'} flex-col`}>
         <div style={{ padding: '18px 16px 14px', borderBottom: '1px solid #141414', background: 'linear-gradient(135deg, #0d0d0d 0%, #0a0a0a 100%)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
             <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(135deg, #ff6b00, #ff8c00)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -625,7 +625,7 @@ export default function Messages() {
                 </div>
               </div>
             )}
-            <form onSubmit={handleSend} style={{ display: 'flex', gap: 8, padding: '10px 14px 12px', alignItems: 'center' }}>
+            <form onSubmit={handleSend} style={{ display: 'flex', gap: 6, padding: '10px 10px 12px', alignItems: 'center' }}>
               <input ref={msgImageRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={handleMsgImage} />
               <button
                 type="button"
@@ -654,7 +654,7 @@ export default function Messages() {
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e) } }}
               />
               <button type="submit" disabled={(!text.trim() && !msgImageFile) || sending || msgImageUploading}
-                style={{ padding: '10px 16px', borderRadius: 12, background: 'linear-gradient(135deg, #ff7a00, #ff5500)', border: 'none', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, opacity: ((!text.trim() && !msgImageFile) || sending || msgImageUploading) ? 0.4 : 1, transition: 'opacity 0.15s' }}>
+                style={{ padding: '10px 12px', borderRadius: 12, background: 'linear-gradient(135deg, #ff7a00, #ff5500)', border: 'none', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, opacity: ((!text.trim() && !msgImageFile) || sending || msgImageUploading) ? 0.4 : 1, transition: 'opacity 0.15s' }}>
                 {sending || msgImageUploading ? <Spinner size="sm" /> : <Send size={15} />}
               </button>
             </form>

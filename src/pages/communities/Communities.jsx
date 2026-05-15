@@ -117,7 +117,7 @@ export default function Communities() {
       </div>
 
       {/* Category chips */}
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-none">
+      <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-none" style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch' }}>
         {CATEGORIES.map(cat => (
           <button
             key={cat}

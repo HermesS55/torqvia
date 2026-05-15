@@ -665,9 +665,9 @@ export default function Profile() {
                     <span style={{ color: '#444' }}>tamamlanan</span>
                   </div>
                   {profile.price_range && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid #1e1e1e', fontSize: 13 }}>
-                      <Banknote size={13} style={{ color: '#444' }} />
-                      <span style={{ color: '#777' }}>{profile.price_range}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid #1e1e1e', fontSize: 13, maxWidth: '100%', overflow: 'hidden' }}>
+                      <Banknote size={13} style={{ color: '#444', flexShrink: 0 }} />
+                      <span style={{ color: '#777', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile.price_range}</span>
                     </div>
                   )}
                 </div>
@@ -809,7 +809,7 @@ export default function Profile() {
                     </div>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: 9, color: '#333', fontFamily: 'monospace', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 5 }}>{item.label}</div>
-                      <div style={{ fontSize: 13, color: '#888', fontWeight: 500, lineHeight: 1.4 }}>{item.value}</div>
+                      <div style={{ fontSize: 13, color: '#888', fontWeight: 500, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.value}</div>
                     </div>
                   </div>
                 ))}
@@ -940,8 +940,12 @@ export default function Profile() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {posts.map(post => (
-                    <PostCard key={post.id} post={post} onDelete={postId => setPosts(prev => prev.filter(p => p.id !== postId))} onRepost={p => setPosts(prev => [p, ...prev])} />
+                  {[...posts].sort((a, b) => (b.id === pinnedPost?.id ? 1 : 0) - (a.id === pinnedPost?.id ? 1 : 0)).map(post => (
+                    <PostCard key={post.id} post={post}
+                      pinnedPostId={pinnedPost?.id}
+                      onPinChange={newId => setPinnedPost(newId ? posts.find(p => p.id === newId) || null : null)}
+                      onDelete={postId => setPosts(prev => prev.filter(p => p.id !== postId))}
+                      onRepost={p => setPosts(prev => [p, ...prev])} />
                   ))}
                 </div>
               )}
@@ -1099,8 +1103,12 @@ export default function Profile() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {posts.map(post => (
-                    <PostCard key={post.id} post={post} onDelete={postId => setPosts(prev => prev.filter(p => p.id !== postId))} onRepost={p => setPosts(prev => [p, ...prev])} />
+                  {[...posts].sort((a, b) => (b.id === pinnedPost?.id ? 1 : 0) - (a.id === pinnedPost?.id ? 1 : 0)).map(post => (
+                    <PostCard key={post.id} post={post}
+                      pinnedPostId={pinnedPost?.id}
+                      onPinChange={newId => setPinnedPost(newId ? posts.find(p => p.id === newId) || null : null)}
+                      onDelete={postId => setPosts(prev => prev.filter(p => p.id !== postId))}
+                      onRepost={p => setPosts(prev => [p, ...prev])} />
                   ))}
                 </div>
               )}

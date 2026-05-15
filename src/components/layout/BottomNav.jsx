@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, List, Calendar, MessageCircle,
-  Car, Search, Newspaper,
+  Search, Newspaper, Hash, Users,
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useUnreadCount } from '../../contexts/UnreadMessagesContext'
@@ -15,22 +15,23 @@ export default function BottomNav() {
   const isOwner = profile?.role === 'owner'
 
   const items = isPro ? [
-    { to: '/dashboard',  icon: LayoutDashboard, label: 'Panel' },
-    { to: '/feed',       icon: Newspaper,       label: 'Akış' },
-    { to: '/listings',   icon: List,            label: 'İlanlar' },
-    { to: '/randevular', icon: Calendar,        label: 'Randevu' },
-    { to: '/messages',   icon: MessageCircle,   label: 'Mesaj', msg: true },
+    { to: '/dashboard',    icon: LayoutDashboard, label: 'Panel' },
+    { to: '/listings',     icon: List,            label: 'İlanlar' },
+    { to: '/communities',  icon: Hash,            label: 'Topluluk' },
+    { to: '/randevular',   icon: Calendar,        label: 'Randevu' },
+    { to: '/messages',     icon: MessageCircle,   label: 'Mesaj', msg: true },
   ] : isOwner ? [
-    { to: '/dashboard',  icon: LayoutDashboard, label: 'Panel' },
-    { to: '/feed',       icon: Newspaper,       label: 'Akış' },
-    { to: '/ustalar',    icon: Search,          label: 'Usta Bul' },
-    { to: '/randevular', icon: Calendar,        label: 'Randevu' },
-    { to: '/messages',   icon: MessageCircle,   label: 'Mesaj', msg: true },
+    { to: '/dashboard',    icon: LayoutDashboard, label: 'Panel' },
+    { to: '/feed',         icon: Newspaper,       label: 'Akış' },
+    { to: '/communities',  icon: Hash,            label: 'Topluluk' },
+    { to: '/randevular',   icon: Calendar,        label: 'Randevu' },
+    { to: '/messages',     icon: MessageCircle,   label: 'Mesaj', msg: true },
   ] : [
-    { to: '/feed',       icon: Newspaper,       label: 'Akış' },
-    { to: '/listings',   icon: List,            label: 'İlanlar' },
-    { to: '/ustalar',    icon: Search,          label: 'Ustalar' },
-    { to: '/messages',   icon: MessageCircle,   label: 'Mesaj', msg: true },
+    { to: '/feed',         icon: Newspaper,       label: 'Akış' },
+    { to: '/communities',  icon: Hash,            label: 'Topluluk' },
+    { to: '/people',       icon: Users,           label: 'Kişiler' },
+    { to: '/ustalar',      icon: Search,          label: 'Ustalar' },
+    { to: '/messages',     icon: MessageCircle,   label: 'Mesaj', msg: true },
   ]
 
   return (
@@ -42,7 +43,7 @@ export default function BottomNav() {
             to={to}
             onClick={msg ? markRead : undefined}
             className={({ isActive }) =>
-              `flex flex-col items-center justify-center gap-0.5 flex-1 py-2 text-[10px] font-medium transition-colors relative ${
+              `flex flex-col items-center justify-center gap-0.5 flex-1 min-h-[52px] py-2 text-[10px] font-medium transition-colors relative ${
                 isActive ? 'text-brand-400' : 'text-zinc-500 hover:text-zinc-300'
               }`
             }

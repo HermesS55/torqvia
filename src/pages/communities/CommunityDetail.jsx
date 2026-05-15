@@ -12,7 +12,7 @@ import UserAvatar from '../../components/ui/UserAvatar'
 import Spinner from '../../components/ui/Spinner'
 import toast from 'react-hot-toast'
 import { sanitizeText, validateImageFile } from '../../lib/security'
-import { uploadPostImage } from '../../lib/avatar'
+import { uploadPostImage, uploadPostVideo } from '../../lib/avatar'
 
 const BASE_TABS = [
   { id: 'feed',    label: 'Paylaşımlar', icon: Hash },
@@ -44,6 +44,7 @@ export default function CommunityDetail() {
   // Post creation
   const [postContent, setPostContent]       = useState('')
   const [postFile, setPostFile]             = useState(null)
+  const [postIsVideo, setPostIsVideo]       = useState(false)
   const [postPreview, setPostPreview]       = useState(null)
   const [postSubmitting, setPostSubmitting] = useState(false)
   const postFileRef = useRef()
@@ -164,12 +165,18 @@ export default function CommunityDetail() {
     setJoining(false)
   }
 
-  async function handlePostImage(e) {
+  async function handlePostFile(e) {
     const file = e.target.files[0]
     if (!file) return
-    try { await validateImageFile(file, 5 * 1024 * 1024) }
-    catch (err) { toast.error(err.message); e.target.value = ''; return }
+    const isVideo = file.type.startsWith('video/')
+    if (isVideo) {
+      if (file.size > 50 * 1024 * 1024) { toast.error('Video en fazla 50 MB olabilir'); e.target.value = ''; return }
+    } else {
+      try { await validateImageFile(file, 5 * 1024 * 1024) }
+      catch (err) { toast.error(err.message); e.target.value = ''; return }
+    }
     setPostFile(file)
+    setPostIsVideo(isVideo)
     setPostPreview(URL.createObjectURL(file))
   }
 
@@ -179,7 +186,11 @@ export default function CommunityDetail() {
     setPostSubmitting(true)
     try {
       let image_url = null
-      if (postFile) image_url = await uploadPostImage(user.id, postFile)
+      if (postFile) {
+        image_url = postIsVideo
+          ? await uploadPostVideo(user.id, postFile)
+          : await uploadPostImage(user.id, postFile)
+      }
       const { data, error } = await supabase.from('community_posts')
         .insert({ community_id: id, user_id: user.id, content: sanitizeText(postContent, 2000), image_url })
         .select('*, profiles!community_posts_user_id_fkey(id, full_name, avatar_url, role), community_post_likes(user_id)')
@@ -188,6 +199,7 @@ export default function CommunityDetail() {
       setPosts(prev => [{ ...data, like_count: 0, liked_by_me: false }, ...prev])
       setPostContent('')
       setPostFile(null)
+      setPostIsVideo(false)
       setPostPreview(null)
       toast.success('Paylaşıldı!')
     } catch { toast.error('Paylaşılamadı') }
@@ -431,7 +443,7 @@ export default function CommunityDetail() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-zinc-800 mb-5 overflow-x-auto scrollbar-none">
+      <div className="flex border-b border-zinc-800 mb-5 overflow-x-auto scrollbar-none" style={{ touchAction: 'pan-x' }}>
         {visibleTabs.map(t => (
           <button
             key={t.id}
@@ -488,8 +500,11 @@ export default function CommunityDetail() {
                     />
                     {postPreview && (
                       <div className="relative mt-2 inline-block">
-                        <img src={postPreview} alt="" className="max-h-40 rounded-lg border border-zinc-700 object-cover" />
-                        <button type="button" onClick={() => { setPostFile(null); setPostPreview(null) }}
+                        {postIsVideo
+                          ? <video src={postPreview} className="max-h-40 rounded-lg border border-zinc-700" controls muted />
+                          : <img src={postPreview} alt="" className="max-h-40 rounded-lg border border-zinc-700 object-cover" />
+                        }
+                        <button type="button" onClick={() => { setPostFile(null); setPostIsVideo(false); setPostPreview(null) }}
                           className="absolute top-1 right-1 bg-black/70 rounded-full p-0.5">
                           <X className="h-3.5 w-3.5 text-white" />
                         </button>
@@ -497,10 +512,10 @@ export default function CommunityDetail() {
                     )}
                     <div className="flex items-center justify-between mt-2">
                       <div className="flex gap-1">
-                        <input ref={postFileRef} type="file" accept="image/*" className="hidden" onChange={handlePostImage} />
+                        <input ref={postFileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handlePostFile} />
                         <button type="button" onClick={() => postFileRef.current?.click()}
                           className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"
-                          title="Fotoğraf ekle">
+                          title="Fotoğraf veya video ekle">
                           <Image className="h-4 w-4" />
                         </button>
                       </div>
@@ -561,7 +576,9 @@ export default function CommunityDetail() {
                   </div>
                   <p className="text-sm text-zinc-300 mt-1 leading-relaxed whitespace-pre-wrap">{post.content}</p>
                   {post.image_url && (
-                    <img src={post.image_url} alt="" className="mt-2 rounded-xl max-h-80 w-full object-cover border border-zinc-700" />
+                    post.image_url.includes('post-videos')
+                      ? <video src={post.image_url} controls className="mt-2 rounded-xl max-h-80 w-full border border-zinc-700" style={{ background: '#000' }} />
+                      : <img src={post.image_url} alt="" className="mt-2 rounded-xl max-h-80 w-full object-cover border border-zinc-700" />
                   )}
                   <div className="flex items-center gap-4 mt-3">
                     <button
@@ -592,7 +609,7 @@ export default function CommunityDetail() {
             </div>
           ) : (
             <>
-              <div className="h-[420px] overflow-y-auto p-4 space-y-3">
+              <div className="h-[280px] sm:h-[420px] overflow-y-auto p-4 space-y-3">
                 {messages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center">
                     <MessageCircle className="h-10 w-10 text-zinc-700 mb-3" />

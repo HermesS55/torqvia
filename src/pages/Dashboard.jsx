@@ -298,29 +298,6 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
 
           <ProfileCompletionCard profile={profile} />
 
-          {/* Owner search bar */}
-          {isOwner && (
-            <div className="dash-search-row" style={{ display: 'flex', gap: 10, marginBottom: 28 }}>
-              <input
-                placeholder="Usta ara, şehir, uzmanlık..."
-                style={{
-                  flex: 1, background: '#0b0b0b', border: '1px solid #1a1a1a', borderRadius: 10,
-                  color: '#f0f0f0', fontSize: 14, padding: '12px 16px', outline: 'none',
-                }}
-                onFocus={e => { e.target.style.borderColor = '#ff6b00' }}
-                onBlur={e => { e.target.style.borderColor = '#1a1a1a' }}
-                onKeyDown={e => { if (e.key === 'Enter') window.location.href = '/ustalar' }}
-              />
-              <Link to="/ustalar" style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 20px',
-                borderRadius: 10, background: '#ff6b00', color: '#fff', fontWeight: 700,
-                fontSize: 14, textDecoration: 'none',
-              }}>
-                <Search size={14} /> USTA BUL
-              </Link>
-            </div>
-          )}
-
           {/* ── Metric cards ── */}
           {isOwner ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 28 }} className="metrics-grid">
