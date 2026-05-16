@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { Search, Car, PlusCircle, X, SlidersHorizontal, Fuel, Zap, AlertTriangle, Wallet, MapPin, Bookmark } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
@@ -48,6 +48,7 @@ const TABS = [
 export default function Listings() {
   useMeta('İlanlar', { description: 'Araç servis ilanlarına göz at, teklif ver veya kendi ilanını oluştur.' })
   const { profile, user } = useAuth()
+  const { pathname } = useLocation()
   const t = useT()
   const [listings, setListings]   = useState([])
   const [savedListings, setSavedListings] = useState([])
@@ -121,6 +122,23 @@ export default function Listings() {
 
   return (
     <div>
+      {/* İlan tipi seçimi — sadece mobilde */}
+      <div className="flex md:hidden" style={{ gap: 6, marginBottom: 20, padding: '4px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid #1e1e1e' }}>
+        {[
+          { to: '/listings', label: 'Servis İlanları' },
+          { to: '/sales',    label: 'Satılık Araçlar' },
+        ].map(item => (
+          <Link key={item.to} to={item.to} style={{
+            flex: 1, textAlign: 'center', padding: '8px 0', borderRadius: 9, fontSize: 13, fontWeight: 600,
+            textDecoration: 'none', transition: 'all 0.15s',
+            background: pathname === item.to ? '#ff6b00' : 'transparent',
+            color: pathname === item.to ? '#fff' : '#555',
+          }}>
+            {item.label}
+          </Link>
+        ))}
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

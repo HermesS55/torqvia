@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import {
   Tag, Plus, Search, Car, Gauge, Fuel, MapPin,
   X, SlidersHorizontal, ArrowUpDown,
@@ -172,6 +172,7 @@ function CarSaleCard({ sale, onFav, favIds }) {
 export default function CarSales() {
   useMeta('Satılık Araçlar')
   const { user } = useAuth()
+  const { pathname } = useLocation()
   const [sales, setSales] = useState([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('all')
@@ -314,6 +315,23 @@ export default function CarSales() {
 
   return (
     <div className="max-w-6xl mx-auto">
+      {/* İlan tipi seçimi — sadece mobilde */}
+      <div className="flex md:hidden" style={{ gap: 6, marginBottom: 20, padding: '4px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid #1e1e1e' }}>
+        {[
+          { to: '/listings', label: 'Servis İlanları' },
+          { to: '/sales',    label: 'Satılık Araçlar' },
+        ].map(item => (
+          <Link key={item.to} to={item.to} style={{
+            flex: 1, textAlign: 'center', padding: '8px 0', borderRadius: 9, fontSize: 13, fontWeight: 600,
+            textDecoration: 'none', transition: 'all 0.15s',
+            background: pathname === item.to ? '#ff6b00' : 'transparent',
+            color: pathname === item.to ? '#fff' : '#555',
+          }}>
+            {item.label}
+          </Link>
+        ))}
+      </div>
+
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
