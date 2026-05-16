@@ -156,6 +156,19 @@ export default function CommunityDetail() {
         toast('Topluluktan ayrıldın')
       }
     } else if (!isMember) {
+      // Ban kontrolü
+      const { data: banRow } = await supabase.from('community_bans')
+        .select('banned_until').eq('community_id', id).eq('user_id', user.id).maybeSingle()
+      if (banRow) {
+        const isActive = !banRow.banned_until || new Date(banRow.banned_until) > new Date()
+        if (isActive) {
+          toast.error(banRow.banned_until ? 'Geçici olarak bu topluluktan banlandınız.' : 'Bu topluluktan kalıcı olarak banlandınız.')
+          setJoining(false)
+          return
+        }
+        // Süresi dolmuş ban kaydını temizle
+        await supabase.from('community_bans').delete().eq('community_id', id).eq('user_id', user.id)
+      }
       const { data, error } = await supabase.from('community_members')
         .insert({ community_id: id, user_id: user.id, role: 'member' })
         .select('*, profiles!community_members_user_id_fkey(id, full_name, avatar_url, role)')
