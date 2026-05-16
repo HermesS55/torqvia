@@ -93,13 +93,39 @@ export default function Messages() {
   const bottomRef = useRef()
   const messagesContainerRef = useRef()
   const channelRef = useRef()
+  const globalChannelRef = useRef()
   const inputRef = useRef()
   const msgImageRef = useRef()
   const activeIdRef = useRef(activeId)
+  const initialLoadRef = useRef(false)
 
   useEffect(() => { activeIdRef.current = activeId }, [activeId])
 
   useEffect(() => { fetchConversations() }, [])
+
+  // Global inbox subscription — her zaman aktif, activeId olmasa bile
+  useEffect(() => {
+    if (!user?.id) return
+    globalChannelRef.current?.unsubscribe()
+    globalChannelRef.current = supabase
+      .channel(`messages-inbox-${user.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'messages',
+        filter: `receiver_id=eq.${user.id}`,
+      }, payload => {
+        const msg = payload.new
+        const senderId = msg.sender_id
+        fetchConversations()
+        if (senderId === activeIdRef.current) {
+          setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg])
+          markConversationRead(senderId)
+        } else {
+          setUnreadCounts(prev => ({ ...prev, [senderId]: (prev[senderId] || 0) + 1 }))
+        }
+      })
+      .subscribe()
+    return () => globalChannelRef.current?.unsubscribe()
+  }, [user?.id])
 
   useEffect(() => {
     if (!activeId) return
@@ -112,11 +138,21 @@ export default function Messages() {
     return () => channelRef.current?.unsubscribe()
   }, [activeId])
 
+  function isNearBottom() {
+    const el = messagesContainerRef.current
+    if (!el) return true
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 120
+  }
+
   useEffect(() => {
-    if (!chatSearch && messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+    if (chatSearch) return
+    if (initialLoadRef.current) {
+      bottomRef.current?.scrollIntoView()
+      initialLoadRef.current = false
+    } else if (isNearBottom()) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
-  }, [messages, chatSearch])
+  }, [messages])
 
   useEffect(() => {
     if (!searchUser.trim()) { setSearchResults([]); return }
@@ -194,6 +230,7 @@ export default function Messages() {
   }
 
   async function fetchMessages(otherId) {
+    initialLoadRef.current = true
     setLoadingMsgs(true)
     const { data } = await supabase
       .from('messages')
@@ -207,22 +244,8 @@ export default function Messages() {
   function subscribeToMessages(otherId) {
     channelRef.current?.unsubscribe()
     channelRef.current = supabase
-      .channel(`messages-${user.id}-${otherId}`)
-      .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'messages',
-        filter: `receiver_id=eq.${user.id}`,
-      }, payload => {
-        if (payload.new.sender_id === otherId) {
-          setMessages(prev => [...prev, payload.new])
-          markConversationRead(otherId)
-        } else {
-          setUnreadCounts(prev => ({
-            ...prev,
-            [payload.new.sender_id]: (prev[payload.new.sender_id] || 0) + 1,
-          }))
-          fetchConversations()
-        }
-      })
+      .channel(`messages-conv-${user.id}-${otherId}`)
+      // Kendi gönderdiğimiz mesajlar (optimistic ekleme dışı kalan edge case)
       .on('postgres_changes', {
         event: 'INSERT', schema: 'public', table: 'messages',
         filter: `sender_id=eq.${user.id}`,
@@ -231,9 +254,9 @@ export default function Messages() {
           setMessages(prev =>
             prev.some(m => m.id === payload.new.id) ? prev : [...prev, payload.new]
           )
-          fetchConversations()
         }
       })
+      // Okundu bilgisi (çift tik)
       .on('postgres_changes', {
         event: 'UPDATE', schema: 'public', table: 'messages',
         filter: `sender_id=eq.${user.id}`,
@@ -244,6 +267,7 @@ export default function Messages() {
           ))
         }
       })
+      // Mesaj silme
       .on('postgres_changes', {
         event: 'DELETE', schema: 'public', table: 'messages',
       }, payload => {
