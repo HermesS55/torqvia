@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
-import { Send, MessageCircle, Search, ArrowLeft, Check, CheckCheck, X, Smile, Trash2, SearchIcon, Image as ImageIcon, ZoomIn, Play } from 'lucide-react'
+import { Send, MessageCircle, Search, ArrowLeft, Check, CheckCheck, X, Smile, Trash2, SearchIcon, Image as ImageIcon, ZoomIn, Play, Tag } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useLang } from '../contexts/LangContext'
@@ -89,6 +89,7 @@ export default function Messages() {
   const [msgIsVideo, setMsgIsVideo] = useState(false)
   const [lightboxSrc, setLightboxSrc] = useState(null)
   const [lightboxVideo, setLightboxVideo] = useState(false)
+  const [counterInputs, setCounterInputs] = useState({})
   const bottomRef = useRef()
   const messagesContainerRef = useRef()
   const channelRef = useRef()
@@ -143,6 +144,13 @@ export default function Messages() {
         ? { ...m, read_at: new Date().toISOString() }
         : m
     ))
+    // Auto-clear message notifications from this sender
+    await supabase.from('notifications')
+      .update({ read: true })
+      .eq('user_id', user.id)
+      .eq('from_user_id', otherId)
+      .eq('type', 'message')
+      .eq('read', false)
   }
 
   async function fetchConversations() {
@@ -326,6 +334,51 @@ export default function Messages() {
     const { error } = await supabase.from('messages').delete().eq('id', id)
     if (error) { toast.error('Silinemedi'); return }
     setMessages(prev => prev.filter(m => m.id !== id))
+  }
+
+  async function handleOfferAction(msg, action) {
+    if (action === 'accept') {
+      if (!confirm('Bu teklifi kabul etmek istediğinizden emin misiniz?')) return
+      const { error } = await supabase.from('messages').update({ offer_status: 'accepted' }).eq('id', msg.id)
+      if (error) { toast.error('İşlem başarısız'); return }
+      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, offer_status: 'accepted' } : m))
+      await supabase.from('notifications').insert({
+        user_id: msg.sender_id, type: 'message', from_user_id: user.id,
+        message: `Teklifiniz kabul edildi! ₺${Number(msg.offer_amount).toLocaleString('tr-TR')}`,
+      })
+      toast.success('Teklif kabul edildi!')
+    } else if (action === 'reject') {
+      if (!confirm('Bu teklifi reddetmek istediğinizden emin misiniz?')) return
+      const { error } = await supabase.from('messages').update({ offer_status: 'rejected' }).eq('id', msg.id)
+      if (error) { toast.error('İşlem başarısız'); return }
+      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, offer_status: 'rejected' } : m))
+      await supabase.from('notifications').insert({
+        user_id: msg.sender_id, type: 'message', from_user_id: user.id,
+        message: 'Teklifiniz reddedildi.',
+      })
+      toast.success('Teklif reddedildi.')
+    } else if (action === 'counter') {
+      const raw = (counterInputs[msg.id] || '').replace(/\./g, '').replace(/,/g, '')
+      const counterAmount = Number(raw)
+      if (!counterAmount || counterAmount <= 0) { toast.error('Geçerli bir tutar girin'); return }
+      await supabase.from('messages').update({ offer_status: 'countered' }).eq('id', msg.id)
+      const { data, error } = await supabase.from('messages').insert({
+        sender_id: user.id, receiver_id: msg.sender_id,
+        content: `Karşı teklif: ₺${counterAmount.toLocaleString('tr-TR')}`,
+        offer_amount: counterAmount, sale_id: msg.sale_id, offer_status: 'countered',
+      }).select().single()
+      if (error) { toast.error('Gönderilemedi'); return }
+      setMessages(prev => [
+        ...prev.map(m => m.id === msg.id ? { ...m, offer_status: 'countered' } : m),
+        data,
+      ])
+      setCounterInputs(prev => ({ ...prev, [msg.id]: '' }))
+      await supabase.from('notifications').insert({
+        user_id: msg.sender_id, type: 'message', from_user_id: user.id,
+        message: `Karşı teklif: ₺${counterAmount.toLocaleString('tr-TR')}`,
+      })
+      toast.success('Karşı teklif gönderildi!')
+    }
   }
 
   function startConversation(profile) {
@@ -530,6 +583,135 @@ export default function Messages() {
                     const showAvatar = !isMine && (!prevMsg || prevMsg.sender_id !== m.sender_id)
                     const isRead = isMine && !!m.read_at
                     const isHighlighted = chatSearch && m.content?.toLowerCase().includes(chatSearch.toLowerCase())
+                    const isOffer = m.offer_amount !== null && m.offer_amount !== undefined && m.sale_id
+                    const isSharedPost = !!m.post_id
+
+                    if (isSharedPost) {
+                      return (
+                        <div key={m.id} style={{ display: 'flex', marginBottom: 8, justifyContent: isMine ? 'flex-end' : 'flex-start' }}>
+                          {!isMine && (
+                            <div style={{ width: 30, flexShrink: 0, marginRight: 8, display: 'flex', alignItems: 'flex-end' }}>
+                              {showAvatar && <UserAvatar profile={activeProfile} size="xs" />}
+                            </div>
+                          )}
+                          <div style={{ maxWidth: '75%' }}>
+                            <Link to={`/posts/${m.post_id}`} style={{ textDecoration: 'none', display: 'block' }}>
+                              <div style={{
+                                borderRadius: isMine ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                                background: isMine ? 'linear-gradient(135deg, #1a0d00, #130900)' : '#111',
+                                border: isMine ? '1px solid rgba(255,107,0,0.25)' : '1px solid #1e1e1e',
+                                overflow: 'hidden',
+                              }}>
+                                {m.image_url && (
+                                  <img src={m.image_url} alt="" style={{ width: '100%', maxHeight: 160, objectFit: 'cover', display: 'block' }} />
+                                )}
+                                <div style={{ padding: '8px 12px 10px' }}>
+                                  <div style={{ fontSize: 10, color: '#ff7a00', fontWeight: 700, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>📌 Paylaşılan Gönderi</div>
+                                  {m.content && (
+                                    <p style={{ fontSize: 12, color: isMine ? '#ccc' : '#aaa', margin: 0, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                      {m.content.replace(/^📌\s*"?/, '').replace(/"$/, '')}
+                                    </p>
+                                  )}
+                                  <div style={{ fontSize: 10, color: '#ff7a00', marginTop: 6 }}>Gönderiyi gör →</div>
+                                </div>
+                              </div>
+                            </Link>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3, justifyContent: isMine ? 'flex-end' : 'flex-start' }}>
+                              <span style={{ fontSize: 10, color: '#333' }}>{timeShort(m.created_at)}</span>
+                              {isMine && (isRead ? <CheckCheck size={11} color="#ff7a00" /> : <Check size={11} color="#333" />)}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    }
+
+                    if (isOffer) {
+                      const offerStatusMap = {
+                        pending:   { bg: '#1a1200', border: '#3d2d00', text: '#ffb800', label: 'Beklemede' },
+                        accepted:  { bg: '#001508', border: '#003018', text: '#00e676', label: 'Kabul Edildi' },
+                        rejected:  { bg: '#180000', border: '#3a0000', text: '#ff4444', label: 'Reddedildi' },
+                        countered: { bg: '#00101e', border: '#002540', text: '#4488ff', label: 'Karşı Teklif' },
+                      }
+                      const ofStatus = offerStatusMap[m.offer_status] || offerStatusMap.pending
+                      const canAct = m.receiver_id === user.id && (m.offer_status === 'pending' || m.offer_status === 'countered')
+                      return (
+                        <div key={m.id} style={{ display: 'flex', marginBottom: 12, justifyContent: isMine ? 'flex-end' : 'flex-start' }}>
+                          {!isMine && (
+                            <div style={{ width: 30, flexShrink: 0, marginRight: 8, display: 'flex', alignItems: 'flex-end' }}>
+                              {showAvatar && <UserAvatar profile={activeProfile} size="xs" />}
+                            </div>
+                          )}
+                          <div style={{ maxWidth: '82%', minWidth: 260 }}>
+                            <div style={{ borderRadius: 16, overflow: 'hidden', background: '#101010', border: '1px solid #222', boxShadow: '0 6px 28px rgba(0,0,0,0.6)' }}>
+                              {/* Card header */}
+                              <div style={{ padding: '10px 14px 9px', background: 'linear-gradient(135deg, #160b00, #0e0600)', borderBottom: '1px solid #1e1200', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <Tag size={12} color="#ff7a00" />
+                                  <span style={{ fontSize: 10, color: '#ff7a00', fontWeight: 800, letterSpacing: 0.8, textTransform: 'uppercase' }}>Araç Satış Teklifi</span>
+                                </div>
+                                <span style={{ fontSize: 10, fontWeight: 700, color: ofStatus.text, background: ofStatus.bg, border: `1px solid ${ofStatus.border}`, borderRadius: 20, padding: '2px 9px', flexShrink: 0 }}>
+                                  {ofStatus.label}
+                                </span>
+                              </div>
+                              {/* Amount */}
+                              <div style={{ padding: '16px 14px 12px', textAlign: 'center', background: '#0c0c0c' }}>
+                                <div style={{ fontSize: 30, fontWeight: 900, color: '#fff', letterSpacing: '-1.5px', lineHeight: 1 }}>
+                                  ₺{Number(m.offer_amount).toLocaleString('tr-TR')}
+                                </div>
+                                <div style={{ fontSize: 11, color: '#444', marginTop: 5 }}>Teklif Tutarı</div>
+                              </div>
+                              {/* Message text */}
+                              {m.content && (
+                                <div style={{ padding: '9px 14px', borderTop: '1px solid #1a1a1a', background: '#0a0a0a' }}>
+                                  <p style={{ fontSize: 12, color: '#777', lineHeight: 1.55, whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0 }}>{m.content}</p>
+                                </div>
+                              )}
+                              {/* Listing link */}
+                              <div style={{ padding: '8px 14px', borderTop: '1px solid #1a1a1a', background: '#0a0a0a' }}>
+                                <Link to={`/sales/${m.sale_id}`} style={{ fontSize: 11, color: '#ff7a00', textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                                  onMouseOver={e => e.currentTarget.style.color = '#ffaa44'}
+                                  onMouseOut={e => e.currentTarget.style.color = '#ff7a00'}>
+                                  İlanı Görüntüle →
+                                </Link>
+                              </div>
+                              {/* Action buttons for pending offer received by current user */}
+                              {canAct && (
+                                <div style={{ padding: '10px 12px 12px', borderTop: '1px solid #1e1e1e', background: '#0d0d0d', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                  <div style={{ display: 'flex', gap: 8 }}>
+                                    <button onClick={() => handleOfferAction(m, 'accept')}
+                                      style={{ flex: 1, padding: '9px 0', borderRadius: 10, background: 'linear-gradient(135deg, #00a84f, #007a3a)', border: 'none', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                                      <Check size={13} /> Kabul Et
+                                    </button>
+                                    <button onClick={() => handleOfferAction(m, 'reject')}
+                                      style={{ flex: 1, padding: '9px 0', borderRadius: 10, background: 'linear-gradient(135deg, #b00020, #800018)', border: 'none', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                                      <X size={13} /> Reddet
+                                    </button>
+                                  </div>
+                                  <div style={{ display: 'flex', gap: 6 }}>
+                                    <input
+                                      value={counterInputs[m.id] || ''}
+                                      onChange={e => setCounterInputs(prev => ({ ...prev, [m.id]: e.target.value }))}
+                                      placeholder="Karşı teklif tutarı (₺)..."
+                                      style={{ flex: 1, background: '#131313', border: '1px solid #2a2a2a', borderRadius: 8, padding: '7px 10px', color: '#e0e0e0', fontSize: 12, outline: 'none' }}
+                                      onKeyDown={e => { if (e.key === 'Enter') handleOfferAction(m, 'counter') }}
+                                    />
+                                    <button onClick={() => handleOfferAction(m, 'counter')}
+                                      style={{ padding: '7px 12px', borderRadius: 8, background: 'rgba(255,107,0,0.15)', border: '1px solid rgba(255,107,0,0.35)', color: '#ff7a00', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                      Teklif Ver
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, justifyContent: isMine ? 'flex-end' : 'flex-start' }}>
+                              <span style={{ fontSize: 10, color: '#333' }}>{timeShort(m.created_at)}</span>
+                              {isMine && (isRead ? <CheckCheck size={11} color="#ff7a00" /> : <Check size={11} color="#333" />)}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    }
+
                     return (
                       <div key={m.id} style={{ display: 'flex', marginBottom: 6, justifyContent: isMine ? 'flex-end' : 'flex-start' }} className="group">
                         {!isMine && (

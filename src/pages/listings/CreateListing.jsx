@@ -16,6 +16,10 @@ const SERVICE_OPTIONS = [
   'Motor', 'Kaporta', 'Boya', 'Elektrik', 'Lastik',
   'Süspansiyon', 'Fren', 'Tuning', 'Detailing', 'Egzoz',
   'Klima', 'Cam', 'Döşeme', 'Yakıt Sistemi', 'Periyodik Bakım',
+  'PPF (Boya Koruma Filmi)', 'Seramik Kaplama', 'Cam Filmi',
+  'Rot & Balans', 'Diferansiyel', 'Şanzıman', 'Turbo',
+  'Far Yenileme', 'Krom & Vinil', 'Deri Döşeme', 'Ses Sistemi',
+  'Güvenlik Sistemi', 'LPG Montajı',
 ]
 
 const CURRENT_YEAR = new Date().getFullYear()
@@ -108,7 +112,7 @@ export default function CreateListing() {
         fuel_type: form.fuel_type || null,
         transmission: form.transmission || null,
         location: form.location.trim() || null,
-        budget: form.budget ? Number(form.budget) : null,
+        budget: form.budget ? Number(String(form.budget).replace(/\./g, '').replace(/,/g, '')) : null,
         urgency: form.urgency,
         service_types: form.service_types,
         description: form.description.trim() || null,

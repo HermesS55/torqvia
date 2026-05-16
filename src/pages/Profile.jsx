@@ -180,10 +180,14 @@ function ProfileActions({ onReport, onBlock, isBlocked }) {
 const SKILLS_OPTIONS = [
   'Motor', 'Kaporta', 'Boya', 'Elektrik', 'Lastik',
   'Süspansiyon', 'Fren', 'Tuning', 'Detailing', 'Egzoz',
-  'Klima', 'Cam', 'Döşeme', 'Yakıt Sistemi',
+  'Klima', 'Cam', 'Döşeme', 'Yakıt Sistemi', 'Periyodik Bakım',
+  'PPF (Boya Koruma Filmi)', 'Seramik Kaplama', 'Cam Filmi',
+  'Rot & Balans', 'Diferansiyel', 'Şanzıman', 'Turbo',
+  'Far Yenileme', 'Krom & Vinil', 'Deri Döşeme', 'Ses Sistemi',
+  'Güvenlik Sistemi', 'LPG Montajı',
 ]
 
-const SPECIALTIES_OPTIONS = ['Motor', 'Kaporta-Boya', 'Elektrik', 'Lastik-Jant', 'Klima', 'Genel Bakım', 'Diğer']
+const SPECIALTIES_OPTIONS = ['Motor', 'Kaporta-Boya', 'Elektrik', 'Lastik-Jant', 'Klima', 'Genel Bakım', 'PPF & Kaplama', 'Detailing', 'Döşeme', 'LPG', 'Diğer']
 
 export default function Profile() {
   const { id } = useParams()
@@ -204,7 +208,10 @@ export default function Profile() {
   const [saving, setSaving] = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [portfolioUploading, setPortfolioUploading] = useState(false)
+  const [portfolioModal, setPortfolioModal] = useState(null) // { file, preview, isVideo }
+  const [portfolioLabel, setPortfolioLabel] = useState('')
   const portfolioRef = useRef()
+  const portfolioCaptionRef = useRef()
   const [showReport, setShowReport] = useState(false)
   const [showRating, setShowRating] = useState(false)
   const [isBlocked, setIsBlocked] = useState(false)
@@ -409,31 +416,56 @@ export default function Profile() {
     finally { setShopPhotoUploading(false); e.target.value = '' }
   }
 
-  async function handlePortfolioUpload(e) {
+  function handlePortfolioPickFile(e) {
     const file = e.target.files[0]
     if (!file) return
-    try { await validateImageFile(file, 5 * 1024 * 1024) }
-    catch (err) { toast.error(err.message); e.target.value = ''; return }
+    const isVideo = file.type.startsWith('video/')
+    if (!isVideo && file.size > 5 * 1024 * 1024) { toast.error('Görsel en fazla 5 MB olabilir'); e.target.value = ''; return }
+    if (isVideo && file.size > 80 * 1024 * 1024) { toast.error('Video en fazla 80 MB olabilir'); e.target.value = ''; return }
+    const preview = URL.createObjectURL(file)
+    setPortfolioModal({ file, preview, isVideo })
+    setPortfolioLabel('')
+    e.target.value = ''
+  }
+
+  async function handlePortfolioUpload() {
+    if (!portfolioModal) return
     setPortfolioUploading(true)
     try {
+      const { file, isVideo } = portfolioModal
       const ext = file.name.split('.').pop()
       const path = `portfolio/${user.id}/${Date.now()}.${ext}`
-      const { error: upErr } = await supabase.storage.from('post-images').upload(path, file, { upsert: false })
+      const bucket = isVideo ? 'post-videos' : 'post-images'
+      const { error: upErr } = await supabase.storage.from(bucket).upload(path, file, { upsert: false })
       if (upErr) throw upErr
-      const { data: { publicUrl } } = supabase.storage.from('post-images').getPublicUrl(path)
-      const { data, error } = await supabase.from('portfolio_items').insert({ pro_id: user.id, image_url: publicUrl }).select().single()
+      const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(path)
+      const captionFull = [portfolioLabel, portfolioCaptionRef.current?.value?.trim() || ''].filter(Boolean).join(' — ')
+      const { data, error } = await supabase.from('portfolio_items')
+        .insert({ pro_id: user.id, image_url: publicUrl, caption: captionFull || null })
+        .select().single()
       if (error) throw error
       setPortfolio(prev => [data, ...prev])
-      toast.success('Portföy fotoğrafı eklendi!')
+      setPortfolioModal(null)
+      toast.success(isVideo ? 'Portföy videosu eklendi!' : 'Portföy fotoğrafı eklendi!')
     } catch { toast.error('Yüklenemedi') }
-    finally { setPortfolioUploading(false); e.target.value = '' }
+    finally { setPortfolioUploading(false) }
   }
 
   async function handlePortfolioDelete(itemId) {
-    if (!confirm('Bu fotoğrafı portföyden kaldırmak istediğine emin misin?')) return
+    if (!confirm('Bu öğeyi portföyden kaldırmak istediğine emin misin?')) return
     const { error } = await supabase.from('portfolio_items').delete().eq('id', itemId)
     if (error) toast.error('Silinemedi')
     else setPortfolio(prev => prev.filter(p => p.id !== itemId))
+  }
+
+  async function handleListingDelete(listingId) {
+    if (!confirm('Bu ilanı silmek istediğine emin misin?')) return
+    const { error } = await supabase.from('listings').delete().eq('id', listingId)
+    if (error) toast.error('Silinemedi')
+    else {
+      setListings(prev => prev.filter(l => l.id !== listingId))
+      toast.success('İlan silindi')
+    }
   }
 
   async function fetchFollowRequests() {
@@ -598,7 +630,7 @@ export default function Profile() {
             </div>
 
             {/* Info */}
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="pp-hero-info" style={{ flex: 1, minWidth: 0 }}>
 
               {/* Name + plan badge + action menu */}
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
@@ -686,8 +718,9 @@ export default function Profile() {
 
               {/* Bio */}
               {profile.bio && (
-                <p style={{ fontSize: 14, color: '#555', lineHeight: 1.7, marginBottom: 20 }}>{profile.bio}</p>
+                <p style={{ fontSize: 14, color: '#555', lineHeight: 1.7, marginBottom: 16 }}>{profile.bio}</p>
               )}
+
 
               {/* CTAs */}
               {!isBlocked && (
@@ -742,6 +775,34 @@ export default function Profile() {
                 </div>
               )}
             </div>
+
+            {/* Follow + post stats — sağ kolon */}
+            <div className="pp-stats-col" style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0, alignSelf: 'center' }}>
+              {[
+                { value: followCounts.followers, label: 'Takipçi', onClick: () => setFollowModal('followers') },
+                { value: followCounts.following,  label: 'Takip',   onClick: () => setFollowModal('following') },
+                { value: posts.length,             label: 'Gönderi', onClick: null },
+              ].map(stat => (
+                <div
+                  key={stat.label}
+                  onClick={stat.onClick || undefined}
+                  style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center',
+                    padding: '10px 20px', borderRadius: 10,
+                    background: 'rgba(255,255,255,0.02)', border: '1px solid #1e1e1e',
+                    minWidth: 80,
+                    cursor: stat.onClick ? 'pointer' : 'default',
+                    transition: 'border-color 0.15s',
+                  }}
+                  onMouseOver={e => { if (stat.onClick) e.currentTarget.style.borderColor = '#333' }}
+                  onMouseOut={e => e.currentTarget.style.borderColor = '#1e1e1e'}
+                >
+                  <span style={{ fontSize: 20, fontWeight: 800, color: '#f0f0f0', lineHeight: 1.2 }}>{stat.value.toLocaleString('tr-TR')}</span>
+                  <span style={{ fontSize: 10, color: '#444', marginTop: 3, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{stat.label}</span>
+                </div>
+              ))}
+            </div>
+
           </div>
         </div>
       </div>
@@ -820,11 +881,23 @@ export default function Profile() {
               )}
             </Panel>
 
+            {/* Shop photo — hakkında ile portföy arasında */}
+            {isPro && profile.shop_photo && (
+              <div style={{ cursor: 'zoom-in', borderRadius: 16, overflow: 'hidden', border: '1px solid #1a1a1a' }}
+                onClick={() => setPhotoSrc(profile.shop_photo)}>
+                <img
+                  src={profile.shop_photo}
+                  alt="Dükkan"
+                  style={{ width: '100%', height: 220, objectFit: 'cover', display: 'block' }}
+                />
+              </div>
+            )}
+
             {/* Portföy */}
             <Panel label="// PORTFÖY">
               {isOwn && (
                 <div style={{ marginBottom: 14 }}>
-                  <input ref={portfolioRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePortfolioUpload} />
+                  <input ref={portfolioRef} type="file" accept="image/*,video/mp4,video/webm,video/quicktime,video/*" style={{ display: 'none' }} onChange={handlePortfolioPickFile} />
                   <button
                     onClick={() => portfolioRef.current?.click()}
                     disabled={portfolioUploading}
@@ -838,10 +911,68 @@ export default function Profile() {
                     onMouseOut={e => { e.currentTarget.style.borderColor = '#1e1e1e' }}
                   >
                     {portfolioUploading ? <Spinner size="sm" /> : <PlusCircle size={15} />}
-                    {portfolioUploading ? 'Yükleniyor...' : 'Fotoğraf Ekle'}
+                    {portfolioUploading ? 'Yükleniyor...' : 'Fotoğraf / Video Ekle'}
                   </button>
                 </div>
               )}
+
+              {/* Portfolio upload modal */}
+              {portfolioModal && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+                  onClick={e => { if (e.target === e.currentTarget) setPortfolioModal(null) }}>
+                  <div style={{ background: '#0e0e0e', border: '1px solid #222', borderRadius: 20, padding: 24, width: '100%', maxWidth: 440 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: '#f0f0f0' }}>Portföye Ekle</span>
+                      <button onClick={() => setPortfolioModal(null)} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer' }}><X size={18} /></button>
+                    </div>
+                    {portfolioModal.isVideo
+                      ? <video src={portfolioModal.preview} controls style={{ width: '100%', maxHeight: 220, borderRadius: 12, objectFit: 'cover', background: '#000', marginBottom: 14 }} />
+                      : <img src={portfolioModal.preview} alt="" style={{ width: '100%', maxHeight: 220, borderRadius: 12, objectFit: 'cover', marginBottom: 14 }} />
+                    }
+                    <div style={{ marginBottom: 10 }}>
+                      <label style={{ fontSize: 11, color: '#555', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: 6 }}>İş Etiketi</label>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {['Önce', 'Sonra', 'Tamamlanmış İş', ''].map(l => (
+                          <button
+                            key={l}
+                            onClick={() => setPortfolioLabel(l)}
+                            style={{
+                              padding: '5px 14px', borderRadius: 99, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                              background: portfolioLabel === l ? '#ff6b00' : 'transparent',
+                              color: portfolioLabel === l ? '#fff' : '#555',
+                              border: portfolioLabel === l ? '1px solid #ff6b00' : '1px solid #2a2a2a',
+                              transition: 'all 0.15s',
+                            }}
+                          >
+                            {l || 'Etiketsiz'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ marginBottom: 16 }}>
+                      <label style={{ fontSize: 11, color: '#555', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: 6 }}>Açıklama (isteğe bağlı)</label>
+                      <input
+                        ref={portfolioCaptionRef}
+                        defaultValue=""
+                        maxLength={120}
+                        placeholder="Yapılan işi kısaca açıkla..."
+                        style={{ width: '100%', background: '#111', border: '1px solid #1e1e1e', borderRadius: 10, color: '#f0f0f0', fontSize: 13, padding: '10px 12px', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                        onFocus={e => { e.target.style.borderColor = '#ff6b00' }}
+                        onBlur={e => { e.target.style.borderColor = '#1e1e1e' }}
+                      />
+                    </div>
+                    <button
+                      onClick={handlePortfolioUpload}
+                      disabled={portfolioUploading}
+                      style={{ width: '100%', padding: '11px', borderRadius: 10, background: '#ff6b00', color: '#fff', fontWeight: 700, fontSize: 14, border: 'none', cursor: portfolioUploading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: portfolioUploading ? 0.7 : 1 }}
+                    >
+                      {portfolioUploading ? <Spinner size="sm" /> : null}
+                      {portfolioUploading ? 'Yükleniyor...' : 'Portföye Ekle'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {portfolio.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '24px 0' }}>
                   <div style={{ fontSize: 28, marginBottom: 8 }}>🖼️</div>
@@ -849,32 +980,52 @@ export default function Profile() {
                 </div>
               ) : (
                 <div className="pp-portfolio-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-                  {portfolio.map(item => (
-                    <div key={item.id} style={{ position: 'relative', borderRadius: 11, overflow: 'hidden', aspectRatio: '1', border: '1px solid #1a1a1a' }}>
-                      <img src={item.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      {item.caption && (
-                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(transparent, rgba(0,0,0,0.85))', padding: '18px 8px 7px', fontSize: 11, color: '#ddd' }}>
-                          {item.caption}
-                        </div>
-                      )}
-                      {isOwn && (
-                        <button
-                          onClick={() => handlePortfolioDelete(item.id)}
-                          style={{
-                            position: 'absolute', top: 6, right: 6,
-                            width: 24, height: 24, borderRadius: '50%',
-                            background: 'rgba(0,0,0,0.6)', border: 'none',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: '#fff', cursor: 'pointer', opacity: 0, transition: 'opacity 0.15s',
-                          }}
-                          onMouseOver={e => { e.currentTarget.style.opacity = 1; e.currentTarget.style.background = 'rgba(220,38,38,0.7)' }}
-                          onMouseOut={e => { e.currentTarget.style.opacity = 0; e.currentTarget.style.background = 'rgba(0,0,0,0.6)' }}
-                        >
-                          <Trash2 size={11} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                  {portfolio.map(item => {
+                    const isVideo = item.image_url?.includes('post-videos') || item.image_url?.match(/\.(mp4|webm|mov|avi)(\?|$)/i)
+                    const [labelPart, ...captionParts] = (item.caption || '').split(' — ')
+                    const hasLabel = ['Önce', 'Sonra', 'Tamamlanmış İş'].includes(labelPart)
+                    const captionText = hasLabel ? captionParts.join(' — ') : item.caption
+                    const labelText = hasLabel ? labelPart : null
+                    return (
+                      <div key={item.id} style={{ position: 'relative', borderRadius: 11, overflow: 'hidden', aspectRatio: '1', border: '1px solid #1a1a1a' }}>
+                        {isVideo
+                          ? <video src={item.image_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted playsInline />
+                          : <img src={item.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        }
+                        {labelText && (
+                          <div style={{
+                            position: 'absolute', top: 6, left: 6,
+                            padding: '2px 8px', borderRadius: 99, fontSize: 10, fontWeight: 800,
+                            background: labelText === 'Önce' ? 'rgba(239,68,68,0.85)' : labelText === 'Sonra' ? 'rgba(34,197,94,0.85)' : 'rgba(255,107,0,0.85)',
+                            color: '#fff', letterSpacing: '0.05em',
+                          }}>
+                            {labelText}
+                          </div>
+                        )}
+                        {captionText && (
+                          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(transparent, rgba(0,0,0,0.85))', padding: '18px 8px 7px', fontSize: 11, color: '#ddd' }}>
+                            {captionText}
+                          </div>
+                        )}
+                        {isOwn && (
+                          <button
+                            onClick={() => handlePortfolioDelete(item.id)}
+                            style={{
+                              position: 'absolute', top: 6, right: 6,
+                              width: 26, height: 26, borderRadius: '50%',
+                              background: 'rgba(0,0,0,0.65)', border: 'none',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              color: '#fff', cursor: 'pointer', transition: 'background 0.15s',
+                            }}
+                            onMouseOver={e => { e.currentTarget.style.background = 'rgba(220,38,38,0.8)' }}
+                            onMouseOut={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.65)' }}
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </Panel>
@@ -898,15 +1049,9 @@ export default function Profile() {
                       onMouseOut={e => e.currentTarget.style.borderColor = '#181818'}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: r.comment ? 11 : 0 }}>
-                        <div style={{
-                          width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-                          background: 'linear-gradient(135deg, rgba(255,107,0,0.12), rgba(255,107,0,0.06))',
-                          border: '1px solid rgba(255,107,0,0.14)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 14, fontWeight: 800, color: '#ff8c33',
-                        }}>
-                          {(r.reviewer?.full_name || 'K')[0].toUpperCase()}
-                        </div>
+                        <Link to={`/profile/${r.owner_id}`} style={{ flexShrink: 0 }}>
+                          <UserAvatar profile={r.reviewer} size="sm" />
+                        </Link>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
                             <Link to={`/profile/${r.owner_id}`} style={{ fontSize: 13, fontWeight: 700, color: '#d0d0d0', textDecoration: 'none' }}>
@@ -1070,21 +1215,38 @@ export default function Profile() {
                 <div style={{ textAlign: 'center', padding: '16px 0', color: '#2e2e2e', fontSize: 13 }}>İlan yok</div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {listings.slice(0, 5).map(l => (
-                    <Link key={l.id} to={`/listings/${l.id}`} style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '11px 14px', background: 'linear-gradient(135deg, #0e0e0e, #0c0c0c)',
-                      border: '1px solid #181818', borderRadius: 12, textDecoration: 'none',
-                    }}
-                      onMouseOver={e => e.currentTarget.style.borderColor = '#222'}
-                      onMouseOut={e => e.currentTarget.style.borderColor = '#181818'}
-                    >
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#e0e0e0' }}>{l.brand} {l.model}</div>
-                        {l.description && <div style={{ fontSize: 11, color: '#444', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 280 }}>{l.description}</div>}
-                      </div>
-                      <span style={{ fontSize: 11, color: '#2e2e2e', fontFamily: 'monospace', flexShrink: 0, marginLeft: 12 }}>{new Date(l.created_at).toLocaleDateString('tr-TR')}</span>
-                    </Link>
+                  {listings.slice(0, 10).map(l => (
+                    <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Link to={`/listings/${l.id}`} style={{
+                        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '11px 14px', background: 'linear-gradient(135deg, #0e0e0e, #0c0c0c)',
+                        border: '1px solid #181818', borderRadius: 12, textDecoration: 'none', minWidth: 0,
+                        opacity: l.status === 'closed' ? 0.55 : 1,
+                      }}
+                        onMouseOver={e => e.currentTarget.style.borderColor = '#222'}
+                        onMouseOut={e => e.currentTarget.style.borderColor = '#181818'}
+                      >
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: '#e0e0e0', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {l.brand} {l.model}
+                            {l.status === 'closed' && <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 99, background: 'rgba(113,113,122,0.15)', color: '#555', border: '1px solid #222' }}>KAPANDI</span>}
+                          </div>
+                          {l.description && <div style={{ fontSize: 11, color: '#444', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 240 }}>{l.description}</div>}
+                        </div>
+                        <span style={{ fontSize: 11, color: '#2e2e2e', fontFamily: 'monospace', flexShrink: 0, marginLeft: 12 }}>{new Date(l.created_at).toLocaleDateString('tr-TR')}</span>
+                      </Link>
+                      {isOwn && (
+                        <button
+                          onClick={() => handleListingDelete(l.id)}
+                          style={{ padding: '8px', borderRadius: 8, background: 'transparent', border: '1px solid #1e1e1e', color: '#333', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', transition: 'all 0.15s' }}
+                          onMouseOver={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.25)' }}
+                          onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#333'; e.currentTarget.style.borderColor = '#1e1e1e' }}
+                          title="İlanı Sil"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
@@ -1320,10 +1482,11 @@ export default function Profile() {
           .pp-body-grid .card { padding: 12px !important; }
         }
         @media (max-width: 600px) {
-          .pp-hero-inner { flex-direction: column !important; align-items: center !important; text-align: center !important; }
+          .pp-hero-inner   { flex-direction: column !important; align-items: center !important; text-align: center !important; }
           .pp-hero-inner > div:first-child { margin-top: 0 !important; }
-          .pp-hero-inner > div:last-child { min-width: 0 !important; width: 100% !important; }
-          .pp-hero-inner > div:last-child > div { justify-content: center !important; }
+          .pp-hero-info    { min-width: 0 !important; width: 100% !important; }
+          .pp-hero-info > div { justify-content: center !important; }
+          .pp-stats-col    { flex-direction: row !important; justify-content: center !important; width: 100% !important; }
           .pp-hero-content { padding: 24px 16px !important; }
           .pp-outer        { padding-left: 8px !important; padding-right: 8px !important; }
           .pp-info-grid    { grid-template-columns: 1fr !important; }

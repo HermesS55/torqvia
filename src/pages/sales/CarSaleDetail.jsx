@@ -175,20 +175,25 @@ export default function CarSaleDetail() {
   }
 
   async function sendOffer() {
-    if (!offerAmount || isNaN(Number(offerAmount))) { toast.error('Geçerli bir tutar girin'); return }
+    const rawAmount = String(offerAmount).replace(/\./g, '').replace(/,/g, '')
+    if (!rawAmount || isNaN(Number(rawAmount)) || Number(rawAmount) <= 0) { toast.error('Geçerli bir tutar girin'); return }
+    const amount = Number(rawAmount)
     setOfferSending(true)
-    const msg = `💰 Teklif: ${Number(offerAmount).toLocaleString('tr-TR')} ₺\n🚗 ${sale.brand} ${sale.model}${sale.year ? ` (${sale.year})` : ''}${offerNote ? `\n📝 ${offerNote}` : ''}`
+    const msg = `💰 Teklif: ${amount.toLocaleString('tr-TR')} ₺\n🚗 ${sale.brand} ${sale.model}${sale.year ? ` (${sale.year})` : ''}${offerNote ? `\n📝 ${offerNote}` : ''}`
     const { error } = await supabase.from('messages').insert({
       sender_id: user.id,
       receiver_id: sale.profiles.id,
       content: msg,
+      offer_amount: amount,
+      sale_id: id,
+      offer_status: 'pending',
     })
     if (error) { toast.error('Teklif gönderilemedi'); setOfferSending(false); return }
     await supabase.from('notifications').insert({
       user_id: sale.profiles.id,
       type: 'message',
       from_user_id: user.id,
-      message: `${sale.brand} ${sale.model} için ${Number(offerAmount).toLocaleString('tr-TR')} ₺ teklif`,
+      message: `${sale.brand} ${sale.model} için ${amount.toLocaleString('tr-TR')} ₺ teklif`,
     })
     setOfferSent(true)
     setOfferSending(false)

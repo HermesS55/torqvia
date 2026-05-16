@@ -173,7 +173,7 @@ export default function CreateCarSale() {
         damage_record: form.damage_record,
         exchange:      form.exchange,
         owner_count:   form.owner_count ? Number(form.owner_count) : null,
-        price:         Number(form.price),
+        price:         Number(String(form.price).replace(/\./g, '').replace(/,/g, '')),
         description:   form.description.trim() || null,
         city:          form.city || null,
         district:      form.district.trim() || null,

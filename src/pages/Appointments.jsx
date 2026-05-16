@@ -191,12 +191,13 @@ function ApptCard({ appt, isOwner, onStatusUpdate, rated, onRate }) {
           )}
         </div>
 
-        {/* Pro can update status */}
-        <div style={{ display: 'flex', gap: 6 }}>
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {/* Pro actions */}
           {!isOwner && onStatusUpdate && status === 'beklemede' && (
             <>
               <button
-                onClick={() => onStatusUpdate(appt.id, 'onaylandi')}
+                onClick={() => onStatusUpdate(appt.id, 'onaylandi', appt)}
                 style={{ padding: '5px 12px', borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: 'pointer', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', color: '#22c55e', transition: 'all 0.15s' }}
                 onMouseOver={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.18)' }}
                 onMouseOut={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.1)' }}
@@ -204,7 +205,7 @@ function ApptCard({ appt, isOwner, onStatusUpdate, rated, onRate }) {
                 Onayla
               </button>
               <button
-                onClick={() => onStatusUpdate(appt.id, 'iptal')}
+                onClick={() => onStatusUpdate(appt.id, 'iptal', appt)}
                 style={{ padding: '5px 12px', borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: 'pointer', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', transition: 'all 0.15s' }}
                 onMouseOver={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)' }}
                 onMouseOut={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)' }}
@@ -214,13 +215,34 @@ function ApptCard({ appt, isOwner, onStatusUpdate, rated, onRate }) {
             </>
           )}
           {!isOwner && onStatusUpdate && status === 'onaylandi' && (
+            <>
+              <button
+                onClick={() => onStatusUpdate(appt.id, 'tamamlandi', appt)}
+                style={{ padding: '5px 14px', borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: 'pointer', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.25)', color: '#3b82f6', transition: 'all 0.15s' }}
+                onMouseOver={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.18)' }}
+                onMouseOut={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.1)' }}
+              >
+                Tamamlandı İşaretle
+              </button>
+              <button
+                onClick={() => onStatusUpdate(appt.id, 'iptal', appt)}
+                style={{ padding: '5px 12px', borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: 'pointer', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', transition: 'all 0.15s' }}
+                onMouseOver={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)' }}
+                onMouseOut={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)' }}
+              >
+                İptal Et
+              </button>
+            </>
+          )}
+          {/* Owner can cancel pending/confirmed */}
+          {isOwner && onStatusUpdate && (status === 'beklemede' || status === 'onaylandi') && (
             <button
-              onClick={() => onStatusUpdate(appt.id, 'tamamlandi')}
-              style={{ padding: '5px 14px', borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: 'pointer', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.25)', color: '#3b82f6', transition: 'all 0.15s' }}
-              onMouseOver={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.18)' }}
-              onMouseOut={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.1)' }}
+              onClick={() => onStatusUpdate(appt.id, 'iptal', appt)}
+              style={{ padding: '5px 12px', borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: 'pointer', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', transition: 'all 0.15s' }}
+              onMouseOver={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)' }}
+              onMouseOut={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)' }}
             >
-              Tamamlandı İşaretle
+              Randevuyu İptal Et
             </button>
           )}
         </div>
@@ -474,10 +496,27 @@ export default function Appointments() {
     setUstaProfile(data)
   }
 
-  async function handleStatusUpdate(id, newStatus) {
+  async function handleStatusUpdate(id, newStatus, appt) {
+    if (newStatus === 'iptal') {
+      const confirmed = window.confirm('Bu randevuyu iptal etmek istediğinizden emin misiniz?')
+      if (!confirmed) return
+    }
     if (!useAppointmentsTable) return
     await supabase.from('appointments').update({ durum: newStatus }).eq('id', id)
     setAppointments(prev => prev.map(a => a.id === id ? { ...a, durum: newStatus } : a))
+
+    if (newStatus === 'iptal' && appt) {
+      const counterpartId = isOwner ? appt.usta?.id : appt.musteri_id
+      const vehicleLabel = appt.arac_bilgisi || 'Araç'
+      if (counterpartId) {
+        supabase.from('notifications').insert({
+          user_id: counterpartId,
+          type: 'appointment_cancelled',
+          from_user_id: user.id,
+          message: `Randevu iptal edildi: ${vehicleLabel}`,
+        }).then(() => {})
+      }
+    }
   }
 
   async function handleSubmitRequest(e) {
@@ -752,7 +791,7 @@ CREATE POLICY "appt_update" ON appointments FOR UPDATE TO authenticated
                     key={appt.id}
                     appt={appt}
                     isOwner={isOwner}
-                    onStatusUpdate={useAppointmentsTable && !isOwner ? handleStatusUpdate : null}
+                    onStatusUpdate={useAppointmentsTable ? handleStatusUpdate : null}
                     rated={isOwner && ratedProIds.has(
                       (appt.usta || appt.profiles)?.id
                     )}

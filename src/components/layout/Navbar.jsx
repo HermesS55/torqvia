@@ -48,7 +48,7 @@ export default function Navbar({ onOpenSearch }) {
   return (
     <nav style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(8,8,8,0.92)', backdropFilter: 'blur(16px)', position: 'sticky', top: 0, zIndex: 50 }} className="pt-safe">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 60 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 56 }} className="h-14 sm:h-[60px]">
 
           {/* Logo */}
           <Link to={user ? (profile?.role === 'pro' ? '/listings' : '/dashboard') : '/'} style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', flexShrink: 0 }}

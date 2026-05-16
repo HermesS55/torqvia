@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { X, Send, Pencil, Trash2, Check } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import UserAvatar from '../ui/UserAvatar'
@@ -109,16 +110,20 @@ export default function CommentModal({ post, onClose, onCommentAdded }) {
           ) : (
             comments.map(c => (
               <div key={c.id} className="flex gap-3 group">
-                <UserAvatar profile={c.profiles} size="sm" />
+                <Link to={`/profile/${c.profiles?.id}`} className="shrink-0">
+                  <UserAvatar profile={c.profiles} size="sm" />
+                </Link>
                 <div className="flex-1 min-w-0">
                   <div className="bg-zinc-800 rounded-xl px-3 py-2">
                     <div className="flex items-baseline justify-between gap-2">
                       <div className="flex items-baseline gap-2 min-w-0">
-                        <span className="text-xs font-semibold text-white truncate">{c.profiles?.full_name || 'Kullanıcı'}</span>
+                        <Link to={`/profile/${c.profiles?.id}`} className="text-xs font-semibold text-white hover:text-brand-400 transition-colors truncate no-underline" style={{ textDecoration: 'none' }}>
+                          {c.profiles?.full_name || 'Kullanıcı'}
+                        </Link>
                         <span className="text-[10px] text-zinc-600 shrink-0">{new Date(c.created_at).toLocaleDateString('tr-TR')}</span>
                       </div>
                       {c.user_id === user.id && editingId !== c.id && (
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                        <div className="flex items-center gap-1 shrink-0">
                           <button onClick={() => startEdit(c)} className="p-1 rounded text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700 transition-colors">
                             <Pencil className="h-3 w-3" />
                           </button>

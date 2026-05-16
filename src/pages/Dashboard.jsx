@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Calendar, MessageCircle, TrendingUp,
   User, Settings, Zap, Plus, Car, Search,
-  CheckCircle2, Clock, Send, Wrench, MapPin,
+  CheckCircle2, Clock, Send, Wrench, MapPin, Trash2,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -170,6 +170,12 @@ export default function Dashboard() {
       .order('created_at', { ascending: false })
     setOffers(sentOffers || [])
     setDataLoading(false)
+  }
+
+  async function handleOfferDelete(offerId) {
+    if (!window.confirm('Bu kaydı listeden kaldırmak istiyor musunuz?')) return
+    const { error } = await supabase.from('offers').delete().eq('id', offerId)
+    if (!error) setOffers(prev => prev.filter(o => o.id !== offerId))
   }
 
   if (authLoading) return <div className="flex justify-center py-16"><Spinner size="lg" /></div>
@@ -384,20 +390,28 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
                     <p style={{ fontFamily: 'monospace', fontSize: 10, color: '#444', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 12 }}>// TAMAMLANAN İŞLER</p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {pastAppointments.slice(0, 3).map(o => (
-                        <Link key={o.id} to={`/listings/${o.listing_id}`} style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          background: '#0b0b0b', border: '1px solid #141414', borderRadius: 10,
-                          padding: '12px 16px', textDecoration: 'none', opacity: 0.75,
-                        }}>
-                          <div>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: '#f0f0f0' }}>{o.listings?.brand} {o.listings?.model}</div>
-                            <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{o.profiles?.full_name}</div>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: 11, color: '#555' }}>{fmtDate(o.appointment_date)}</div>
-                            <StatusBadge status="completed" />
-                          </div>
-                        </Link>
+                        <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <Link to={`/listings/${o.listing_id}`} style={{
+                            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            background: '#0b0b0b', border: '1px solid #141414', borderRadius: 10,
+                            padding: '12px 16px', textDecoration: 'none', opacity: 0.75,
+                          }}>
+                            <div>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: '#f0f0f0' }}>{o.listings?.brand} {o.listings?.model}</div>
+                              <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{o.profiles?.full_name}</div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontSize: 11, color: '#555' }}>{fmtDate(o.appointment_date)}</div>
+                              <StatusBadge status="completed" />
+                            </div>
+                          </Link>
+                          <button onClick={() => handleOfferDelete(o.id)} title="Kaydı sil"
+                            style={{ padding: 8, borderRadius: 8, background: 'none', border: '1px solid #1a1a1a', cursor: 'pointer', color: '#333', flexShrink: 0, transition: 'all 0.15s' }}
+                            onMouseOver={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = '#3a1010' }}
+                            onMouseOut={e => { e.currentTarget.style.color = '#333'; e.currentTarget.style.borderColor = '#1a1a1a' }}>
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -494,20 +508,28 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
                     <p style={{ fontFamily: 'monospace', fontSize: 10, color: '#444', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 12 }}>// TAMAMLANAN İŞLER</p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {pastAppointments.slice(0, 5).map(o => (
-                        <Link key={o.id} to={`/listings/${o.listing_id}`} style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          background: '#0b0b0b', border: '1px solid #141414', borderRadius: 10,
-                          padding: '14px 16px', textDecoration: 'none', opacity: 0.75,
-                        }}>
-                          <div>
-                            <div style={{ fontSize: 14, fontWeight: 600, color: '#f0f0f0' }}>{o.listings?.brand} {o.listings?.model}</div>
-                            <div style={{ fontSize: 12, color: '#ff6b00', fontWeight: 700, marginTop: 2 }}>₺{Number(o.price).toLocaleString('tr-TR')}</div>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: 11, color: '#555' }}>{fmtDate(o.appointment_date)}</div>
-                            <StatusBadge status="completed" />
-                          </div>
-                        </Link>
+                        <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <Link to={`/listings/${o.listing_id}`} style={{
+                            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            background: '#0b0b0b', border: '1px solid #141414', borderRadius: 10,
+                            padding: '14px 16px', textDecoration: 'none', opacity: 0.75,
+                          }}>
+                            <div>
+                              <div style={{ fontSize: 14, fontWeight: 600, color: '#f0f0f0' }}>{o.listings?.brand} {o.listings?.model}</div>
+                              <div style={{ fontSize: 12, color: '#ff6b00', fontWeight: 700, marginTop: 2 }}>₺{Number(o.price).toLocaleString('tr-TR')}</div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontSize: 11, color: '#555' }}>{fmtDate(o.appointment_date)}</div>
+                              <StatusBadge status="completed" />
+                            </div>
+                          </Link>
+                          <button onClick={() => handleOfferDelete(o.id)} title="Kaydı sil"
+                            style={{ padding: 8, borderRadius: 8, background: 'none', border: '1px solid #1a1a1a', cursor: 'pointer', color: '#333', flexShrink: 0, transition: 'all 0.15s' }}
+                            onMouseOver={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = '#3a1010' }}
+                            onMouseOut={e => { e.currentTarget.style.color = '#333'; e.currentTarget.style.borderColor = '#1a1a1a' }}>
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       ))}
                     </div>
                   </div>

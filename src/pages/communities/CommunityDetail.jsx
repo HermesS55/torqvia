@@ -10,6 +10,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import UserAvatar from '../../components/ui/UserAvatar'
 import Spinner from '../../components/ui/Spinner'
+import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import toast from 'react-hot-toast'
 import { sanitizeText, validateImageFile } from '../../lib/security'
 import { uploadPostImage, uploadPostVideo } from '../../lib/avatar'
@@ -72,6 +73,9 @@ export default function CommunityDetail() {
   const [avatarFile, setAvatarFile]       = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState('')
+  const [kickDialog, setKickDialog] = useState(null) // { memberId, memberName }
+  const [banDialog, setBanDialog] = useState(null)   // { memberId, memberName }
+  const [banDuration, setBanDuration] = useState('permanent')
   const coverFileRef  = useRef()
   const avatarFileRef = useRef()
 
@@ -168,9 +172,15 @@ export default function CommunityDetail() {
   async function handlePostFile(e) {
     const file = e.target.files[0]
     if (!file) return
-    const isVideo = file.type.startsWith('video/')
+    const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|avi|mkv)$/i.test(file.name)
     if (isVideo) {
-      if (file.size > 50 * 1024 * 1024) { toast.error('Video en fazla 50 MB olabilir'); e.target.value = ''; return }
+      const validVideoTypes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/avi']
+      if (!validVideoTypes.includes(file.type) && !file.type.startsWith('video/')) {
+        toast.error('Desteklenmeyen video formatı. MP4, WebM veya MOV kullanın.')
+        e.target.value = ''
+        return
+      }
+      if (file.size > 80 * 1024 * 1024) { toast.error('Video en fazla 80 MB olabilir'); e.target.value = ''; return }
     } else {
       try { await validateImageFile(file, 5 * 1024 * 1024) }
       catch (err) { toast.error(err.message); e.target.value = ''; return }
@@ -308,9 +318,8 @@ export default function CommunityDetail() {
     setEditSaving(false)
   }
 
-  async function kickMember(memberId) {
+  async function doKickMember(memberId) {
     if (memberId === community.created_by) { toast.error('Kurucu çıkarılamaz'); return }
-    if (!confirm('Bu üyeyi topluluktan çıkarmak istiyor musun?')) return
     const { error } = await supabase.from('community_members').delete()
       .eq('community_id', id).eq('user_id', memberId)
     if (!error) {
@@ -319,6 +328,30 @@ export default function CommunityDetail() {
     } else {
       toast.error('İşlem başarısız')
     }
+    setKickDialog(null)
+  }
+
+  async function doBanMember(memberId) {
+    if (memberId === community.created_by) { toast.error('Kurucu banlanamaz'); return }
+    let banUntil = null
+    if (banDuration !== 'permanent') {
+      const days = parseInt(banDuration)
+      banUntil = new Date(Date.now() + days * 24 * 3600 * 1000).toISOString()
+    }
+    // Remove from members first
+    await supabase.from('community_members').delete().eq('community_id', id).eq('user_id', memberId)
+    // Insert ban record
+    const { error } = await supabase.from('community_bans').upsert({
+      community_id: id, user_id: memberId, banned_until: banUntil,
+    }, { onConflict: 'community_id,user_id' })
+    if (!error) {
+      setMembers(prev => prev.filter(m => m.user_id !== memberId))
+      toast.success(banUntil ? `Üye ${banDuration} gün süreyle banlandı` : 'Üye kalıcı olarak banlandı')
+    } else {
+      toast.error('İşlem başarısız')
+    }
+    setBanDialog(null)
+    setBanDuration('permanent')
   }
 
   async function toggleMemberRole(member) {
@@ -366,6 +399,44 @@ export default function CommunityDetail() {
 
   return (
     <div className="max-w-3xl mx-auto">
+      {/* Kick confirm dialog */}
+      <ConfirmDialog
+        open={!!kickDialog}
+        title="Üyeyi Çıkar"
+        message={kickDialog ? `"${kickDialog.memberName}" kişisini topluluktan çıkarmak istediğinizden emin misiniz?` : ''}
+        confirmLabel="Çıkar"
+        danger
+        onConfirm={() => doKickMember(kickDialog?.memberId)}
+        onCancel={() => setKickDialog(null)}
+      />
+
+      {/* Ban dialog */}
+      <ConfirmDialog
+        open={!!banDialog}
+        title="Üyeyi Banla"
+        confirmLabel="Banla"
+        danger
+        onConfirm={() => doBanMember(banDialog?.memberId)}
+        onCancel={() => { setBanDialog(null); setBanDuration('permanent') }}
+      >
+        <p style={{ fontSize: 13, color: '#666', margin: '0 0 12px', lineHeight: 1.6 }}>
+          <strong style={{ color: '#f0f0f0' }}>{banDialog?.memberName}</strong> kişisini banlamak istediğinizden emin misiniz?
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {[
+            { value: '1',         label: '1 Gün' },
+            { value: '7',         label: '7 Gün' },
+            { value: '30',        label: '30 Gün' },
+            { value: 'permanent', label: 'Kalıcı' },
+          ].map(opt => (
+            <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '8px 12px', borderRadius: 8, background: banDuration === opt.value ? 'rgba(255,107,0,0.08)' : 'transparent', border: banDuration === opt.value ? '1px solid rgba(255,107,0,0.2)' : '1px solid transparent' }}>
+              <input type="radio" name="banDuration" value={opt.value} checked={banDuration === opt.value} onChange={e => setBanDuration(e.target.value)} style={{ accentColor: '#ff7a00' }} />
+              <span style={{ fontSize: 13, color: banDuration === opt.value ? '#ff7a00' : '#888', fontWeight: banDuration === opt.value ? 600 : 400 }}>{opt.label}</span>
+            </label>
+          ))}
+        </div>
+      </ConfirmDialog>
+
       <Link to="/communities" className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-300 text-sm mb-4 transition-colors">
         <ArrowLeft className="h-4 w-4" /> Topluluklara Dön
       </Link>
@@ -512,7 +583,7 @@ export default function CommunityDetail() {
                     )}
                     <div className="flex items-center justify-between mt-2">
                       <div className="flex gap-1">
-                        <input ref={postFileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handlePostFile} />
+                        <input ref={postFileRef} type="file" accept="image/*,video/mp4,video/webm,video/quicktime,video/x-msvideo,video/*" className="hidden" onChange={handlePostFile} />
                         <button type="button" onClick={() => postFileRef.current?.click()}
                           className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"
                           title="Fotoğraf veya video ekle">
@@ -988,11 +1059,18 @@ export default function CommunityDetail() {
                           {memberAdmin ? <ShieldOff className="h-3.5 w-3.5" /> : <ShieldCheck className="h-3.5 w-3.5" />}
                         </button>
                         <button
-                          onClick={() => kickMember(m.user_id)}
+                          onClick={() => setKickDialog({ memberId: m.user_id, memberName: m.profiles?.full_name || 'Kullanıcı' })}
                           title="Topluluktan çıkar"
                           className="p-1.5 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                         >
                           <UserMinus className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setBanDialog({ memberId: m.user_id, memberName: m.profiles?.full_name || 'Kullanıcı' })}
+                          title="Banla"
+                          className="p-1.5 rounded-lg text-zinc-600 hover:text-orange-400 hover:bg-orange-500/10 transition-colors"
+                        >
+                          <AlertTriangle className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     )}

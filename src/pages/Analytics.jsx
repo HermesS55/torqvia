@@ -120,8 +120,8 @@ export default function Analytics() {
     const [{ data: offerData }, { data: ratingData }] = await Promise.all([
       supabase
         .from('offers')
-        .select('id, price, status, created_at, appointment_date, listing_id, listings(brand, model)')
-        .eq('sender_id', user.id)
+        .select('id, price, status, created_at, appointment_date, listing_id, listings!inner(brand, model, user_id)')
+        .eq('listings.user_id', user.id)
         .order('created_at', { ascending: false }),
       supabase
         .from('pro_ratings')

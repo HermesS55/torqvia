@@ -42,6 +42,7 @@ export default function SharePostModal({ post, onClose }) {
       receiver_id: toUser.id,
       content,
       image_url: post.image_url || null,
+      post_id: post.id,
     })
 
     if (!error) {

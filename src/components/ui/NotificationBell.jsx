@@ -107,6 +107,15 @@ export default function NotificationBell() {
           sendBrowserNotif('Torqvia', `${who} ${cfg.label}`)
         }
       })
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'notifications',
+        filter: `user_id=eq.${user.id}`,
+      }, payload => {
+        if (payload.new.read && !payload.old?.read) {
+          setNotifications(prev => prev.map(n => n.id === payload.new.id ? { ...n, read: true } : n))
+          setUnread(u => Math.max(0, u - 1))
+        }
+      })
       .subscribe()
     return () => channel.unsubscribe()
   }, [user?.id])
@@ -190,7 +199,8 @@ export default function NotificationBell() {
           setOpen(opening)
           if (opening) { fetchNotifications(); markAllRead() }
         }}
-        className="relative p-2 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+        className="relative p-2.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+        style={{ minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         title="Bildirimler"
       >
         <Bell className="h-4 w-4" />
