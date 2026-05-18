@@ -305,7 +305,6 @@ export default function CarSales() {
   function clearFilters() { setFilters(EMPTY_FILTERS) }
 
   const totalActive = sales.length
-  const avgPrice = totalActive ? Math.round(sales.reduce((s, c) => s + Number(c.price), 0) / totalActive) : 0
 
   const TABS = [
     { v: 'all',  l: 'Tüm İlanlar' },
@@ -344,7 +343,6 @@ export default function CarSales() {
           {!loading && totalActive > 0 && (
             <p className="text-zinc-500 text-sm mt-0.5 ml-0.5">
               <span className="text-zinc-300 font-medium">{totalActive}</span> aktif ilan
-              {avgPrice > 0 && <> · Ort. <span className="text-brand-400 font-medium">{avgPrice.toLocaleString('tr-TR')} ₺</span></>}
             </p>
           )}
         </div>

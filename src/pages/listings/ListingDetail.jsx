@@ -2,14 +2,17 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
   Car, Calendar, Trash2, ArrowLeft, Send,
-  MapPin, Gauge, Fuel, Settings2, AlertTriangle, Wallet, Wrench,
+  MapPin, Gauge, Fuel, Settings2, AlertTriangle, Wrench,
   MessageCircle, Phone, User, Edit2, CheckCircle2, RotateCcw, Cog, Bookmark, BookmarkCheck,
+  Lock, Unlock, Heart, EyeOff,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { useT } from '../../contexts/LangContext'
 import { useLightbox, MediaThumb } from '../../components/ui/MediaLightbox'
+import { useSubscription } from '../../hooks/useSubscription'
 import Spinner from '../../components/ui/Spinner'
+import UpgradeModal from '../../components/ui/UpgradeModal'
 import OfferCard from '../../components/offers/OfferCard'
 import SendOfferForm from '../../components/offers/SendOfferForm'
 import UserAvatar from '../../components/ui/UserAvatar'
@@ -37,6 +40,37 @@ function PhoneReveal({ phone }) {
   )
 }
 
+function BlurredContactRow({ label, onUpgrade, unlocksLeft, onUnlock, unlocking }) {
+  return (
+    <div className="mt-3 pt-3 border-t border-zinc-800">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-sm font-medium select-none">
+          <EyeOff className="h-3.5 w-3.5 text-zinc-600 shrink-0" />
+          <span className="blur-sm text-zinc-400 pointer-events-none">{label}</span>
+        </div>
+        {unlocksLeft > 0 ? (
+          <button
+            onClick={onUnlock}
+            disabled={unlocking}
+            className="flex items-center gap-1.5 text-xs font-semibold text-green-400 hover:text-green-300 border border-green-500/30 hover:border-green-500/60 px-2.5 py-1 rounded-lg transition-colors shrink-0"
+          >
+            {unlocking ? <Spinner size="xs" /> : <Unlock className="h-3 w-3" />}
+            Kilidi Aç ({unlocksLeft} hakkın var)
+          </button>
+        ) : (
+          <button
+            onClick={onUpgrade}
+            className="flex items-center gap-1.5 text-xs font-semibold text-orange-400 hover:text-orange-300 border border-orange-500/30 hover:border-orange-500/60 px-2.5 py-1 rounded-lg transition-colors shrink-0"
+          >
+            <Lock className="h-3 w-3" />
+            Turbo&apos;ya Geç
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function InfoChip({ icon: Icon, label, value }) {
   if (!value) return null
   return (
@@ -52,10 +86,12 @@ function InfoChip({ icon: Icon, label, value }) {
 
 export default function ListingDetail() {
   const { id } = useParams()
-  const { user, profile } = useAuth()
+  const { user, profile, refetchProfile } = useAuth()
   const t = useT()
   const navigate = useNavigate()
   const { show: showMedia, LightboxModal } = useLightbox()
+  const { can, freeTalepUnlocksLeft, effectivePlan, isPro } = useSubscription()
+
   const [listing, setListing] = useState(null)
   const [offers, setOffers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -64,17 +100,46 @@ export default function ListingDetail() {
   const [togglingStatus, setTogglingStatus] = useState(false)
   const [saved, setSaved] = useState(false)
   const [savingBookmark, setSavingBookmark] = useState(false)
+  const [talepAcildi, setTalepAcildi] = useState(false)
+  const [unlocking, setUnlocking] = useState(false)
+  const [sendingInterest, setSendingInterest] = useState(false)
+  const [interestSent, setInterestSent] = useState(false)
+  const [upgradeModal, setUpgradeModal] = useState(null) // feature key or null
 
   const isOwner = listing?.user_id === user?.id
-  const isPro = profile?.role === 'pro'
+
+  // Bu pro kullanıcının bu talep iletişim bilgilerini görüp göremeyeceği
+  const canSeeContact = !isPro || can.talepIletisimGor || talepAcildi
 
   useEffect(() => { fetchAll(); if (user?.id) checkSaved() }, [id])
 
+  // Bu ücretsiz pro kullanıcı için servis talebinin daha önce açılıp açılmadığını kontrol et
+  useEffect(() => {
+    if (!user?.id || !isPro || can.talepIletisimGor) return
+    // TODO: DB table is `lead_contact_unlocks` — rename in DB + migration if this column is ever migrated
+    supabase
+      .from('lead_contact_unlocks')
+      .select('listing_id')
+      .eq('pro_id', user.id)
+      .eq('listing_id', id)
+      .maybeSingle()
+      .then(({ data }) => { if (data) setTalepAcildi(true) })
+  }, [id, user?.id, isPro, can.talepIletisimGor])
+
   async function fetchAll() {
     const [{ data: listingData }, { data: offersData }] = await Promise.all([
-      supabase.from('listings').select('*, profiles(id, role, phone, full_name, avatar_url, bio, specialty)').eq('id', id).single(),
+      supabase.from('listings').select('*').eq('id', id).single(),
       supabase.from('offers').select('*, profiles(id, role, phone, full_name, avatar_url, city, shop_name, specialties, plan)').eq('listing_id', id).order('created_at', { ascending: false }),
     ])
+    // Attach owner profile separately to avoid FK join errors
+    if (listingData?.user_id) {
+      const { data: ownerProfile } = await supabase
+        .from('profiles')
+        .select('id, role, phone, full_name, avatar_url, bio, specialty')
+        .eq('id', listingData.user_id)
+        .single()
+      if (ownerProfile) listingData.profiles = ownerProfile
+    }
     setListing(listingData)
     setOffers(offersData || [])
     setLoading(false)
@@ -98,6 +163,50 @@ export default function ListingDetail() {
       toast.success('İlan kaydedildi!')
     }
     setSavingBookmark(false)
+  }
+
+  async function handleUnlockTalep() {
+    if (unlocking) return
+    setUnlocking(true)
+    try {
+      // TODO: DB table `lead_contact_unlocks` and RPC `increment_lead_unlocks` — rename in DB + migration if ever migrated
+      const { error } = await supabase
+        .from('lead_contact_unlocks')
+        .insert({ pro_id: user.id, listing_id: id })
+      if (error && error.code !== '23505') throw error // 23505 = unique violation (already unlocked)
+
+      await supabase.rpc('increment_lead_unlocks', { p_user_id: user.id })
+      setTalepAcildi(true)
+      refetchProfile()
+      toast.success('İletişim bilgileri açıldı!')
+    } catch {
+      toast.error('Bir hata oluştu')
+    } finally {
+      setUnlocking(false)
+    }
+  }
+
+  async function handleInterested() {
+    if (sendingInterest || interestSent || !listing) return
+    setSendingInterest(true)
+    try {
+      const isVisible = effectivePlan !== 'free'
+      await supabase.from('notifications').insert({
+        user_id: listing.user_id,
+        type: 'mechanic_interested',
+        from_user_id: isVisible ? user.id : null,
+        listing_id: id,
+        message: isVisible
+          ? `${profile?.full_name || 'Bir usta'} ilanınıza ilgi gösterdi`
+          : `Bir servis uzmanı ${listing.brand} ${listing.model} ilanınıza ilgi gösterdi`,
+      })
+      setInterestSent(true)
+      toast.success('İlginiz iletildi!')
+    } catch {
+      toast.error('Bir hata oluştu')
+    } finally {
+      setSendingInterest(false)
+    }
   }
 
   async function setListingStatus(newStatus) {
@@ -166,6 +275,10 @@ export default function ListingDetail() {
 
   return (
     <div className="max-w-3xl mx-auto">
+      {upgradeModal && (
+        <UpgradeModal feature={upgradeModal} onClose={() => setUpgradeModal(null)} />
+      )}
+
       <Link to="/listings" className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-300 text-sm mb-6 transition-colors">
         <ArrowLeft className="h-4 w-4" />
         {t('ld.back')}
@@ -326,46 +439,124 @@ export default function ListingDetail() {
             <User className="h-3 w-3" /> İlanı Veren
           </p>
           <div className="flex items-center gap-3">
-            <Link to={`/profile/${listing.user_id}`}>
-              <UserAvatar profile={listing.profiles} size="md" />
+            <Link to={canSeeContact ? `/profile/${listing.user_id}` : '#'}
+              onClick={canSeeContact ? undefined : e => { e.preventDefault(); setUpgradeModal('talep_iletisim') }}>
+              <UserAvatar profile={listing.profiles} size="md" className={canSeeContact ? '' : 'opacity-40 blur-[2px]'} />
             </Link>
             <div className="flex-1 min-w-0">
-              <Link to={`/profile/${listing.user_id}`} className="font-semibold text-white hover:text-brand-400 transition-colors text-sm">
-                {listing.profiles.full_name || 'Kullanıcı'}
-              </Link>
-              <p className="text-xs text-zinc-500">Araç Sahibi</p>
-              {listing.profiles.bio && (
-                <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{listing.profiles.bio}</p>
+              {canSeeContact ? (
+                <>
+                  <Link to={`/profile/${listing.user_id}`} className="font-semibold text-white hover:text-brand-400 transition-colors text-sm">
+                    {listing.profiles.full_name || 'Kullanıcı'}
+                  </Link>
+                  <p className="text-xs text-zinc-500">Araç Sahibi</p>
+                  {listing.profiles.bio && (
+                    <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{listing.profiles.bio}</p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p className="font-semibold text-sm blur-sm select-none text-zinc-400">•••• ••••••</p>
+                  <p className="text-xs text-zinc-600">Araç Sahibi</p>
+                </>
               )}
             </div>
-            <Link
-              to={`/messages?to=${listing.user_id}`}
-              className="btn-secondary flex items-center gap-1.5 text-sm shrink-0"
-            >
-              <MessageCircle className="h-4 w-4" />
-              <span className="hidden sm:inline">Mesaj</span>
-            </Link>
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-2 shrink-0">
+              {/* İlgileniyorum — always available for pros */}
+              {isPro && listing.status !== 'closed' && (
+                <button
+                  onClick={handleInterested}
+                  disabled={sendingInterest || interestSent}
+                  title="İlgileniyorum"
+                  className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border transition-colors
+                    ${interestSent
+                      ? 'border-green-500/40 text-green-400 bg-green-500/10'
+                      : 'border-zinc-700 text-zinc-400 hover:text-pink-400 hover:border-pink-500/40'
+                    }`}
+                >
+                  {sendingInterest ? <Spinner size="sm" /> : <Heart className="h-4 w-4" />}
+                  <span className="hidden sm:inline">{interestSent ? 'İletildi' : 'İlgileniyorum'}</span>
+                </button>
+              )}
+
+              {/* Message button */}
+              {can.messaging ? (
+                <Link
+                  to={`/messages?to=${listing.user_id}`}
+                  className="btn-secondary flex items-center gap-1.5 text-sm shrink-0"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  <span className="hidden sm:inline">Mesaj</span>
+                </Link>
+              ) : (
+                <button
+                  onClick={() => setUpgradeModal('messaging')}
+                  className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-zinc-700 text-zinc-600 cursor-pointer hover:border-orange-500/40 hover:text-orange-400 transition-colors shrink-0"
+                  title="Bu özellik Turbo planında mevcut"
+                >
+                  <Lock className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Mesaj</span>
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* Phone reveal / blurred */}
           {listing.show_phone && listing.profiles.phone && (
-            <PhoneReveal phone={listing.profiles.phone} />
+            canSeeContact ? (
+              <PhoneReveal phone={listing.profiles.phone} />
+            ) : (
+              <BlurredContactRow
+                label="0••• ••• •• ••"
+                unlocksLeft={freeTalepUnlocksLeft}
+                onUpgrade={() => setUpgradeModal('talep_iletisim')}
+                onUnlock={handleUnlockTalep}
+                unlocking={unlocking}
+              />
+            )
+          )}
+
+          {/* Telefon yoksa da iletişim kilitliyse bulanık isim satırı göster */}
+          {!listing.show_phone && !canSeeContact && (
+            <BlurredContactRow
+              label="•••• ••••••"
+              unlocksLeft={freeTalepUnlocksLeft}
+              onUpgrade={() => setUpgradeModal('talep_iletisim')}
+              onUnlock={handleUnlockTalep}
+              unlocking={unlocking}
+            />
           )}
         </div>
       )}
 
+      {/* Offer section — pros only */}
       {isPro && !isOwner && listing.status !== 'closed' && (
         <div className="mb-5">
-          {showOfferForm ? (
-            <SendOfferForm
-              listingId={id}
-              listingOwnerId={listing?.user_id}
-              listingLabel={`${listing?.brand} ${listing?.model}`}
-              onSuccess={offer => { setOffers(prev => [offer, ...prev]); setShowOfferForm(false) }}
-              onCancel={() => setShowOfferForm(false)}
-            />
+          {can.sendOffer ? (
+            showOfferForm ? (
+              <SendOfferForm
+                listingId={id}
+                listingOwnerId={listing?.user_id}
+                listingLabel={`${listing?.brand} ${listing?.model}`}
+                onSuccess={offer => { setOffers(prev => [offer, ...prev]); setShowOfferForm(false) }}
+                onCancel={() => setShowOfferForm(false)}
+              />
+            ) : (
+              <button onClick={() => setShowOfferForm(true)} className="btn-primary flex items-center gap-2 w-full justify-center">
+                <Send className="h-4 w-4" />
+                {t('ld.sendOffer')}
+              </button>
+            )
           ) : (
-            <button onClick={() => setShowOfferForm(true)} className="btn-primary flex items-center gap-2 w-full justify-center">
-              <Send className="h-4 w-4" />
-              {t('ld.sendOffer')}
+            <button
+              onClick={() => setUpgradeModal('offer_send')}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-zinc-700 text-zinc-500 hover:border-orange-500/40 hover:text-orange-400 transition-colors text-sm font-medium"
+            >
+              <Lock className="h-4 w-4" />
+              Teklif Gönder
+              <span className="text-xs text-zinc-600 ml-1">(Turbo planında mevcut)</span>
             </button>
           )}
         </div>

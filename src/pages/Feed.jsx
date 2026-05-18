@@ -127,7 +127,8 @@ export default function Feed() {
         profiles!posts_user_id_fkey(id, avatar_url, full_name, role, specialty, plan),
         post_tags(tagged_user_id, profiles!post_tags_tagged_user_id_fkey(id, full_name)),
         post_likes(user_id),
-        post_comments(count)
+        post_comments(count),
+        original_post:repost_of(id, user_id, profiles!posts_user_id_fkey(id, full_name, avatar_url))
       `)
       .order('created_at', { ascending: false })
 

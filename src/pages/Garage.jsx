@@ -338,8 +338,8 @@ function VehicleModal({ vehicle, onClose, onSaved }) {
           {/* Photo */}
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
           {imagePreview ? (
-            <div className="relative h-40 rounded-xl overflow-hidden border border-zinc-700">
-              <img src={imagePreview} alt="" className="w-full h-full object-cover" />
+            <div className="relative rounded-xl overflow-hidden border border-zinc-700 bg-zinc-800">
+              <img src={imagePreview} alt="" className="w-full max-h-64 object-contain" />
               <div className="absolute top-2 right-2 flex gap-1">
                 <button onClick={() => fileRef.current?.click()}
                   className="bg-black/70 rounded-lg px-2.5 py-1.5 text-xs text-white hover:bg-black/90 flex items-center gap-1">

@@ -67,9 +67,23 @@ export default function Listings() {
   async function fetchListings() {
     const { data, error } = await supabase
       .from('listings')
-      .select('*, profiles(id, full_name, avatar_url, role)')
+      .select('*')
       .order('created_at', { ascending: false })
-    if (!error) setListings(data || [])
+    if (error) console.error('listings fetch error:', error.message, error.code)
+    const rows = data || []
+    // Attach profiles separately to avoid FK join errors
+    const userIds = [...new Set(rows.map(l => l.user_id).filter(Boolean))]
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url, role')
+        .in('id', userIds)
+      if (profiles) {
+        const map = Object.fromEntries(profiles.map(p => [p.id, p]))
+        rows.forEach(l => { l.profiles = map[l.user_id] || null })
+      }
+    }
+    setListings(rows)
     setLoading(false)
   }
 
@@ -77,10 +91,22 @@ export default function Listings() {
     if (!user?.id) return
     const { data } = await supabase
       .from('saved_listings')
-      .select('listing_id, listings(*, profiles(id, full_name, avatar_url, role))')
+      .select('listing_id')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-    setSavedListings((data || []).map(r => r.listings).filter(Boolean))
+    const ids = (data || []).map(r => r.listing_id).filter(Boolean)
+    if (!ids.length) { setSavedListings([]); return }
+    const { data: rows } = await supabase.from('listings').select('*').in('id', ids)
+    const listings2 = rows || []
+    const userIds = [...new Set(listings2.map(l => l.user_id).filter(Boolean))]
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase.from('profiles').select('id, full_name, avatar_url, role').in('id', userIds)
+      if (profiles) {
+        const map = Object.fromEntries(profiles.map(p => [p.id, p]))
+        listings2.forEach(l => { l.profiles = map[l.user_id] || null })
+      }
+    }
+    setSavedListings(listings2)
   }
 
   const sourceList = tab === 'saved' ? savedListings : listings

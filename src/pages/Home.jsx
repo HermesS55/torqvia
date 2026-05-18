@@ -175,8 +175,8 @@ export default function Home() {
       period: tr ? '/ ay' : '/ mo',
       for: tr ? 'ARAÇ SAHİBİ & USTA' : 'OWNER & MECHANIC',
       features: tr
-        ? ['Profil oluştur', '5 randevu / ay', 'Temel özellikler', 'İlan görüntüleme']
-        : ['Create profile', '5 appointments / mo', 'Basic features', 'View listings'],
+        ? ['Servis talep listesini gör', '3 ücretsiz talep iletişim hakkı', 'İlgileniyorum butonu', 'Temel profil']
+        : ['View service requests', '3 free contact unlocks', 'Interested button', 'Basic profile'],
       borderColor: '#1a1a1a',
       featured: false,
       cta: tr ? 'Başla' : 'Get Started',
@@ -184,12 +184,12 @@ export default function Home() {
     {
       key: 'turbo',
       name: 'Turbo',
-      price: '₺80',
+      price: '₺299',
       period: tr ? '/ ay' : '/ mo',
       for: tr ? 'USTA' : 'MECHANIC',
       features: tr
-        ? ["Ücretsiz'in her şeyi", 'Sınırsız randevu', 'Öncelikli listeleme', 'Analitik & İstatistik', '⚡ Turbo rozeti']
-        : ["Everything in Free", 'Unlimited appointments', 'Priority listing', 'Analytics', '⚡ Turbo badge'],
+        ? ['Sınırsız talep iletişim bilgisi', 'Mesajlaşma & sınırsız teklif', 'Randevu yönetimi', 'Profil istatistikleri', '⚡ Turbo rozeti']
+        : ['Unlimited contact unlocks', 'Messaging & unlimited offers', 'Appointment management', 'Profile stats', '⚡ Turbo badge'],
       borderColor: '#ff6b00',
       featured: true,
       cta: tr ? 'Turbo\'ya Geç' : 'Get Turbo',
@@ -197,12 +197,12 @@ export default function Home() {
     {
       key: 'elite',
       name: 'Elite',
-      price: '₺200',
+      price: '₺599',
       period: tr ? '/ ay' : '/ mo',
       for: tr ? 'USTA' : 'MECHANIC',
       features: tr
-        ? ["Turbo'nun her şeyi", 'Spotlight listeleme', 'Öncelikli destek', '✦ Elite rozeti', 'Özel profil tasarımı']
-        : ["Everything in Turbo", 'Spotlight listing', 'Priority support', '✦ Elite badge', 'Custom profile design'],
+        ? ["Turbo'nun her şeyi", 'Öncelikli arama sıralaması', 'Verified rozet', 'Rakip kıyaslama & analitik', 'WhatsApp entegrasyonu']
+        : ["Everything in Turbo", 'Priority search ranking', 'Verified badge', 'Competitor analytics', 'WhatsApp integration'],
       borderColor: '#8b5cf6',
       featured: false,
       cta: tr ? "Elite'e Geç" : 'Get Elite',

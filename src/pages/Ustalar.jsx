@@ -6,6 +6,9 @@ import { useAuth } from '../contexts/AuthContext'
 import UserAvatar from '../components/ui/UserAvatar'
 import Spinner from '../components/ui/Spinner'
 import { useMeta } from '../hooks/useMeta'
+import { CAR_BRANDS } from '../lib/carData'
+
+const BRAND_LIST = Object.keys(CAR_BRANDS).sort()
 
 useMeta && void 0 // tree-shake guard
 
@@ -291,6 +294,7 @@ export default function Ustalar() {
   const [searchQ, setSearchQ] = useState(searchParams.get('q') || '')
   const [cityFilter, setCityFilter] = useState('')
   const [specFilter, setSpecFilter] = useState('')
+  const [brandFilter, setBrandFilter] = useState('')
   const [sortBy, setSortBy] = useState('rating') // rating | trend | reviews
 
   useMeta('Usta Bul — Güvenilir Oto Servis Uzmanları', {
@@ -304,7 +308,7 @@ export default function Ustalar() {
     setLoading(true)
     const [{ data: proData }, { data: ratingData }] = await Promise.all([
       supabase.from('profiles')
-        .select('id, full_name, avatar_url, shop_name, city, specialties, plan, bio, specialty, shop_photo, location')
+        .select('id, full_name, avatar_url, shop_name, city, specialties, plan, bio, specialty, shop_photo, location, brand_expertise')
         .eq('role', 'pro')
         .neq('banned', true)
         .not('full_name', 'is', null),
@@ -343,18 +347,21 @@ export default function Ustalar() {
         (p.specialties || []).includes(specFilter) || (p.specialty || '') === specFilter
       )
     }
+    if (brandFilter) {
+      result = result.filter(p => (p.brand_expertise || []).includes(brandFilter))
+    }
     if (sortBy === 'trend') result.sort((a, b) => scoreOf(b) - scoreOf(a))
     else if (sortBy === 'rating') result.sort((a, b) => (b.avgRating || 0) - (a.avgRating || 0))
     else if (sortBy === 'reviews') result.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0))
     return result
-  }, [pros, searchQ, cityFilter, specFilter, sortBy])
+  }, [pros, searchQ, cityFilter, specFilter, brandFilter, sortBy])
 
   const trending = useMemo(
     () => [...pros].sort((a, b) => scoreOf(b) - scoreOf(a)).slice(0, 6),
     [pros]
   )
 
-  const hasFilters = searchQ || cityFilter || specFilter
+  const hasFilters = searchQ || cityFilter || specFilter || brandFilter
   const cities = useMemo(() => [...new Set(pros.map(p => p.city).filter(Boolean))].sort(), [pros])
 
   return (

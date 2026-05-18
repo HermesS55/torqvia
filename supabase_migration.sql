@@ -5,16 +5,67 @@
 
 -- ── 1. profiles tablosu - eksik kolonlar ──────────────────────
 ALTER TABLE public.profiles
-  ADD COLUMN IF NOT EXISTS plan            text    DEFAULT 'free',
-  ADD COLUMN IF NOT EXISTS skills          text[]  DEFAULT '{}',
-  ADD COLUMN IF NOT EXISTS specialty       text,
-  ADD COLUMN IF NOT EXISTS website         text,
-  ADD COLUMN IF NOT EXISTS phone           text,
-  ADD COLUMN IF NOT EXISTS phone_public    boolean DEFAULT false,
-  ADD COLUMN IF NOT EXISTS private_account boolean DEFAULT false,
-  ADD COLUMN IF NOT EXISTS pinned_post_id  uuid,
-  ADD COLUMN IF NOT EXISTS bio             text,
-  ADD COLUMN IF NOT EXISTS avatar_url      text;
+  ADD COLUMN IF NOT EXISTS plan                    text    DEFAULT 'free',
+  ADD COLUMN IF NOT EXISTS skills                  text[]  DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS specialty               text,
+  ADD COLUMN IF NOT EXISTS website                 text,
+  ADD COLUMN IF NOT EXISTS phone                   text,
+  ADD COLUMN IF NOT EXISTS phone_public            boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS private_account         boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS pinned_post_id          uuid,
+  ADD COLUMN IF NOT EXISTS bio                     text,
+  ADD COLUMN IF NOT EXISTS avatar_url              text,
+  ADD COLUMN IF NOT EXISTS trial_start_date        timestamptz,
+  ADD COLUMN IF NOT EXISTS lifetime_leads_unlocked integer DEFAULT 0;
+
+-- Auto-set trial start date for new pro users
+CREATE OR REPLACE FUNCTION public.set_pro_trial_start()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.role = 'pro' AND NEW.trial_start_date IS NULL THEN
+    NEW.trial_start_date := now();
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trigger_set_pro_trial ON public.profiles;
+CREATE TRIGGER trigger_set_pro_trial
+  BEFORE INSERT ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION public.set_pro_trial_start();
+
+-- TODO: DB identifiers below use legacy "lead" naming. Rename `increment_lead_unlocks` → e.g. `increment_servis_talebi_unlocks`
+-- and `lifetime_leads_unlocked` column → `acilan_servis_talepleri` in a future schema migration.
+-- Until then, keep these names in sync with the RPC calls in ListingDetail.jsx (handleUnlockTalep).
+CREATE OR REPLACE FUNCTION public.increment_lead_unlocks(p_user_id uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  UPDATE public.profiles
+  SET lifetime_leads_unlocked = COALESCE(lifetime_leads_unlocked, 0) + 1
+  WHERE id = p_user_id;
+END;
+$$;
+
+
+-- ── 1b. lead_contact_unlocks table ────────────────────────────
+-- TODO: Rename table `lead_contact_unlocks` → `servis_talebi_acmalari` in a future migration.
+-- Also rename column `lifetime_leads_unlocked` on profiles → `acilan_servis_talepleri`.
+CREATE TABLE IF NOT EXISTS public.lead_contact_unlocks (
+  pro_id     uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  listing_id uuid NOT NULL REFERENCES public.listings(id)  ON DELETE CASCADE,
+  unlocked_at timestamptz DEFAULT now(),
+  PRIMARY KEY (pro_id, listing_id)
+);
+
+ALTER TABLE public.lead_contact_unlocks ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "lcu_select" ON public.lead_contact_unlocks;
+DROP POLICY IF EXISTS "lcu_insert" ON public.lead_contact_unlocks;
+
+CREATE POLICY "lcu_select" ON public.lead_contact_unlocks
+  FOR SELECT USING (auth.uid() = pro_id);
+CREATE POLICY "lcu_insert" ON public.lead_contact_unlocks
+  FOR INSERT WITH CHECK (auth.uid() = pro_id);
 
 
 -- ── 2. posts tablosu - eksik kolonlar ─────────────────────────

@@ -8,7 +8,9 @@ import OnboardingModal from '../ui/OnboardingModal'
 import GlobalSearch from '../ui/GlobalSearch'
 import InstallBanner from '../ui/InstallBanner'
 import OfflineBanner from '../ui/OfflineBanner'
+import TrialBanner from '../ui/TrialBanner'
 import { useAuth } from '../../contexts/AuthContext'
+import { useSubscription } from '../../hooks/useSubscription'
 import { supabase } from '../../lib/supabase'
 import { UnreadMessagesProvider } from '../../contexts/UnreadMessagesContext'
 
@@ -20,6 +22,7 @@ function ScrollToTop() {
 
 export default function Layout({ children }) {
   const { user, profile, loading } = useAuth()
+  const { isTrialing, trialDaysLeft, trialEnded, isPro } = useSubscription()
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
 
@@ -56,6 +59,9 @@ export default function Layout({ children }) {
       <Navbar onOpenSearch={() => setSearchOpen(true)} />
       <OfflineBanner />
       <InstallBanner />
+      {isPro && (trialDaysLeft <= 3 || trialEnded) && (
+        <TrialBanner daysLeft={trialDaysLeft} trialEnded={trialEnded} />
+      )}
       <main className="flex-1 max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 pt-4 sm:pt-8 pb-20 md:pb-8">
         {children}
       </main>

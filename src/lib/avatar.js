@@ -6,7 +6,8 @@ async function compressImage(file, maxWidth = 1280, quality = 0.82) {
     const url = URL.createObjectURL(file)
     img.onload = () => {
       URL.revokeObjectURL(url)
-      const ratio = Math.min(1, maxWidth / img.width)
+      // Use longest side so portrait (9:16) images are also scaled down
+      const ratio = Math.min(1, maxWidth / Math.max(img.width, img.height))
       const canvas = document.createElement('canvas')
       canvas.width = Math.round(img.width * ratio)
       canvas.height = Math.round(img.height * ratio)

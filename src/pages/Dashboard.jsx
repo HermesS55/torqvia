@@ -3,10 +3,11 @@ import { Link, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Calendar, MessageCircle, TrendingUp,
   User, Settings, Zap, Plus, Car, Search,
-  CheckCircle2, Clock, Send, Wrench, MapPin, Trash2,
+  CheckCircle2, Clock, Send, Wrench, MapPin, Trash2, X, AlertTriangle,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useSubscription } from '../hooks/useSubscription'
 import Spinner from '../components/ui/Spinner'
 import UserAvatar from '../components/ui/UserAvatar'
 import { useMeta } from '../hooks/useMeta'
@@ -108,14 +109,82 @@ function SidebarItem({ icon: Icon, label, to, active }) {
   )
 }
 
+function TrialEndedModal({ onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+      <div className="w-full max-w-sm bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden shadow-2xl">
+        <div className="h-0.5 w-full bg-gradient-to-r from-orange-500 to-red-500" />
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-2 bg-orange-500/15 rounded-xl">
+              <AlertTriangle className="h-5 w-5 text-orange-400" />
+            </div>
+            <button onClick={onClose} className="text-zinc-600 hover:text-zinc-400 transition-colors">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <h2 className="text-lg font-bold text-white mb-2">Deneme süreniz bitti</h2>
+          <p className="text-zinc-400 text-sm leading-relaxed mb-5">
+            14 günlük Turbo denemeniz sona erdi. Free planda yalnızca 3 talep iletişim bilgisine erişebilirsin. Turbo&apos;ya geçerek tüm müşterilere ulaşmaya devam et.
+          </p>
+          <Link
+            to="/pricing"
+            onClick={onClose}
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-xl px-4 py-3 text-sm hover:opacity-90 transition-opacity"
+          >
+            <Zap className="h-4 w-4" />
+            Turbo&apos;ya Geç — 299₺/ay
+          </Link>
+          <button onClick={onClose} className="w-full text-center text-zinc-600 text-xs mt-3 hover:text-zinc-400 transition-colors">
+            Şimdilik devam et
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function LossAversionBanner({ talepSayisi, profileViews }) {
+  const [dismissed, setDismissed] = useState(false)
+  if (dismissed || (!talepSayisi && !profileViews)) return null
+  return (
+    <div className="mb-5 rounded-xl border border-orange-500/20 bg-orange-500/5 px-4 py-3 flex items-start justify-between gap-3">
+      <div className="flex items-start gap-3">
+        <Zap className="h-4 w-4 text-orange-400 shrink-0 mt-0.5" />
+        <div>
+          {talepSayisi > 0 && (
+            <p className="text-sm text-zinc-300">
+              Bu ay <span className="font-semibold text-white">{talepSayisi} servis talebi</span> aldın,
+              Free planda yalnızca <span className="font-semibold text-orange-400">3 tanesinin</span> iletişim bilgisine erişebilirsin.
+            </p>
+          )}
+          {profileViews > 0 && (
+            <p className="text-sm text-zinc-400 mt-0.5">
+              <span className="font-semibold text-white">{profileViews} müşteri</span> bu ay profilini görüntüledi.
+            </p>
+          )}
+          <Link to="/pricing" className="inline-flex items-center gap-1 text-xs font-semibold text-orange-400 hover:text-orange-300 mt-1.5 transition-colors">
+            <Zap className="h-3 w-3" /> Turbo&apos;ya Geç →
+          </Link>
+        </div>
+      </div>
+      <button onClick={() => setDismissed(true)} className="text-zinc-700 hover:text-zinc-500 transition-colors shrink-0">
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  )
+}
+
 export default function Dashboard() {
   useMeta('Dashboard')
   const { user, profile, loading: authLoading } = useAuth()
   const { pathname } = useLocation()
+  const { effectivePlan, trialEnded, isPro } = useSubscription()
   const [listings, setListings] = useState([])
   const [offers, setOffers] = useState([])
   const [dataLoading, setDataLoading] = useState(false)
   const [topPros, setTopPros] = useState([])
+  const [showTrialEndedModal, setShowTrialEndedModal] = useState(false)
 
   const isOwner = profile?.role === 'owner'
 
@@ -125,6 +194,15 @@ export default function Dashboard() {
     if (isOwner) { fetchOwnerData(); fetchTopPros() }
     else fetchProData()
   }, [profile?.id])
+
+  // Show trial ended modal once per session for pro users
+  useEffect(() => {
+    if (!profile || isOwner) return
+    if (trialEnded && !sessionStorage.getItem('trial_ended_shown')) {
+      sessionStorage.setItem('trial_ended_shown', '1')
+      setShowTrialEndedModal(true)
+    }
+  }, [trialEnded, profile?.id, isOwner])
 
   async function fetchTopPros() {
     const [{ data: prosData }, { data: ratingData }] = await Promise.all([
@@ -233,9 +311,14 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
 
   const sidebarLinks = isOwner ? ownerSidebarLinks : proSidebarLinks
 
+  const monthlyTalepSayisi = offers.length
+  const isFreeProWithData = !isOwner && effectivePlan === 'free' && monthlyTalepSayisi > 0
+
   return (
     <div className="dash-outer -mx-3 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-8 -mb-20 md:-mb-8 flex"
       style={{ minHeight: 'calc(100dvh - 64px)', background: '#080808' }}>
+
+      {showTrialEndedModal && <TrialEndedModal onClose={() => setShowTrialEndedModal(false)} />}
 
       {/* ── Sidebar ── */}
       <aside style={{
@@ -303,6 +386,13 @@ VALUES ('${user?.id}', 'owner', '', '');`}</pre>
         <div className="dash-main" style={{ padding: '24px', flex: 1 }}>
 
           <ProfileCompletionCard profile={profile} />
+
+          {isFreeProWithData && (
+            <LossAversionBanner
+              talepSayisi={monthlyTalepSayisi}
+              profileViews={0}
+            />
+          )}
 
           {/* ── Metric cards ── */}
           {isOwner ? (

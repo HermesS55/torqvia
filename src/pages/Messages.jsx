@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
-import { Send, MessageCircle, Search, ArrowLeft, Check, CheckCheck, X, Smile, Trash2, SearchIcon, Image as ImageIcon, ZoomIn, Play, Tag } from 'lucide-react'
+import { Send, MessageCircle, Search, ArrowLeft, Check, CheckCheck, X, Smile, Trash2, SearchIcon, Image as ImageIcon, ZoomIn, Play, Tag, Lock, Zap } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useLang } from '../contexts/LangContext'
+import { useSubscription } from '../hooks/useSubscription'
 import { uploadPostImage, uploadPostVideo } from '../lib/avatar'
 import UserAvatar from '../components/ui/UserAvatar'
 import Spinner from '../components/ui/Spinner'
@@ -63,7 +64,8 @@ function MediaLightboxMsg({ src, isVideo, onClose }) {
 }
 
 export default function Messages() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
+  const { can, isPro } = useSubscription()
   const { lang } = useLang()
   const tr = lang === 'tr'
   const [searchParams] = useSearchParams()
@@ -436,6 +438,29 @@ export default function Messages() {
     : messages
 
   const messageGroups = groupByDate(filteredMessages)
+
+  // Paywall for free pro users
+  if (isPro && !can.messaging) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center max-w-sm mx-auto">
+        <div className="p-4 bg-orange-500/10 rounded-2xl mb-5">
+          <Lock className="h-10 w-10 text-orange-400" />
+        </div>
+        <h2 className="text-xl font-bold text-white mb-2">Mesajlaşma Kilitli</h2>
+        <p className="text-zinc-400 text-sm leading-relaxed mb-6">
+          Müşterilerle doğrudan mesajlaşmak için Turbo planına geçin. Sınırsız iletişim, sınırsız iş.
+        </p>
+        <Link
+          to="/pricing"
+          className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-xl px-6 py-3 text-sm hover:opacity-90 transition-opacity"
+        >
+          <Zap className="h-4 w-4" />
+          Turbo&apos;ya Geç — 299₺/ay
+        </Link>
+        <p className="text-zinc-600 text-xs mt-3">14 gün ücretsiz deneme ile başla</p>
+      </div>
+    )
+  }
 
   return (
     <>

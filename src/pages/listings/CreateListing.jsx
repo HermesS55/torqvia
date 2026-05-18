@@ -119,7 +119,7 @@ export default function CreateListing() {
         show_phone: form.show_phone,
         cover_image,
         extra_images,
-        status: 'in_progress',
+        status: 'open',
       }
 
       const { data, error: err } = await supabase.from('listings').insert(payload).select().single()
@@ -127,6 +127,7 @@ export default function CreateListing() {
       toast.success(t('cl.success'))
       navigate(`/listings/${data.id}`)
     } catch (err) {
+      console.error('CreateListing error:', err)
       setError(err.message || t('cl.failed'))
     } finally {
       setLoading(false)

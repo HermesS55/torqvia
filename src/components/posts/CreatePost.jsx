@@ -188,7 +188,7 @@ export default function CreatePost({ onCreated }) {
                     muted
                   />
                 ) : (
-                  <img src={mediaPreview} alt="" className="max-h-40 rounded-lg border border-zinc-700 object-cover" />
+                  <img src={mediaPreview} alt="" className="max-h-72 rounded-lg border border-zinc-700 object-contain bg-zinc-900" />
                 )}
                 <button type="button" onClick={clearMedia}
                   className="absolute top-1 right-1 bg-black/70 rounded-full p-0.5">

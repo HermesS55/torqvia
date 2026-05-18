@@ -109,8 +109,8 @@ export default function Navbar({ onOpenSearch }) {
                   )}
                 </div>
 
-                {/* Usta Ara */}
-                <Link to="/ustalar"
+                {/* Usta Ara — sadece usta olmayan kullanıcılara göster */}
+                {!isPro && <Link to="/ustalar"
                   style={{
                     display: 'flex', alignItems: 'center', gap: 5,
                     padding: '6px 10px', borderRadius: 8, fontSize: 13, fontWeight: 500,
@@ -123,7 +123,7 @@ export default function Navbar({ onOpenSearch }) {
                 >
                   <Wrench size={15} />
                   <span className="hidden xl:inline">{lang === 'tr' ? 'Usta Ara' : 'Find Mechanic'}</span>
-                </Link>
+                </Link>}
 
                 {/* Nav links (messages, feed, people…) */}
                 {navLinks.map(link => {

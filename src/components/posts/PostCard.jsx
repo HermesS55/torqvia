@@ -262,9 +262,24 @@ export default function PostCard({ post, onDelete, onRepost, pinnedPostId, onPin
           </div>
         )}
         {post.repost_of && (
-          <div className="flex items-center gap-1.5 text-xs text-zinc-600 mb-3">
-            <Repeat2 className="h-3 w-3" />
-            {t('post.repost')}
+          <div className="flex items-center gap-1.5 text-xs text-zinc-500 mb-3">
+            <Repeat2 className="h-3 w-3 shrink-0" />
+            <span>
+              {post.original_post?.profiles?.full_name ? (
+                <>
+                  <Link
+                    to={`/profile/${post.original_post.user_id}`}
+                    className="font-medium text-zinc-400 hover:text-white transition-colors"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    {post.original_post.profiles.full_name}
+                  </Link>
+                  {' '}adlı kullanıcının gönderisi paylaşıldı
+                </>
+              ) : (
+                t('post.repost')
+              )}
+            </span>
           </div>
         )}
 
@@ -342,7 +357,7 @@ export default function PostCard({ post, onDelete, onRepost, pinnedPostId, onPin
 
             {post.image_url && (
               <MediaThumb src={post.image_url} type="image" onOpen={showMedia} className="mt-3">
-                <img src={post.image_url} alt="" loading="lazy" decoding="async" className="rounded-xl w-full max-h-80 object-cover border border-zinc-800" />
+                <img src={post.image_url} alt="" loading="lazy" decoding="async" className="rounded-xl w-full max-h-[600px] object-cover border border-zinc-800" />
               </MediaThumb>
             )}
 

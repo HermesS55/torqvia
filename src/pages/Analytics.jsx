@@ -3,10 +3,11 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Calendar, MessageCircle, TrendingUp,
   User, Settings, Zap, Star, CheckCircle2, DollarSign,
-  ArrowUp, ArrowDown,
+  ArrowUp, ArrowDown, Lock,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useSubscription } from '../hooks/useSubscription'
 import Spinner from '../components/ui/Spinner'
 import { useMeta } from '../hooks/useMeta'
 
@@ -101,6 +102,7 @@ function StatCard({ label, value, sub, accent = '#f0f0f0', icon: Icon }) {
 export default function Analytics() {
   useMeta('Gelir & Analitik')
   const { user, profile, loading: authLoading } = useAuth()
+  const { can, effectivePlan, isPro } = useSubscription()
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const [offers, setOffers] = useState([])
@@ -139,6 +141,29 @@ export default function Analytics() {
       <div className="-mx-3 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-8 -mb-20 md:-mb-8 flex"
         style={{ minHeight: 'calc(100dvh - 64px)', background: '#080808', alignItems: 'center', justifyContent: 'center' }}>
         <Spinner size="lg" />
+      </div>
+    )
+  }
+
+  // Stats are available for turbo+, analytics (competitor/funnel) for elite only
+  if (isPro && !can.viewStats) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center max-w-sm mx-auto">
+        <div className="p-4 bg-orange-500/10 rounded-2xl mb-5">
+          <Lock className="h-10 w-10 text-orange-400" />
+        </div>
+        <h2 className="text-xl font-bold text-white mb-2">Analitik Kilitli</h2>
+        <p className="text-zinc-400 text-sm leading-relaxed mb-6">
+          Gelir takibi ve profil istatistiklerinizi görmek için Turbo planına, rakip kıyaslama ve detaylı analizler için Elite planına geçin.
+        </p>
+        <Link
+          to="/pricing"
+          className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-xl px-6 py-3 text-sm hover:opacity-90 transition-opacity"
+        >
+          <Zap className="h-4 w-4" />
+          Turbo&apos;ya Geç — 299₺/ay
+        </Link>
+        <p className="text-zinc-600 text-xs mt-3">14 gün ücretsiz deneme ile başla</p>
       </div>
     )
   }
@@ -424,6 +449,39 @@ export default function Analytics() {
                     <span style={{ fontSize: 13, color: i === 0 ? '#ff8c33' : '#666' }}>{s}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Elite analytics — locked for turbo/free */}
+          {!can.analytics && (
+            <div style={{ marginTop: 20, background: 'linear-gradient(160deg, #0d0d0d, #0a0a0a)', border: '1px solid rgba(139,92,246,0.15)', borderRadius: 16, padding: '28px 24px', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(139,92,246,0.04), transparent)', pointerEvents: 'none' }} />
+              <div style={{ position: 'relative' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                  <div style={{ padding: 8, background: 'rgba(139,92,246,0.12)', borderRadius: 10 }}>
+                    <Lock size={16} style={{ color: '#a78bfa' }} />
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#a78bfa', margin: 0 }}>Elite Analitik</p>
+                    <p style={{ fontSize: 11, color: '#444', margin: 0, marginTop: 2 }}>Rakip kıyaslama, talep hunisi, en çok aranan hizmetler</p>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+                  {['Rakip Kıyaslama', 'Talep Hunisi', 'Trend Hizmetler'].map(f => (
+                    <div key={f} style={{ background: '#111', border: '1px solid #1a1a1a', borderRadius: 10, padding: '14px 16px', filter: 'blur(2px)', userSelect: 'none' }}>
+                      <div style={{ height: 8, background: '#1a1a1a', borderRadius: 4, marginBottom: 8, width: '60%' }} />
+                      <div style={{ height: 32, background: '#141414', borderRadius: 4 }} />
+                    </div>
+                  ))}
+                </div>
+                <Link
+                  to="/pricing"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 10, background: 'linear-gradient(135deg, #7c3aed, #d97706)', color: '#fff', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}
+                >
+                  <Zap size={14} />
+                  Elite&apos;e Geç — 599₺/ay
+                </Link>
               </div>
             </div>
           )}

@@ -3,10 +3,11 @@ import { Link, useLocation, useSearchParams, useNavigate } from 'react-router-do
 import {
   LayoutDashboard, Calendar, MessageCircle, TrendingUp,
   User, Settings, Zap, Car, Search, Clock, CheckCircle2,
-  XCircle, AlertCircle, ChevronRight, Plus, Send, MapPin, Star,
+  XCircle, AlertCircle, ChevronRight, Plus, Send, MapPin, Star, Lock,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useSubscription } from '../hooks/useSubscription'
 import Spinner from '../components/ui/Spinner'
 import UserAvatar from '../components/ui/UserAvatar'
 import { useMeta } from '../hooks/useMeta'
@@ -363,6 +364,7 @@ function RateProModal({ proId, proName, proAvatar, onClose, onSubmitted }) {
 export default function Appointments() {
   useMeta('Randevular')
   const { user, profile, loading: authLoading } = useAuth()
+  const { can, isPro } = useSubscription()
   const { pathname } = useLocation()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -623,6 +625,29 @@ export default function Appointments() {
       <div className="-mx-3 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-8 -mb-20 md:-mb-8 flex"
         style={{ minHeight: 'calc(100dvh - 64px)', background: '#080808', alignItems: 'center', justifyContent: 'center' }}>
         <Spinner size="lg" />
+      </div>
+    )
+  }
+
+  // Paywall for free pro users
+  if (isPro && !can.appointments) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center max-w-sm mx-auto">
+        <div className="p-4 bg-orange-500/10 rounded-2xl mb-5">
+          <Lock className="h-10 w-10 text-orange-400" />
+        </div>
+        <h2 className="text-xl font-bold text-white mb-2">Randevular Kilitli</h2>
+        <p className="text-zinc-400 text-sm leading-relaxed mb-6">
+          Randevu yönetimini kullanmak için Turbo planına geçin. Tüm randevularınızı tek yerden yönetin.
+        </p>
+        <Link
+          to="/pricing"
+          className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-xl px-6 py-3 text-sm hover:opacity-90 transition-opacity"
+        >
+          <Zap className="h-4 w-4" />
+          Turbo&apos;ya Geç — 299₺/ay
+        </Link>
+        <p className="text-zinc-600 text-xs mt-3">14 gün ücretsiz deneme ile başla</p>
       </div>
     )
   }

@@ -19,6 +19,7 @@ import FollowButton from '../components/profile/FollowButton'
 import FollowListModal from '../components/profile/FollowListModal'
 import ReportModal from '../components/ui/ReportModal'
 import RatingModal from '../components/ui/RatingModal'
+import AvatarCropModal from '../components/ui/AvatarCropModal'
 import { VehicleCard } from './Garage'
 import toast from 'react-hot-toast'
 
@@ -207,6 +208,7 @@ export default function Profile() {
   const [editForm, setEditForm] = useState({})
   const [saving, setSaving] = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
+  const [cropFile, setCropFile] = useState(null)
   const [portfolioUploading, setPortfolioUploading] = useState(false)
   const [portfolioModal, setPortfolioModal] = useState(null) // { file, preview, isVideo }
   const [portfolioLabel, setPortfolioLabel] = useState('')
@@ -300,7 +302,7 @@ export default function Profile() {
     const [{ data: p }, { data: postsData }, { data: listingsData }, { data: vehiclesData }, { data: portfolioData }] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', id).single(),
       supabase.from('posts')
-        .select(`*, profiles!posts_user_id_fkey(id, avatar_url, full_name, role, specialty, plan), post_tags(tagged_user_id, profiles!post_tags_tagged_user_id_fkey(id, full_name)), post_likes(user_id), post_comments(count)`)
+        .select(`*, profiles!posts_user_id_fkey(id, avatar_url, full_name, role, specialty, plan), post_tags(tagged_user_id, profiles!post_tags_tagged_user_id_fkey(id, full_name)), post_likes(user_id), post_comments(count), original_post:repost_of(id, user_id, profiles!posts_user_id_fkey(id, full_name, avatar_url))`)
         .eq('user_id', id).order('created_at', { ascending: false }),
       supabase.from('listings').select('*').eq('user_id', id).order('created_at', { ascending: false }),
       supabase.from('vehicles').select('*').eq('user_id', id).order('created_at', { ascending: false }),
@@ -345,11 +347,17 @@ export default function Profile() {
   async function handleAvatarUpload(e) {
     const file = e.target.files[0]
     if (!file) return
+    e.target.value = ''
     try { await validateImageFile(file, 3 * 1024 * 1024) }
-    catch (err) { toast.error(err.message); e.target.value = ''; return }
+    catch (err) { toast.error(err.message); return }
+    setCropFile(file)
+  }
+
+  async function handleCropConfirm(croppedFile) {
+    setCropFile(null)
     setAvatarUploading(true)
     try {
-      const url = await uploadAvatar(user.id, file)
+      const url = await uploadAvatar(user.id, croppedFile)
       await supabase.from('profiles').update({ avatar_url: url }).eq('id', user.id)
       setProfile(p => ({ ...p, avatar_url: url }))
       refetchProfile?.()
@@ -1428,6 +1436,7 @@ export default function Profile() {
       {followModal && <FollowListModal userId={id} type={followModal} onClose={() => setFollowModal(null)} />}
       {showReport && <ReportModal targetType="user" targetId={id} reportedUserId={id} onClose={() => setShowReport(false)} />}
       {showRating && <RatingModal pro={profile} onClose={() => setShowRating(false)} onRated={fetchRatings} />}
+      {cropFile && <AvatarCropModal file={cropFile} onConfirm={handleCropConfirm} onCancel={() => setCropFile(null)} />}
 
       {/* ══ PHOTO LIGHTBOX ══ */}
       {photoSrc && (
