@@ -186,6 +186,7 @@ export default function CreatePost({ onCreated }) {
                     className="max-h-48 rounded-lg border border-zinc-700 bg-black"
                     controls
                     muted
+                    playsInline
                   />
                 ) : (
                   <img src={mediaPreview} alt="" className="max-h-72 rounded-lg border border-zinc-700 object-contain bg-zinc-900" />
@@ -236,7 +237,7 @@ export default function CreatePost({ onCreated }) {
             <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
               <div className="flex gap-1 flex-shrink-0">
                 <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
-                <input ref={videoRef} type="file" accept="video/mp4,video/mov,video/webm,video/*" className="hidden" onChange={handleVideo} />
+                <input ref={videoRef} type="file" accept="video/mp4,video/quicktime,video/webm,video/*" className="hidden" onChange={handleVideo} />
 
                 <button type="button" onClick={() => { setShowVideoGate(false); imageRef.current?.click() }}
                   className="p-2 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors" title="Fotoğraf ekle">

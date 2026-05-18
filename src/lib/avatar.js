@@ -46,11 +46,12 @@ export async function uploadPostImage(userId, file) {
 }
 
 export async function uploadPostVideo(userId, file) {
-  const ext = file.name.split('.').pop()
+  const ext = file.name.split('.').pop().toLowerCase()
+  const contentType = file.type || 'video/mp4'
   const path = `${userId}/${Date.now()}.${ext}`
   const { error } = await supabase.storage
     .from('post-videos')
-    .upload(path, file, { upsert: false })
+    .upload(path, file, { upsert: false, contentType })
   if (error) throw error
   const { data } = supabase.storage.from('post-videos').getPublicUrl(path)
   return data.publicUrl
